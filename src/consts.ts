@@ -10,9 +10,8 @@ import {
 export const anthroipcApiKey = CUMARU_KEYS_ANTHROPIC_API_KEY ?? "";
 export const geminiApiKey = CUMARU_KEYS_GEMINI_API_KEY ?? "";
 
-export const prePrompt: string =
-  CUMARU_LLM_PRE_PROMPT_REPLACE ??
-  `Create a function that follows the parameters below. Respond with only the function.
+const defaultPrePrompt = `
+Create a function that follows the parameters below. Respond with only the function.
 
 Build a JSON with the parameters of: "name" as string, "body" as a string and "parameters", as an array of strings, example:
 
@@ -23,12 +22,15 @@ Build a JSON with the parameters of: "name" as string, "body" as a string and "p
 }
 
 This JSON will create a standard paramters for the "new Function()" class locally to parse it as a real function.
+`;
+export const prePrompt: string = `${
+  Boolean(CUMARU_LLM_PRE_PROMPT_REPLACE)
+    ? `${CUMARU_LLM_PRE_PROMPT_REPLACE}`
+    : defaultPrePrompt
+} ${CUMARU_LLM_PRE_PROMPT_APPEND}`;
 
-${CUMARU_LLM_PRE_PROMPT_APPEND}`;
-
-export const postPrompt: string =
-  CUMARU_LLM_POST_PROMPT_REPLACE ??
-  `Do not output nothing else, no explanations, no video. No console logs or tests are necessary.
+const defaultPostPrompt = `
+Do not output nothing else, no explanations, no video. No console logs or tests are necessary.
 
 Do not use restricted values.
 
@@ -45,5 +47,9 @@ Do not use comments.
 Do not use triple quotes.
 
 RESPECT THE JSON STRUCTURE.
-
-${CUMARU_LLM_POST_PROMPT_APPEND}`;
+`;
+export const postPrompt: string = `${
+  Boolean(CUMARU_LLM_POST_PROMPT_REPLACE)
+    ? `${CUMARU_LLM_POST_PROMPT_REPLACE}`
+    : defaultPostPrompt
+} ${CUMARU_LLM_POST_PROMPT_APPEND}`;
