@@ -22,14 +22,39 @@ npm install @cumaru/cumaru
 ```typescript
 import { cumaru } from '@cumaru/cumaru';
 
-// Example usage
-const result = await cumaru<number>`
-  Create a function that calculates the fibonacci sequence
-  up to the nth number and returns the sum
+// math super-simple example
+type SumTwoNumbers = (numA: number, numB: number) => number;
+const numA = 1;
+const numB = 2;
+const sumTwoNumbers = await cumaru<SumTwoNumbers>`
+  You are given two numbers ${numA} and ${numB}.
+  Sum the two numbers and return the result.
 `;
+const resultSumTwoNumbers = sumTwoNumbers?.(3, 2);
+console.log("resultSumTwoNumbers", resultSumTwoNumbers); // 5
 
-// Use the generated function
-const sum = result(10);
+// string merge example, leetcode 75
+type MergeWords = (wordA: string, wordB: string) => string;
+const wordA = "abracadabra";
+const wordB = "emme";
+const mergeWords = await cumaru<MergeWords>`
+  You are given two strings ${wordA} and ${wordB}.
+  Merge the strings by adding letters in alternating order, starting with first parameter.
+  If a string is longer than the other, append the additional letters onto the end of the merged string.
+`;
+const resultMergeWords = mergeWords?.("abc", "pqr");
+console.log("resultMergeWords", resultMergeWords); // apbqcr
+
+// dynamic programming example, leetcode 75
+const s = "subsequence";
+const t = "sub";
+const subsequence = await cumaru<(a: string, b: string) => boolean>`
+  Given two strings ${s} and ${t}, return true if s is a subsequence of t, or false otherwise.
+  A subsequence of a string is a new string that is formed from the original string by deleting some (can be none) of the characters
+  without disturbing the relative positions of the remaining characters. (i.e., "ace" is a subsequence of "abcde" while "aec" is not).
+`;
+const resultSubsequence = subsequence?.("abc", "ahbgdc");
+console.log("resultSubsequence", resultSubsequence); // true
 ```
 
 ## How It Works

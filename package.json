@@ -1,6 +1,6 @@
 {
   "name": "@cumaru/cumaru",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Cumaru is a tool that allows you to create functions in JavaScript and TypeScript using AI.",
   "main": "./dist/index.js",
   "type": "module",
