@@ -10,7 +10,7 @@
 # Expects from the entry-point: DOT_LLM_DIR.
 
 cmd_regen_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm regen — regenerate derived state inside .llm/
 
 Usage:
@@ -57,12 +57,12 @@ _regen_index_one() {
     exploring) table=$(_regen_table_exploring) ;;
   esac
 
-  if echo "$table" | fm_block_replace "$index_file" entries "$pillar"; then
+  if echo "$table" | fm_block_replace "$index_file" "$pillar"; then
     local count
-    count=$(echo "$table" | grep -c '^|' || echo 0)
+    count=$(printf '%s\n' "$table" | grep -c '^|')
     green "✓ $pillar/index.md  ($count rows)"
   else
-    red "✗ $index_file has no <!-- llm:entries:$pillar --> block — skip"
+    red "✗ $index_file has no <!-- llm:$pillar --> block — skip"
     return 1
   fi
 }

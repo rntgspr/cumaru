@@ -6,16 +6,16 @@ count: 0
 apps: [meta]
 ---
 
+<!-- llm:intake -->
+| ID | Type | Title | Epic | Story | Status | Synced |
+|----|------|-------|------|-------|--------|--------|
+
+_No entries yet._
+<!-- /llm:intake -->
+
 # Intake
 
 A pillar for **the local mirror of Jira** — epics, stories, and tickets that the project will work on. Source of truth stays in Jira; this directory is a navigable index synced on demand by `llm intake <KEY>`.
-
-| ID | Type | Title | Epic | Story | Status | Synced |
-|----|------|-------|------|-------|--------|--------|
-<!-- llm:entries:intake -->
-<!-- /llm:entries:intake -->
-
-_No entries yet._
 
 ## Rules
 

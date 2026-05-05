@@ -1,51 +1,78 @@
-# cmd_doctor.sh — aggregate health checks on a .llm/ tree.
+# cmd_doctor.sh — run health checks on a .llm/ tree.
 #
-# Runs a series of independent checks and prints a summary.  Each check emits
-# one of:
-#   [✓] label                     — pass (incremented to ok counter)
-#   [⚠] label   detail            — soft issue (warnings; never fails)
-#   [✗] label   detail            — hard issue (errors; exit 1 at end)
+# `llm doctor` runs all checks: schema conformance plus tree-wide
+# structural checks. Each check emits one of:
+#   [✓] label                     — pass
+#   [⚠] label   detail            — soft issue (warning; never fails)
+#   [✗] label   detail            — hard issue (error; exit 1 at end)
 #
-# Composition (delegates to existing functions whenever possible):
-#   1. Validate            — runs cmd_validate (subshell so its counters don't leak)
-#   2. Indexes drift       — compares current shallow indexes vs what `regen index` would produce
+# Composition:
+#   1. Schema conformance — frontmatter, EARS, framework-version match
+#   2. Indexes drift      — current shallow indexes vs `regen index` output
 #   3. Tasks done w/o handoff
 #   4. Orphan archive work files (temp-archive-flow.delete-me.md lingering)
-#   5. Orphan delta-drafts (delta-draft.md in a plan that already has an archive entry)
-#   6. File references     — paths inside `<!-- llm:files:<tag> -->` blocks exist on disk
+#   5. Orphan delta-drafts (delta-draft.md after archive entry exists)
+#   6. File references — paths inside `<!-- llm:files:<tag> -->` blocks exist on disk
 #   7. External tools available (curl, jq, git, rsync)
 #
-# Expects from the entry-point: DOT_LLM_DIR, SCHEMA. Reuses fm_* helpers from
-# common.sh and _regen_table_* from cmd_regen.sh.
+# Cross-file checks (path resolution, depends-on, deltas references) are
+# listed in schema.yaml under cross_file_checks.deferred and not yet enforced.
+#
+# Expects from the entry-point: DOT_LLM_DIR, SCHEMA, QUIET. Reuses fm_*
+# helpers from common.sh and _regen_table_* from cmd_regen.sh.
 
 cmd_doctor_help() {
-  cat <<EOF
-llm doctor — aggregate health checks on the .llm/ tree
+  cat <<'EOF'
+llm doctor — run health checks on the .llm/ tree
 
 Usage:
-  llm doctor
+  llm doctor [--quiet]
 
-Reports:
-  - Validate (frontmatter, EARS, version)
-  - Shallow index drift vs disk
-  - Tasks marked done without a sibling handoff
-  - Lingering archive work files (Phase 2 pending)
-  - delta-draft.md left in plans/ after archive completed
-  - File references in <!-- llm:files:<tag> --> blocks exist on disk
-  - External tools available (curl, jq, git, rsync)
+Options:
+  --quiet   suppress [✓] pass lines; warnings, errors, and the summary still print.
 
-Exits 0 if all checks pass (warnings allowed), 1 if any check errors.
+Checks:
+  [1] Schema conformance — frontmatter, EARS, framework-version match
+        Sub-passes:
+          [0] H1 heading on every markdown
+          [1] index.md universal frontmatter (generated, apps; apps values valid)
+          [2] Plans + tasks (frontmatter required fields; EARS warning in AC)
+          [3] Spec areas + concerns (frontmatter; EARS warning in Requirements)
+          [4] Archive index.md required fields
+          [5] Exploring index.md required fields
+          Cross — framework-version in .llm/index.md must equal version in schema.yaml.
+  [2] Shallow index drift vs disk
+  [3] Tasks marked done without a sibling handoff-t<N>.md
+  [4] Lingering archive work files (Phase 2 pending)
+  [5] delta-draft.md left in plans/ after archive completed
+  [6] File references in <!-- llm:files:<tag> --> blocks resolve on disk
+  [7] External tools available (curl, jq, git, rsync)
+
+  EARS pattern: WHEN .+ THE SYSTEM SHALL .+ — non-conforming bullets emit
+  warnings, not errors. Cross-file checks (path resolution, depends-on,
+  deltas references) are listed in schema.yaml under cross_file_checks.deferred
+  and not yet enforced.
+
+Exit codes:
+  0   all checks pass (warnings allowed)
+  1   at least one error
+  2   usage error (unknown flag)
+
+Examples:
+  llm                                       equivalent to llm doctor (default)
+  llm doctor --quiet                      hide pass lines; show warnings + errors
+  DOT_LLM_DIR=path/to/.llm llm doctor     non-default tree
 EOF
 }
 
-# --- output helpers ---
+# --- output helpers (orchestrator level) ---
 
 _doctor_ok=0
 _doctor_warn=0
 _doctor_err=0
 
 _doctor_pass() {
-  printf '\033[32m[✓]\033[0m %s\n' "$1"
+  [[ "${QUIET:-0}" == "1" ]] || printf '\033[32m[✓]\033[0m %s\n' "$1"
   _doctor_ok=$((_doctor_ok + 1))
 }
 
@@ -61,23 +88,227 @@ _doctor_fail() {
   _doctor_err=$((_doctor_err + 1))
 }
 
-# --- individual checks ---
+# --- schema conformance check (verbose pass, used as helper below) ---
 
-_doctor_check_validate() {
+# Run frontmatter / EARS / version checks against the schema. Verbose by
+# default (the [0]..[5] sub-passes); silenced by the orchestrator via QUIET.
+# Bumps the local `errors` and `warnings` counters; returns non-zero if any
+# error landed.
+_doctor_check_schema() {
+  # Pre-flight: schema must exist
+  if [[ ! -f "$SCHEMA" ]]; then
+    red "✗ schema not found at $SCHEMA"
+    return 1
+  fi
+
+  # Read valid apps from schema (single source of truth)
+  local VALID_APPS=()
+  while IFS= read -r line; do
+    VALID_APPS+=("$line")
+  done < <(awk '
+    /^apps:[[:space:]]*$/                           { state="apps"; next }
+    state=="apps"   && /^[[:space:]]+values:[[:space:]]*$/ { state="values"; next }
+    state=="values" && /^[[:space:]]+-[[:space:]]+/ {
+      sub(/^[[:space:]]+-[[:space:]]+/, "")
+      sub(/[[:space:]]+#.*/, "")
+      sub(/[[:space:]]+$/, "")
+      if (length($0) > 0) print
+      next
+    }
+    state=="values" && /^[a-zA-Z]/                  { exit }
+  ' "$SCHEMA")
+
+  if [[ ${#VALID_APPS[@]} -eq 0 ]]; then
+    red "✗ failed to parse apps.values from $SCHEMA"
+    return 1
+  fi
+
+  # Framework-version check
+  local schema_version
+  schema_version=$(awk '/^version:[[:space:]]/ {print $2; exit}' "$SCHEMA")
+  local front_door="$DOT_LLM_DIR/index.md"
+  if [[ -f "$front_door" ]]; then
+    local fd_version
+    fd_version=$(awk '/^---$/{c++; if(c==2) exit; next} c==1 && /^framework-version:[[:space:]]/ {print $2; exit}' "$front_door")
+    if [[ -z "$fd_version" ]]; then
+      red "✗ $front_door missing framework-version: in frontmatter (schema is at version $schema_version)"
+      errors=$((errors + 1))
+    elif [[ "$fd_version" != "$schema_version" ]]; then
+      red "✗ framework-version mismatch: $front_door declares $fd_version, schema is $schema_version"
+      errors=$((errors + 1))
+    fi
+  fi
+
+  # frontmatter helpers
+  fm() { awk '/^---$/{c++; if(c==2) exit; next} c>=1' "$1"; }
+  has_key() { fm "$1" | grep -qE "^${2}:" 2>/dev/null; }
+
+  check_required() {
+    local file="$1" label="$2"; shift 2
+    local missing=()
+    local f
+    for f in "$@"; do
+      has_key "$file" "$f" || missing+=("$f")
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+      local joined
+      joined=$(IFS=,; echo "${missing[*]}")
+      red "  ✗ $file ($label): missing $joined"
+      errors=$((errors + ${#missing[@]}))
+    fi
+  }
+
+  check_apps_value() {
+    local file="$1"
+    local line
+    line=$(fm "$file" | grep -E '^apps:' | head -1 || true)
+    [[ -z "$line" ]] && return 0
+    local raw
+    raw=$(echo "$line" | sed -E 's/^apps:[[:space:]]*\[(.*)\][[:space:]]*$/\1/' | tr -d ' ' | tr ',' '\n')
+    local v ok valid
+    for v in $raw; do
+      [[ -z "$v" ]] && continue
+      valid=0
+      for ok in "${VALID_APPS[@]}"; do
+        [[ "$v" == "$ok" ]] && valid=1 && break
+      done
+      if [[ $valid -eq 0 ]]; then
+        local valid_list
+        valid_list=$(IFS=,; echo "${VALID_APPS[*]}")
+        red "  ✗ $file: apps value '$v' not in {${valid_list//,/, }}"
+        errors=$((errors + 1))
+      fi
+    done
+  }
+
+  check_ears() {
+    local file="$1" section_marker="$2"
+    local found
+    found=$(awk -v marker="$section_marker" -v f="$file" '
+      $0 ~ marker {section=1; next}
+      /^## / {section=0}
+      section && /^- / && !/WHEN .+ THE SYSTEM SHALL .+/ {
+        print f ":" NR ": " $0
+      }
+    ' "$file")
+    if [[ -n "$found" ]]; then
+      while IFS= read -r line; do
+        yellow "  ⚠ EARS form: $line"
+        warnings=$((warnings + 1))
+      done <<< "$found"
+    fi
+  }
+
+  check_h1() {
+    local file="$1"
+    if ! grep -qE '^# ' "$file"; then
+      red "  ✗ $file: missing H1 heading"
+      errors=$((errors + 1))
+    fi
+  }
+
+  say "Running diagnostic checks on $DOT_LLM_DIR/ ..."
+
+  # [0] Every .md has an H1
+  say ""
+  say "[0] H1 heading on every markdown"
+  while IFS= read -r f; do
+    check_h1 "$f"
+  done < <(find "$DOT_LLM_DIR" -name '*.md' -type f 2>/dev/null | sort)
+
+  # [1] Universal: every index.md
+  say ""
+  say "[1] index.md universal frontmatter"
+  while IFS= read -r f; do
+    check_required "$f" "index" generated apps
+    check_apps_value "$f"
+  done < <(find "$DOT_LLM_DIR" -name index.md -type f 2>/dev/null | sort)
+
+  # [2] Plans + tasks
+  say ""
+  say "[2] Plans and tasks"
+  for d in "$DOT_LLM_DIR"/plans/*/; do
+    [[ -d "$d" ]] || continue
+    pi="$d/index.md"
+    if [[ -f "$pi" ]]; then
+      check_required "$pi" "plan" generated apps status summary scope
+      check_apps_value "$pi"
+      check_ears "$pi" '## Acceptance Criteria'
+    fi
+    for tf in "$d"/t*.md; do
+      [[ -f "$tf" ]] || continue
+      base=$(basename "$tf")
+      [[ "$base" == handoff-* ]] && continue
+      check_required "$tf" "task" plan task depends-on concerns files status apps
+      check_apps_value "$tf"
+    done
+  done
+
+  # [3] Spec areas + concerns (recursive: areas may nest as subareas at any depth)
+  say ""
+  say "[3] Spec areas and concerns"
+  while IFS= read -r ai; do
+    d=$(dirname "$ai")
+    check_required "$ai" "spec area" generated name summary depends-on apps deltas
+    check_apps_value "$ai"
+    check_ears "$ai" '## Requirements'
+    for cf in "$d"/*.md; do
+      [[ -f "$cf" ]] || continue
+      base=$(basename "$cf")
+      [[ "$base" == "index.md" ]] && continue
+      [[ "$base" == "history.md" ]] && continue
+      [[ "$base" == "bootstrap.md" ]] && continue
+      check_required "$cf" "spec concern" generated apps
+      check_apps_value "$cf"
+    done
+  done < <(find "$DOT_LLM_DIR/specs" -mindepth 2 -name index.md -type f 2>/dev/null)
+
+  # [4] Archive
+  say ""
+  say "[4] Archive"
+  for d in "$DOT_LLM_DIR"/archive/*/; do
+    [[ -d "$d" ]] || continue
+    ai="$d/index.md"
+    [[ -f "$ai" ]] || continue
+    check_required "$ai" "archive" generated status summary apps
+    check_apps_value "$ai"
+  done
+
+  # [5] Exploring
+  say ""
+  say "[5] Exploring"
+  for d in "$DOT_LLM_DIR"/exploring/*/; do
+    [[ -d "$d" ]] || continue
+    ei="$d/index.md"
+    [[ -f "$ei" ]] || continue
+    check_required "$ei" "exploring idea" generated status apps summary
+    check_apps_value "$ei"
+  done
+
+  # Schema-pass returns based on local error count; orchestrator owns the overall summary.
+  if [[ $errors -gt 0 ]]; then
+    return 1
+  fi
+  return 0
+}
+
+# --- orchestrator-level checks (each emits exactly one [✓]/[⚠]/[✗] line) ---
+
+_doctor_check_schema_pass() {
   local out exit_code
-  # Subshell so cmd_validate's local errors/warnings counters don't leak into doctor's.
-  out=$(QUIET=1 errors=0 warnings=0 cmd_validate 2>&1)
+  # Subshell so the schema pass's local errors/warnings counters don't leak.
+  out=$(QUIET=1 errors=0 warnings=0 _doctor_check_schema 2>&1)
   exit_code=$?
   if [[ $exit_code -eq 0 ]]; then
-    _doctor_pass "Validate (frontmatter, EARS, version)"
+    _doctor_pass "Schema conformance (frontmatter, EARS, version)"
   else
-    _doctor_fail "Validate" "$(echo "$out" | tr '\n' ';' | sed 's/;$//')"
+    _doctor_fail "Schema conformance" "$(echo "$out" | tr '\n' ';' | sed 's/;$//')"
   fi
 }
 
 _doctor_check_indexes_drift() {
   local drifted=()
-  local pillar index_file table tmp expected
+  local pillar index_file table tmp
   for pillar in intake plans archive specs exploring; do
     index_file="$DOT_LLM_DIR/$pillar/index.md"
     [[ -f "$index_file" ]] || continue
@@ -92,7 +323,7 @@ _doctor_check_indexes_drift() {
 
     tmp=$(mktemp)
     cp "$index_file" "$tmp"
-    if echo "$table" | fm_block_replace "$tmp" entries "$pillar" 2>/dev/null; then
+    if echo "$table" | fm_block_replace "$tmp" "$pillar" 2>/dev/null; then
       if ! cmp -s "$tmp" "$index_file"; then
         drifted+=("$pillar/index.md")
       fi
@@ -164,23 +395,20 @@ _doctor_check_orphan_delta_drafts() {
 }
 
 _doctor_check_file_refs() {
-  # Repo root is the parent of .llm/. Paths inside `llm:files:*` blocks are
-  # interpreted relative to the repo root.
   local repo_root
   repo_root=$(cd "$(dirname "$DOT_LLM_DIR")" && pwd)
 
   local missing=()
-  local f kind tag path resolved
+  local f name path resolved
   while IFS= read -r f; do
-    while IFS=$'\t' read -r kind tag; do
-      [[ "$kind" == "files" ]] || continue
+    while IFS= read -r name; do
+      [[ "$name" == files:* ]] || continue
       while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        # Skip placeholders left from templates (no real project would commit `<...>`).
         [[ "$path" == *'<'*'>'* ]] && continue
         resolved="$repo_root/$path"
         [[ -e "$resolved" ]] || missing+=("${f#$DOT_LLM_DIR/}: $path")
-      done < <(fm_block_extract "$f" files "$tag" | awk '
+      done < <(fm_block_extract "$f" "$name" | awk '
         /^[[:space:]]*-[[:space:]]+`[^`]+`/ {
           match($0, /`[^`]+`/)
           print substr($0, RSTART+1, RLENGTH-2)
@@ -207,19 +435,13 @@ _doctor_check_external_tools() {
   if [[ ${#missing[@]} -eq 0 ]]; then
     _doctor_pass "External tools available (curl, jq, git, rsync)"
   else
-    _doctor_warn_emit "Missing external tools: ${missing[*]}" "→ Some commands won't work (intake needs curl+jq; update needs rsync; framework sync via git URL needs git)"
+    _doctor_warn_emit "Missing external tools: ${missing[*]}" "→ Some commands won't work (intake needs curl+jq; sync via git URL needs git)"
   fi
 }
 
 # --- driver ---
 
 cmd_doctor() {
-  case "${1:-}" in
-    -h|--help|help) cmd_doctor_help; return 0 ;;
-    "") ;;
-    *) red "✗ unknown arg: $1"; cmd_doctor_help; return 2 ;;
-  esac
-
   if [[ ! -d "$DOT_LLM_DIR" ]]; then
     red "✗ $DOT_LLM_DIR not found — run 'llm install' first"
     return 1
@@ -228,12 +450,12 @@ cmd_doctor() {
   echo "Running diagnostic checks on $DOT_LLM_DIR/ ..."
   echo
 
-  # Reset counters (subcommand may be called more than once in a process)
+  # Reset orchestrator counters (subcommand may be called more than once in a process)
   _doctor_ok=0
   _doctor_warn=0
   _doctor_err=0
 
-  _doctor_check_validate
+  _doctor_check_schema_pass
   _doctor_check_indexes_drift
   _doctor_check_tasks_handoffs
   _doctor_check_orphan_archive_work

@@ -14,7 +14,7 @@
 # Expects from the entry-point: SCRIPT_DIR, DOT_LLM_DIR.
 
 cmd_intake_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm intake — fetch a Jira issue and mirror it under .llm/intake/
 
 Usage:
@@ -39,6 +39,10 @@ Behavior:
     is preserved.
 
 Dependencies: curl, jq.
+
+Examples:
+  llm intake JET-1234        first run — pulls template + JIRA-RAW block
+  llm intake JET-1234        later — refresh status/synced-at only
 EOF
 }
 

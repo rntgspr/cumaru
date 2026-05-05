@@ -34,5 +34,6 @@ Group requirements by sub-topic when useful.
 ## Files
 
 - [<concern>.md](<concern>.md) — short description (single-app areas).
+- [<subarea>/](<subarea>/) — nested subarea (its own `index.md`), when a concern grew beyond a flat file and needs its own concerns.
 - [newapp.md](newapp.md) — newapp-specific spec (only if content diverges).
 - [legacy.md](legacy.md) — legacy-specific spec (only if content diverges).

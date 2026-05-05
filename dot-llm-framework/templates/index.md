@@ -4,6 +4,13 @@ generated: false
 apps: [meta]
 ---
 
+<!-- llm:templates -->
+| Templates | Status | Updated |
+|-----------|--------|---------|
+
+_No custom templates yet._
+<!-- /llm:templates -->
+
 # Templates
 
 Templates for the various entity types in `.llm/`. Copy the relevant file when creating a new entity, then fill in the placeholders.

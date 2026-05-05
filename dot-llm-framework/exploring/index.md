@@ -1,42 +1,58 @@
 ---
 human_revised: false
 generated: true
-generated-at: 2026-05-01T00:00:00Z
+generated-at: 2026-05-07T00:00:00Z
 count: 0
 apps: [meta]
 ---
 
-# Exploring
-
-A pillar for **ideas in incubation** — anything you want to think about, sketch, or argue with yourself before committing to a plan.
-
+<!-- llm:exploring -->
 | Idea | Status | Apps | Updated | Summary |
 |------|--------|------|---------|---------|
-<!-- llm:entries:exploring -->
-<!-- /llm:entries:exploring -->
 
 _No explorations yet._
+<!-- /llm:exploring -->
 
-## Rules
+# Exploring
 
-- **No Jira tickets here.** If a topic is mature enough to map to Jira, it goes to `intake/` and `plans/`. Exploring is pre-plan.
-- **No `maintenance-` prefix.** Slug is the slug. Add a slug-only directory (e.g. `exploring/feature-flag-naming-strategy/`).
-- **Never loaded by default.** Same rule as `archive/`. The Lead consults `exploring/index.md` (this file) when looking for prior thoughts; drills into a specific idea only when explicitly asked.
-- **Each idea is a directory** with `index.md` and optional aux files. Same universal entity rules.
-- **Promotion path:** when an idea matures, the Lead either:
-  - Moves it to `plans/maintenance-<slug>/` (internal initiative), or
-  - Moves it to `plans/<JIRA-ID>/` after creating the Jira ticket from the idea.
-- **Drop path:** ideas that won't happen are simply deleted. Git keeps the history. Do not accumulate dead ideas.
+Incubator for ideas that are **not yet plans**. Free-form notes the user wants to think about, sketch, or argue with before committing. An exploration has no Jira ticket and no commitment — it either matures into a plan or gets dropped. This file is the only entry point: drilling into a specific `<slug>/` requires explicit instruction.
 
-## When to use
+## What goes in
+
+Loose ideas worth capturing before they lose shape — a refactor someone might attempt, a feature hypothesis, an architecture sketch, a decision-in-progress with pros/cons to revisit. Anything too premature to justify a `plans/maintenance-<slug>/` directory but worth keeping around.
+
+### When to use
 
 - Capturing a recurring thought before it scatters.
 - Sketching a refactor or architecture change before it's ready for spec/plan.
 - Preserving an analysis or comparison the user asked for that isn't tied to a ticket.
 - Storing decisions-in-progress (with pros/cons) to revisit later.
 
-## When NOT to use
+### When **not** to use
 
 - Anything with acceptance criteria → `plans/`.
 - Anything that describes the system as it is → `specs/`.
 - Anything already done → `archive/`.
+
+## Structure
+
+```
+exploring/<slug>/
+├── index.md          ← required; same frontmatter contract as any entity
+└── *.md              ← optional aux (referenced via `aux:` only)
+```
+
+`<slug>` is **pure kebab-case** — no `maintenance-` prefix, no Jira key. An exploration is **not** a plan: no `scope:`, no DAG, no EARS criteria required. The body is free-form.
+
+## Lifecycle of an exploration
+
+An exploration is **transient by design** — it should eventually either become a plan or be discarded. Two valid exits:
+
+- **Promote** — the idea matured into committed work. The Lead moves the directory to `plans/maintenance-<slug>/` (or `plans/<JIRA-KEY>/` when a Jira ticket lands for it), authors the plan-level frontmatter the exploration didn't have (`scope:`, EARS criteria, DAG), and removes the entry from `exploring/`.
+- **Drop** — the idea won't happen. The Lead deletes the directory. Explorations never migrate to `archive/`; only completed plans do.
+
+Stale entries are a smell: prune or promote, don't accumulate.
+
+## Loading and ownership
+
+This file is the only opportunistic entry point — drilling into `<slug>/` requires explicit instruction (see the Loading rule in the root `.llm/index.md`). The Lead owns `exploring/`: captures, prunes, and promotes. Dev and Ghost do not write here.

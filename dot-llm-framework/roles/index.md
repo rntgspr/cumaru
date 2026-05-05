@@ -4,6 +4,14 @@ generated: false
 apps: [meta]
 ---
 
+<!-- llm:roles -->
+| Roles | Title | Scope | Status | Updated |
+|-------|-------|-------|--------|---------|
+
+_No custom roles yet._
+<!-- /llm:roles -->
+
+
 # Roles
 
 Agent role definitions. Each role describes responsibilities, restrictions, and the workflow expected of an LLM acting in that capacity.

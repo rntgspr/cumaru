@@ -3,6 +3,8 @@
 # Expects from the entry-point:
 #   FRAMEWORK_SRC  — path to dot-llm-framework/ (the default starter)
 #   SKILLS_SRC     — path to skills/ (top-level published skills)
+#   COMMANDS_SRC   — path to commands/ (slash commands installed into
+#                    <parent>/.claude/commands/ alongside .llm/)
 #
 # Usage:
 #   cmd_install [TARGET] [--with <skill>...]
@@ -51,8 +53,21 @@ cmd_install() {
   fi
 
   if [[ -e "$target" ]]; then
-    red "✗ target $target already exists; refusing to overwrite"
-    return 1
+    if [[ ! -t 0 ]]; then
+      red "✗ target $target already exists (run interactively to confirm overwrite)"
+      return 1
+    fi
+    local answer=""
+    read -r -p "Target $target already exists. Overwrite? This will replace its contents. [y/N] " answer
+    case "${answer:-N}" in
+      [Yy]*)
+        rm -rf "$target"
+        ;;
+      *)
+        red "✗ aborted; target $target left untouched"
+        return 1
+        ;;
+    esac
   fi
 
   # Pre-validate skills before any write — fail fast.
@@ -72,6 +87,13 @@ cmd_install() {
 
   green "✓ installed framework starter to $target"
 
+  # Regenerate shallow pillar indexes against the freshly copied tree so the
+  # starter's didactic placeholder tables are replaced by the canonical empty
+  # form `regen` produces — `llm doctor` would otherwise report drift on the
+  # very first run.
+  ( DOT_LLM_DIR="$target" cmd_regen_index ) >/dev/null
+  green "  + shallow indexes regenerated"
+
   # Apply opt-in skills.
   for skill in "${with_skills[@]+"${with_skills[@]}"}"; do
     src="$SKILLS_SRC/${skill}/SKILL.md"
@@ -83,11 +105,17 @@ cmd_install() {
   # Wire CLAUDE.md so the LLM auto-loads .llm/index.md on every session.
   _install_wire_claude_md "$parent" "$target"
 
-  local validate_cmd
+  # Install slash commands into $parent/.claude/commands/.
+  _install_wire_claude_commands "$parent"
+
+  # Offer to detect spec areas from the source tree (interactive only).
+  _install_offer_specs_bootstrap "$parent" "$target"
+
+  local doctor_cmd
   if [[ "$target" == "./.llm" || "$target" == ".llm" ]]; then
-    validate_cmd="llm validate"
+    doctor_cmd="llm doctor"
   else
-    validate_cmd="DOT_LLM_DIR=$target llm validate"
+    doctor_cmd="DOT_LLM_DIR=$target llm doctor"
   fi
   cat <<EOF
 
@@ -96,8 +124,8 @@ Next steps:
      with your project's actual components.
   2. Edit $target/schema.yaml — under apps.values, add one entry per
      component your project ships. Keep platform and meta as reserved.
-  3. Validate the result:
-       $validate_cmd
+  3. Run health checks:
+       $doctor_cmd
 
 The CLAUDE.md hook ensures every Claude session in this repo loads
 $target/index.md automatically (via @import). Open the project in your
@@ -112,11 +140,86 @@ _install_print_hook_block() {
 <!-- BEGIN DOT-LLM-HOOK -->
 ## \`.llm/\` framework
 
-This project uses the \`.llm/\` framework — a spec-driven, agent-friendly knowledge structure. Whenever you (the LLM) start a session in this repository, **read \`$rel_index\` first**. It carries the four pillars (intake / plans / archive / specs / exploring), the loading rule for what enters context, and the role definitions under \`$rel_index\`'s sibling \`roles/\`.
+This project uses the \`.llm/\` framework — a spec-driven, agent-friendly knowledge structure. Whenever you (the LLM) start a session in this repository, **read \`$rel_index\` first**. It carries the five pillars (intake / plans / archive / specs / exploring), the loading rule for what enters context, and the role definitions under \`$rel_index\`'s sibling \`roles/\`.
 
 @$rel_index
 <!-- END DOT-LLM-HOOK -->
 EOF
+}
+
+# Offer (interactively) to run `llm specs bootstrap` (dry-run) so the user
+# sees the areas the CLI would scaffold from their source tree. Skipped
+# when stdin is not a TTY (e.g. piped install).
+_install_offer_specs_bootstrap() {
+  local parent="$1" target="$2"
+
+  # Non-interactive context — skip silently.
+  if [[ ! -t 0 ]]; then
+    return 0
+  fi
+
+  echo ""
+  local answer=""
+  read -r -p "Detect spec areas from your source tree (light pass, no writes)? [Y/n] " answer
+
+  case "${answer:-Y}" in
+    [Yy]*) ;;
+    *) return 0 ;;
+  esac
+
+  echo ""
+  local target_name
+  target_name=$(basename "$target")
+  # Run bootstrap in a subshell rooted at the project parent so its scan
+  # path detection (src/, app/, lib/) is relative to the adopter's project.
+  ( cd "$parent" && DOT_LLM_DIR="$target_name" cmd_specs_bootstrap )
+
+  echo ""
+  say "  → If the areas above look right, write specs/<area>/bootstrap.md per area:"
+  if [[ "$parent" == "." ]]; then
+    say "    llm specs bootstrap --apply"
+  else
+    say "    (cd $parent && llm specs bootstrap --apply)"
+  fi
+}
+
+# Copy slash commands from $COMMANDS_SRC into $parent/.claude/commands/.
+# Walks recursively so subdirs (namespaces) are preserved: a source file
+# at commands/llm/sync.md becomes <parent>/.claude/commands/llm/sync.md,
+# exposing the slash command as /llm:sync. Idempotent: skips files
+# already present at the destination.
+_install_wire_claude_commands() {
+  local parent="$1"
+
+  if [[ ! -d "$COMMANDS_SRC" ]]; then
+    return 0
+  fi
+
+  local cmds_dir="$parent/.claude/commands"
+  local any_source=0
+  local cmd_file
+  while IFS= read -r -d '' cmd_file; do
+    any_source=1
+    break
+  done < <(find "$COMMANDS_SRC" -type f -name '*.md' -print0)
+  [[ $any_source -eq 0 ]] && return 0
+
+  mkdir -p "$cmds_dir"
+
+  local rel dest slash
+  while IFS= read -r -d '' cmd_file; do
+    rel="${cmd_file#"$COMMANDS_SRC"/}"
+    dest="$cmds_dir/$rel"
+    slash="${rel%.md}"
+    slash="/${slash//\//:}"
+    if [[ -f "$dest" ]]; then
+      say "  · ${slash} command already present (skip)"
+    else
+      mkdir -p "$(dirname "$dest")"
+      cp "$cmd_file" "$dest"
+      green "  + ${slash} command added at $dest"
+    fi
+  done < <(find "$COMMANDS_SRC" -type f -name '*.md' -print0)
 }
 
 _install_wire_claude_md() {
@@ -147,7 +250,7 @@ _install_wire_claude_md() {
 }
 
 cmd_install_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm install — install the framework starter into a project
 
 Usage:
