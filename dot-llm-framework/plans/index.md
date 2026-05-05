@@ -6,16 +6,16 @@ count: 0
 apps: [meta]
 ---
 
+<!-- llm:plans -->
+| Plan | Title | Scope | Tasks | Status | Apps | Updated |
+|------|-------|-------|-------|--------|------|---------|
+
+_No active plans yet._
+<!-- /llm:plans -->
+
 # Plans
 
 A pillar for **active execution plans** — one directory per ticket or internal initiative currently being worked on. Authored by the Lead at planning time; moved to `archive/` by the Lead on close.
-
-| Plan | Title | Scope | Tasks | Status | Apps | Updated |
-|------|-------|-------|-------|--------|------|---------|
-<!-- llm:entries:plans -->
-<!-- /llm:entries:plans -->
-
-_No active plans yet._
 
 ## Rules
 

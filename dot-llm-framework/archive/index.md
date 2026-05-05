@@ -6,16 +6,16 @@ count: 0
 apps: [meta]
 ---
 
+<!-- llm:archive -->
+| Plan | Type | Apps | Story | Epic | Completed | Summary |
+|------|------|------|-------|------|-----------|---------|
+
+_No archived plans yet._
+<!-- /llm:archive -->
+
 # Archive
 
 A pillar for **plans that have shipped**. Once a plan closes (Lead runs the archive flow), the plan directory moves here, its delta is absorbed into `specs/`, and this index gains a new row.
-
-| Plan | Type | Apps | Story | Epic | Completed | Summary |
-|------|------|------|-------|------|-----------|---------|
-<!-- llm:entries:archive -->
-<!-- /llm:entries:archive -->
-
-_No archived plans yet._
 
 ## Rules
 
@@ -34,5 +34,5 @@ _No archived plans yet._
 ## When NOT to consult
 
 - Routine planning of new work — start at `intake/` + `plans/`.
-- Browsing for general context — the four pillars + `exploring/` already serve current work.
+- Browsing for general context — the five pillars already serve current work.
 - Anything still in progress — that lives in `plans/`, not here.

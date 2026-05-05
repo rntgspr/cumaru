@@ -56,7 +56,9 @@ sections under `## Files` and `## Topics` are yours to write.
 
   4. Refine `specs/<area>/index.md` with what you learned: tighten EARS,
      add `## Decisions`, update `## Files` descriptions, split into
-     `<area>/<concern>.md` if it grows large.
+     `<area>/<concern>.md` if it grows large — or promote a concern to a
+     `<area>/<subarea>/` directory (with its own `index.md`) when it grows
+     beyond a flat file and needs its own concerns.
 
 END BOOTSTRAP-INSTRUCTIONS -->
 

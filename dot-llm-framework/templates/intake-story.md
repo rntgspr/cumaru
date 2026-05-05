@@ -43,7 +43,7 @@ Stories are executed **linearly** at the Lead level — only one plan from this 
 
 ### Integration points
 
-- `path/to/file.ts` — JET-XXXX owns; JET-YYYY consumes (read-only).
+- `<path/to/file.ts>` — JET-XXXX owns; JET-YYYY consumes (read-only).
 - API contract `/foo` — JET-XXXX ships v2; JET-ZZZZ must continue working with v1 until cutover.
 
 ### Open decisions

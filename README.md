@@ -10,9 +10,9 @@ A spec-driven, agent-friendly knowledge structure for codebases. Lives at `.llm/
 curl -fsSL https://pixelpunk.works/dot-llm/install.sh | bash
 ```
 
-Installs to `~/.dot-llm` and symlinks `llm` into `~/.local/bin`. To update, run `llm update` or re-run the curl command.
+Installs to `~/.dot-llm` and symlinks `llm` into `~/.local/bin`. **The same command updates in place** — re-run it any time and the script does `git pull --ff-only` on `~/.dot-llm` if it already exists.
 
-Alternatively, clone the repo and symlink `llm` onto your PATH — then `llm update` or `git pull` to update.
+Alternatively, clone the repo and symlink `llm` onto your PATH — then `git pull` to update.
 
 ## Why
 
@@ -21,7 +21,7 @@ Two opposite trade-offs show up across current spec-driven approaches:
 1. **Frameworks like GitHub Spec Kit and OpenSpec lean toward loading a lot.** Specs and change files often land in the prompt by default; on bigger projects the context window fills quickly.
 2. **Without any framework, the LLM tends to re-explore the codebase each session** — which can be slow and inconsistent across runs.
 
-`.llm/` splits durable context into **four pillars** plus an ideation space, with explicit declaration rules for what loads. The LLM reads only what the active task points to; the rest stays on disk, version-controlled, but out of context.
+`.llm/` splits durable context into **five pillars** — four for the canonical work cycle (`intake → plans → archive → specs`) plus `exploring/` for ideation — with explicit declaration rules for what loads. The LLM reads only what the active task points to; the rest stays on disk, version-controlled, but out of context.
 
 > **Load only what is declared. Everything else stays on disk but out of context.**
 
@@ -45,7 +45,7 @@ Once installed, a project's `.llm/` looks like this:
 
 ## What the framework is
 
-Four pillars + one ideation space, each loaded only on demand:
+Five pillars, each loaded only on demand:
 
 - **`intake/`** — issue-tracker mirror, synced mechanically (today: Jira; the structure is tracker-agnostic and could mirror Linear, Basecamp, GitHub Issues, etc.).
 - **`plans/<PLAN-ID>/`** — execution plans (with EARS criteria, scope, DAG of tasks).
@@ -79,7 +79,7 @@ Skills live under `skills/<name>/SKILL.md` in this repo (Anthropic format) and a
 Then customize:
 1. **`.llm/index.md`** — replace the placeholder Multi-component table with your project's actual components.
 2. **`.llm/schema.yaml`** — under `apps.values`, add one entry per component. Keep `platform` and `meta` as reserved.
-3. **Run `llm`** (or `llm validate`) to validate the structure.
+3. **Run `llm`** (or `llm doctor`) to validate the structure.
 
 ## Skills (Claude integration)
 
@@ -104,34 +104,19 @@ When the framework introduces a breaking change, bump `schema.yaml` `version:` a
 
 ## CLI subcommands
 
-Run `llm help` (or `llm <cmd> --help`) for full usage. Summary:
+Run `llm help` (or `llm <cmd> --help`) for full usage. Each row links to a per-command doc under [`docs/`](docs/):
 
 | Subcommand | Purpose |
 |---|---|
-| `validate` *(default)* | Tier 1+2 schema checks against `.llm/` |
-| `install [DIR] [--with <skill>...]` | Copy `dot-llm-framework/` into a project's `.llm/`; opt-in skills |
-| `intake <JIRA-KEY>` | Fetch a Jira issue and mirror it under `.llm/intake/` (epic / story / ticket) |
-| `framework sync [filter] [--apply]` | Update `.llm/` from a fresh framework source; preserves `BEGIN/END PROJECT-CUSTOM` blocks |
-| `archive <PLAN-ID>` / `archive finalize` | Two-phase plan closure: copy to `archive/`, absorb deltas into specs, then drop `plans/<ID>/` |
-| `regen index [pillar]` / `regen <JIRA-KEY>` | Regenerate shallow pillar indexes; chain-check (intake → plan → archive → specs) |
-| `specs bootstrap / deep / consolidate` | Spec area discovery (light → incremental → heavy delta absorption) |
-| `doctor` | Aggregate health check (validate + index drift + missing handoffs + external tools) |
-| `update [--ref <branch\|tag>]` | Update the CLI checkout itself, plus skills and framework source |
+| [`doctor`](docs/doctor.md) *(default)* | Schema checks + tree-wide health (index drift, missing handoffs, lingering work files, file refs, external tools) |
+| [`install`](docs/install.md) `[DIR] [--with <skill>...]` | Copy `dot-llm-framework/` into a project's `.llm/`; opt-in skills |
+| [`intake`](docs/intake.md) `<JIRA-KEY>` | Fetch a Jira issue and mirror it under `.llm/intake/` (epic / story / ticket) |
+| [`sync`](docs/sync.md) `[filter] [--apply]` | Update `.llm/` from a fresh framework source; preserves `<!-- llm:*:* -->` blocks |
+| [`archive`](docs/archive.md) `<PLAN-ID>` / `archive finalize` | Two-phase plan closure: copy to `archive/`, absorb deltas into specs, then drop `plans/<ID>/` |
+| [`regen`](docs/regen.md) `index [pillar]` / `regen <JIRA-KEY>` | Regenerate shallow pillar indexes; chain-check (intake → plan → archive → specs) |
+| [`specs`](docs/specs.md) `bootstrap / deep / consolidate` | Spec area discovery (light → incremental → heavy delta absorption) |
 
 `llm intake` requires `ATLASSIAN_DOMAIN`, `ATLASSIAN_EMAIL`, and `ATLASSIAN_API_TOKEN` (auto-loaded from `.env`).
-
-## Validator (`llm validate`)
-
-Tier 1 + 2 checks, hardcoded in bash (the schema is the canonical doc; the bash mirrors it):
-
-- Every `.md` has at least one H1 heading.
-- Every `index.md` carries `generated`, `apps` in frontmatter.
-- Plans, tasks, spec areas, archive, exploring entries each have their required fields.
-- `apps:` values are in the schema's `apps.values` enum.
-- `framework-version:` in the project's `.llm/index.md` matches the schema's `version:`.
-- EARS warning on acceptance criteria not matching `WHEN ... THE SYSTEM SHALL ...`.
-
-Cross-file checks (scope path resolution, depends-on resolution, files-list verification, deltas references) are listed in `schema.yaml` under `cross_file_checks_deferred` and will land in a future version.
 
 ## Status
 

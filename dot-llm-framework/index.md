@@ -5,9 +5,20 @@ apps: [meta]
 framework-version: 2
 ---
 
+<!-- llm:components -->
+| Key | Folder | Stack / Notes |
+|---|---|---|
+| `webapp` | `web-app/` | (replace with your actual stack) |
+| `api`    | `api/`    | (replace with your actual stack) |
+<!-- /llm:components -->
+
+<!-- llm:root -->
+_(empty — replace with adopter-specific context, or delete this placeholder)_
+<!-- /llm:root -->
+
 # `.llm/`
 
-Entry point for any LLM (or human) interacting with this repository. Organized as **four pillars** plus `exploring/` and supporting directories.
+Entry point for any LLM (or human) interacting with this repository. Organized as **five pillars** plus supporting directories.
 
 > **Load only what is declared. Everything else stays on disk but out of context.**
 
@@ -17,7 +28,7 @@ Every structural choice — declared `scope:` in plans, `aux:` in tasks, generat
 
 Context starts at the **ticket**, not at the framework. The framework only structures *how* context attaches to a ticket once it arrives.
 
-1. **Only `index.md` is read by default.** All other framework files (`schema.yaml`, `templates/`, `roles/`) are loaded on demand — when the role or task at hand needs them. The framework explains *the rules*, not *the work*. Skills don't ship with the framework; they're published separately and added per project (`llm install --with <name>`) or globally to your Claude (Code / claude.ai).
+1. **Both `index.md` and `schema.yaml` are loaded by default.** Other framework files (`templates/`, `roles/`) are loaded only when required by the current role or task. The framework specifies *the rules*, not *the work*. Skills are not included within the framework by default; they are published separately and can be added per project (`llm install --with <name>`) or globally to your Claude (Code / claude.ai).
 
 2. **Context is born from the ticket.** A working session begins with either:
    - a Jira-backed ticket — mirrored under `intake/<type>/<KEY>/index.md`, plus a `plans/<KEY>/` directory authored against it;
@@ -47,29 +58,40 @@ Context starts at the **ticket**, not at the framework. The framework only struc
 
 Skills, when present in a project, live at `.llm/skills/<name>/SKILL.md` and are opt-in per project via `llm install --with <name>`. They are not part of the framework starter; the dot-llm repo publishes them separately under `skills/` (Anthropic format).
 
-## The four pillars
+## The five pillars
+
+The first four form the canonical work cycle (`intake → plans → archive → specs`); `exploring/` sits beside the cycle as an incubator for pre-plan ideas. Each pillar has its own shallow `index.md` — the only opportunistic entry point into that pillar.
 
 ### `intake/` — what the ticket asks
 Local mirror of Jira hierarchy (epics → stories → tickets). Each ticket file carries `## Overview` and `## Acceptance Criteria (EARS)` — these are **authored locally** from the Jira description (translated to English and refined), not copied verbatim. Plans for a Jira ticket reference these sections instead of repeating them. Re-sync from Jira when the upstream description changes materially. Stories with more than one active plan also carry a `## Coordination` section.
+**See `intake/index.md`** for the ticket catalog.
 
 ### `plans/` — how we will do it
-One directory per active ticket or internal initiative. Each plan declares its `scope:` (which `specs/` paths it touches) and a DAG of tasks. The plan body carries **`## Plan / DAG`, `## Out of scope`, `## Risks`** only — for Jira-backed plans, Overview and Acceptance Criteria live in `intake/tickets/<JIRA>/index.md`. Slug-based plans (no Jira) keep Overview and AC inside the plan body since they have no intake counterpart.
+One directory per active ticket or internal initiative. Each plan declares its `scope:` (which `specs/` paths it touches) and a DAG of tasks. The plan body carries **`## Plan / DAG`, `## Out of scope`, `## Risks`** only — for Jira-backed plans, Overview and Acceptance Criteria live in `intake/tickets/<KEY>/index.md`. Slug-based plans (no Jira) keep Overview and AC inside the plan body since they have no intake counterpart.
+**See `plans/index.md`** for the active plan catalog.
 
 ### `archive/` — what we did
-Completed plans, moved here on close by the Lead. Never loaded into LLM context by default. The shallow `archive/index.md` is the only entry point; drilling into `<PLAN-ID>/` requires explicit instruction.
+Completed plans, moved here on close by the Lead. Never loaded into LLM context by default; drilling into `<PLAN-ID>/` requires explicit instruction.
+**See `archive/index.md`** for the catalog of completed plans.
 
 ### `specs/` — what is true now
 The living spec of the system: product features, platform conventions, integrations, and durable decisions. Plans reference paths in `specs/` via their `scope:` field. When a plan archives, its delta is **absorbed** into the spec body (current state); the spec's frontmatter `deltas:` list adds the plan ID as a reference. Verbose change wording stays in `archive/<PLAN-ID>/delta.md` — drill there when historical detail is needed.
+**See `specs/index.md`** for the spec area catalog.
 
-## `exploring/` — pre-plan ideas
-
-Free-form ideas that are not yet ready to become plans. No Jira tickets, no `maintenance-` prefix, never loaded by default. Promote to `plans/` when an idea matures; delete when it won't happen.
+### `exploring/` — pre-plan ideas
+Incubator for ideas that are **not yet plans**: free-form notes outside the canonical work cycle. Entries (`exploring/<slug>/`) have no Jira ticket, no commitment, and never enter LLM context by default. Each exploration is **transient by design** — it either matures into a plan or gets dropped (explorations never migrate to `archive/`; only completed plans do). The Lead owns this area; Dev and Ghost don't write here.
+**See `exploring/index.md`** for what goes in, structure, lifecycle, and the current incubation list.
 
 ## Universal rules
 
 - **Every entity is a directory containing `index.md`.** No bare files representing entities. Sub-entities (tasks, concerns) are sibling files with structured names.
 - **Aux files load only when declared** in the entity's frontmatter `aux: [...]`. Undeclared aux is treated as scratch and ignored by the LLM.
 - **Nothing loads by physical proximity.** Always by declaration (`scope`, `aux`, `concerns`, `files`).
+- **Drill-into rule for a referenced `index.md`.** When the active context references an `index.md` (via `scope:`, `deltas:`, or explicit instruction), inspect the markdown files it lists:
+  - **Direct match** — if a listed file's name or one-line description clearly relates to the context, load **only that file** (or those files).
+  - **No direct match** — load **all** the markdown files in that directory; the relation may live inside a file whose name doesn't surface it.
+  Example: the active context is *"the login button"*. A plan's `scope:` resolves to `specs/auth/index.md`, which lists `logout.md` and `structure.md` — neither name matches "login". Load all `.md` files under `specs/auth/` to find where login lives. If the index also listed `login.md`, load only `login.md`.
+- **Tags right after frontmatter.** Every `<!-- llm:NAME -->` block lives **immediately after the YAML frontmatter, before any prose** (including the `# H1`). The frontmatter is the stable anchor; prose is framework-owned and may be rewritten between versions. Project-owned content lives inside the markers, above the prose, so it survives `llm sync` regardless of how the framework's narrative evolves. NAME is a single token (`intake`, `components`, `root`) or a `kind:tag` pair when the kind needs qualification (`files:touched`). Each tag's format is declared under `tags:` in `schema.yaml`.
 - **Default directory depth ≤ 2 levels.** Deeper nesting requires justification.
 - **Plans may exist without a Jira ID.** Slug-based plan IDs are valid and **must use the `maintenance-` prefix** (e.g., `plans/maintenance-cleanup-deprecated-helpers/`). When `jira:` is absent in the plan frontmatter, the directory name is the plan ID.
 - **`exploring/` slugs have no prefix.** Pure kebab-case slug. No Jira ticket may live in `exploring/`.
@@ -89,14 +111,7 @@ Edit this section to describe your repository's components. The framework defaul
 | `platform` | the monorepo as a whole — repo layout, build, conventions, integrations, anything that crosses components |
 | `meta` | `.llm/` framework files — indexes, templates, role definitions, skills stubs (metadata of the framework itself, not system content) |
 
-Add one row per component your project ships, between the markers below. The `framework sync` command preserves the body of any `<!-- llm:custom:<tag> -->` block across upgrades.
-
-<!-- llm:custom:multi-component -->
-| Key | Folder | Stack / Notes |
-|---|---|---|
-| `webapp` | `web-app/` | (replace with your actual stack) |
-| `api`    | `api/`    | (replace with your actual stack) |
-<!-- /llm:custom:multi-component -->
+Add one row per component your project ships to the `<!-- llm:components -->` block at the **top of this file** (right after the frontmatter). The `llm sync` command preserves the body of any `<!-- llm:NAME -->` block across upgrades.
 
 Then list those keys in `schema.yaml` under `apps.values`.
 
@@ -113,7 +128,11 @@ A note on multi-component task naming: in plans declared with multiple component
 
 ## Loading rule
 
-Plans declare `scope:` referencing paths under `specs/`. The LLM loads only what is declared:
+The LLM loads only what is **declared** — never what is physically near. Declarations come from three sources: the active plan, the role on duty, and explicit user instruction.
+
+### When a plan is active
+
+Plans declare `scope:` referencing paths under `specs/`:
 
 ```yaml
 # plans/<PLAN-ID>/index.md
@@ -132,9 +151,30 @@ specs/auth/integration.md
 specs/platform/routing/index.md
 ```
 
-Plus any `aux:` declared in `index.md` or in the active task's `t<N>.md`.
+Plus any `aux:` declared at the plan level or in the active task's `t<N>.md`. For Jira-backed plans, the linked `intake/<type>/<KEY>/index.md` also enters context.
 
-`archive/` and `exploring/` are **never loaded by default**. Consult their root indexes (shallow) only when historical or pre-plan context is genuinely needed; drill into `<PLAN-ID>/` or `<slug>/` only with explicit instruction.
+### When no plan is active (planning, ad-hoc)
+
+Initial load depends on the role on duty:
+
+| Role  | Shallow indexes loaded                                                       | Rationale |
+|-------|------------------------------------------------------------------------------|-----------|
+| Lead  | `plans/index.md`, `specs/index.md`, `intake/index.md`, `archive/index.md`    | Lead orchestrates — needs the full map to plan, dispatch, and reference history. |
+| Dev   | none                                                                         | Dev operates inside a dispatched `plans/<PLAN-ID>/`. With no active plan there is no task to execute — **recommend the user switch to Lead** to plan and dispatch first. |
+| Ghost | none                                                                         | Ad-hoc and read-only; pulls a shallow only when the user's question requires it. If the question outgrows ad-hoc help (multi-step, touches specs, needs a plan), **recommend the user switch to Lead**. |
+
+Shallow indexes are tables of *what exists* — cheap in tokens. They are **maps**, not content. Drilling into a `<PLAN-ID>/`, `<KEY>/`, `<area>/`, or `<slug>/` is a separate step (see below).
+
+### Drill-into (deep load)
+
+Deep paths enter context **only** when one of the following declares them:
+
+- the active plan (`scope:`, `aux:`, `concerns:`, `files:`),
+- a spec's `deltas:` frontmatter (points to an archived plan),
+- a plan's `jira:` field (points to an intake ticket),
+- explicit user instruction.
+
+`archive/<PLAN-ID>/` and `exploring/<slug>/` are never drilled by physical proximity. Their shallow root indexes describe what exists; the bodies require explicit reference or instruction.
 
 ## Linearity rules
 
@@ -201,8 +241,13 @@ Four canonical interactions. Each maps to a role and a phase.
 When starting any interaction:
 
 1. Read this file to recall structural rules.
-2. Identify the current scope: a plan in `plans/<PLAN-ID>/`, a spec area in `specs/<area>/`, an exploration in `exploring/<slug>/`, or a request that does not yet have a plan.
-3. Load only what the plan declares (`scope`, `aux`, `concerns`, `files`). Do not browse `specs/` opportunistically.
-4. Do not consult `archive/` or `exploring/` unless explicitly asked or the current plan references a past entry directly.
-5. As Dev, persist your progress: keep `t<N>.md` `status:` current, write `handoff-t<N>.md` at task end, and `delta-draft.md` at plan close.
-6. As Lead, reconcile each `handoff-t<N>.md` before dispatching dependent tasks; on plan close, validate the `delta-draft.md`, finalize as `delta.md`, absorb into specs, move plan to archive, regenerate indexes.
+2. **Identify the role on duty** (Lead, Dev, or Ghost) and read the matching `roles/<role>.md`. Apply the per-role initial load defined in the [Loading rule](#loading-rule).
+3. Identify the current scope: a plan in `plans/<PLAN-ID>/`, a spec area in `specs/<area>/`, an exploration in `exploring/<slug>/`, or a request that does not yet have a plan.
+4. Load only what the plan declares (`scope`, `aux`, `concerns`, `files`). Do not browse `specs/` opportunistically.
+5. Do not consult `archive/` or `exploring/` unless explicitly asked or the current plan references a past entry directly.
+6. As Dev, persist your progress: keep `t<N>.md` `status:` current, write `handoff-t<N>.md` at task end, and `delta-draft.md` at plan close.
+7. As Lead, reconcile each `handoff-t<N>.md` before dispatching dependent tasks; on plan close, validate the `delta-draft.md`, finalize as `delta.md`, absorb into specs, move plan to archive, regenerate indexes.
+
+## Project context
+
+Adopter-specific orientation the LLM should keep in mind while applying the rules above: stack, monorepo layout, conventions not yet captured in `specs/`, important external links, current focus, hard constraints. Edit the `<!-- llm:root -->` block at the **top of this file** — its body is preserved across `llm sync` upgrades.

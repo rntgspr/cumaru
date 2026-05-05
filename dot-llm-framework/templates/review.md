@@ -1,12 +1,15 @@
 ---
 human_revised: false
+plan: <PLAN-ID>
+apps: []
+reviewer: <name or role>
+date: YYYY-MM-DD
+status: pending          # pending | accepted | rejected
 ---
 
 # Review: <PLAN-ID> — <Ticket title>
 
-**Date:** YYYY-MM-DD
 **Branch:** <branch-name>
-**Reviewer:** <name or role>
 **Ticket:** [<JIRA-ID>](https://<domain>.atlassian.net/browse/<JIRA-ID>)
 
 ---

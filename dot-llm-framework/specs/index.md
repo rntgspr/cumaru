@@ -5,16 +5,16 @@ generated-at: 2026-05-01T00:00:00Z
 apps: [meta]
 ---
 
+<!-- llm:specs -->
+| Path | Summary | Apps | Depends on |
+|------|---------|------|------------|
+
+_No areas yet. Bootstrap a `specs/<area>/` directory the first time a plan touches it._
+<!-- /llm:specs -->
+
 # Specs
 
 A pillar for the **living spec** of the system — what is true right now about product features, platform conventions, integrations, and durable decisions. Authored and refactored by the Lead; deltas are absorbed here on plan close.
-
-| Path | Summary | Apps | Depends on |
-|------|---------|------|------------|
-<!-- llm:entries:specs -->
-<!-- /llm:entries:specs -->
-
-_No areas yet. Bootstrap a `specs/<area>/` directory the first time a plan touches it._
 
 ## Rules
 
@@ -22,9 +22,10 @@ _No areas yet. Bootstrap a `specs/<area>/` directory the first time a plan touch
 - **`deltas:` frontmatter is the canonical reference.** Each spec area lists the plan IDs whose deltas built its current state. Drill into `archive/<PLAN-ID>/` only when you need the verbose change wording.
 - **Bootstrap on demand.** A spec area is created the first time a plan declares it in `scope:`. Don't seed empty areas in advance.
 - **Concerns split inside an area.** A large area splits into per-concern files (`<area>/<concern>.md`) referenced from the area's `## Files` section. Tasks declare which concerns they touch in their frontmatter `concerns:`.
+- **Subareas when needed.** When an area grows beyond a flat concern split, promote a concern into a nested subarea: `specs/<area>/<subarea>/index.md` with its own concerns. Subareas follow the same shape as areas recursively. The parent area's `## Files` lists the subarea directories alongside any flat concern files.
 - **Per-component split via `<component>.md`** files appears only when content meaningfully diverges between components. Otherwise the area's `index.md` carries everything.
 - **Authoring is the Lead's.** Dev never writes inside `specs/` directly — spec absorption happens during the Lead's archive flow, driven by the Dev's `delta-draft.md`.
-- **Each area is a directory** with `index.md` (overview, requirements, decisions, files) and any concern files.
+- **Each area is a directory** with `index.md` (overview, requirements, decisions, files), any concern files, and optional subarea directories.
 
 ## When to use
 

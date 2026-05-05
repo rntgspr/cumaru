@@ -41,9 +41,13 @@ Confirm with the user before writing a hand-off — that the session is ending, 
 - **Git is skill-gated.** Without `.llm/skills/git/SKILL.md`, use git only for reading. With it present, follow it for mutating commands. Check first; never assume.
 - **Do not transition Jira tickets, do not edit Jira fields.**
 
-## Loading rule
+## Initial load
 
-Read whatever the current question requires (code, configs, specs, the active plan/intake). Default to **not loading** `.llm/archive/` or `.llm/exploring/` — drilling into either is opt-in (user reference, or the active plan's `scope:`/`deltas:` pointing there). When in doubt, ask before loading more.
+Ghost is ad-hoc and read-only. Load nothing from `.llm/` by default — pull what the user's question requires (code, configs, a spec area, the active plan/intake) and stop there. Shallow pillar indexes (`intake/index.md`, `plans/index.md`, `archive/index.md`, `specs/index.md`, `exploring/index.md`) are opt-in: open one only when the question genuinely needs the map.
+
+`archive/<PLAN-ID>/` and `exploring/<slug>/` are not drilled by default — opening either is opt-in (user reference, or the active plan's `scope:`/`deltas:` pointing there). When in doubt, ask before loading more.
+
+If the question outgrows ad-hoc help (multi-step work, touches specs, needs a plan), recommend the user switch to **Lead** — see the **When to escalate** section below.
 
 ## When to escalate
 

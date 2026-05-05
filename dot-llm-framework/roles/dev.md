@@ -46,9 +46,9 @@ You may **not** write anywhere else inside `.llm/`. Specifically, do not touch:
 - **Judgment call:** "obvious vs significant" is yours. When in doubt, lean toward stopping and surfacing.
 - **Git is skill-gated.** Without `.llm/skills/git/SKILL.md`, use git only for reading (`status`, `log`, `diff`, `blame`, `show`). When that file is present, follow it for mutating operations (`commit`, `push`, `reset`, `checkout`, ...). Never assume the skill is there — check `.llm/skills/git/SKILL.md` first.
 
-## Loading rule
+## Initial load
 
-Before reading any `specs/<area>/<concern>.md`, classify the task by its declared `concerns:` (in `t<N>.md`) and the plan's `scope:` (in `index.md`). Read only:
+The Dev only operates **inside a dispatched plan**. With an active `<PLAN-ID>` and a task `t<N>` assigned, classify the task by its declared `concerns:` (in `t<N>.md`) and the plan's `scope:` (in `index.md`). Read only:
 
 - `plans/<PLAN-ID>/index.md` and the active task file `t<N>.md`.
 - `specs/<area>/index.md` for each entry in the plan's `scope:`.
@@ -56,7 +56,9 @@ Before reading any `specs/<area>/<concern>.md`, classify the task by its declare
 - Anything declared in `aux: [...]` of the plan or task.
 - Sibling `handoff-t<N>.md` files for **prerequisite tasks already done** (those in your `depends-on:`) — useful to inherit decisions made there.
 
-Do **not** load other concerns, sibling areas, `archive/`, or `exploring/` unless the user explicitly asks.
+Do **not** load shallow pillar indexes (`intake/index.md`, `plans/index.md`, etc.), other concerns, sibling areas, `archive/`, or `exploring/` unless the user explicitly asks. Shallows are noise during execution.
+
+If activated **without an active plan**, there is no task to execute — recommend the user switch to **Lead** to plan and dispatch first.
 
 ## Workflow
 
@@ -103,7 +105,7 @@ Hand-off rules:
 
 Written **only at plan close**, when the Dev is the last one to finish the plan's tasks. Follow `templates/delta-draft.md`. Frontmatter carries `status: draft`.
 
-Propose, per affected `specs/<area>/<concern>.md`:
+Propose, per affected `specs/<area>[/<subarea>...]/<concern>.md`:
 
 - `### Added Requirements` — new EARS criteria.
 - `### Modified Requirements` — changed EARS, with the previous version cited as `(was: ...)`.

@@ -1,12 +1,15 @@
 ---
 human_revised: false
+plan: <PLAN-ID>
+date: YYYY-MM-DD
+apps: []
 ---
 
 # Delta — <PLAN-ID>
 
 Delta applied to `specs/` when this plan was archived. Source of authority for the changes that landed in the system spec on close.
 
-Each section names a path under `specs/` and lists requirement-level changes. Use the headings exactly: `### Added Requirements`, `### Modified Requirements`, `### Removed Requirements`.
+Each section names a path under `specs/` and lists requirement-level changes. Paths may reference an area's `index.md`, a flat concern file (`<area>/<concern>.md`), or a subarea at any depth (`<area>/<subarea>/index.md`, `<area>/<subarea>/<concern>.md`). Use the headings exactly: `### Added Requirements`, `### Modified Requirements`, `### Removed Requirements`.
 
 ## specs/<area>/<concern>.md
 

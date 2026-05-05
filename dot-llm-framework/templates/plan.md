@@ -7,7 +7,7 @@ epic: <EPIC-ID>            # optional
 story: <STORY-ID>          # optional
 scope:
   - <area>/<concern>
-  - <area>/<concern>
+  - <area>/<subarea>/<concern>
 status: drafting | in-progress | blocked | done
 summary: <one-line summary, used in plans/index.md>
 apps: [newapp] | [legacy] | [mockoon] | [newapp, legacy] | [platform]
@@ -19,7 +19,7 @@ aux: []
 <!-- ===== Slug-based plans (no Jira) ===== -->
 <!-- Include these two sections only when the plan is slug-based (no `jira:` in
      frontmatter). Jira-backed plans defer Overview and Acceptance Criteria to
-     intake/tickets/<JIRA>/index.md and do not repeat them here. -->
+     intake/tickets/<KEY>/index.md and do not repeat them here. -->
 
 ## Overview
 

@@ -11,7 +11,7 @@ date: YYYY-MM-DD
 ## Files touched
 
 <!-- llm:files:touched -->
-- `relative/path/file.ts` — created | modified | removed (1 line about the change)
+- `<relative/path/file.ts>` — created | modified | removed (1 line about the change)
 - ...
 <!-- /llm:files:touched -->
 

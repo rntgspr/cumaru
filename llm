@@ -6,17 +6,15 @@
 # cmd_<name> function.
 #
 # Subcommands:
-#   validate [--quiet]            validate the .llm/ tree (default)
+#   doctor [--quiet]              run health checks on the .llm/ tree (default)
 #   install [DIR] [--with <s>...] install the framework starter into a project
 #   intake <KEY>                  fetch a Jira issue and mirror it under .llm/intake/
-#   framework sync [...]          update .llm/ from a fresh framework source
+#   sync [...]                    update .llm/ from a fresh framework source
 #   archive <PLAN-ID>             prepare a plan for archival (phase 1)
 #   archive finalize <PLAN-ID>    finalize archival after deltas absorbed (phase 2)
 #   regen index [pillar]          regenerate a pillar's shallow index
 #   regen <JIRA-KEY|slug>         chain-check report (intake → plan → archive → specs)
 #   specs bootstrap|deep|consolidate   spec area discovery / delta absorption
-#   doctor                        aggregate health check
-#   update [--ref <branch|tag>]   update CLI checkout + skills + framework source
 #   help                          print top-level help
 #
 # Exit codes:
@@ -46,6 +44,7 @@ SCRIPT_DIR="$(_resolve_self "${BASH_SOURCE[0]}")"
 SRC="$SCRIPT_DIR/src"
 FRAMEWORK_SRC="$SCRIPT_DIR/dot-llm-framework"
 SKILLS_SRC="$SCRIPT_DIR/skills"
+COMMANDS_SRC="$SCRIPT_DIR/commands"
 
 # --- runtime globals consumed by the sourced subcommands ---
 DOT_LLM_DIR="${DOT_LLM_DIR:-.llm}"
@@ -62,25 +61,21 @@ warnings=0
 . "$SRC/cmd_help.sh"
 # shellcheck source=src/cmd_install.sh
 . "$SRC/cmd_install.sh"
-# shellcheck source=src/cmd_validate.sh
-. "$SRC/cmd_validate.sh"
-# shellcheck source=src/cmd_framework_sync.sh
-. "$SRC/cmd_framework_sync.sh"
+# shellcheck source=src/cmd_doctor.sh
+. "$SRC/cmd_doctor.sh"
+# shellcheck source=src/cmd_sync.sh
+. "$SRC/cmd_sync.sh"
 # shellcheck source=src/cmd_intake.sh
 . "$SRC/cmd_intake.sh"
-# shellcheck source=src/cmd_update.sh
-. "$SRC/cmd_update.sh"
 # shellcheck source=src/cmd_specs.sh
 . "$SRC/cmd_specs.sh"
 # shellcheck source=src/cmd_archive.sh
 . "$SRC/cmd_archive.sh"
 # shellcheck source=src/cmd_regen.sh
 . "$SRC/cmd_regen.sh"
-# shellcheck source=src/cmd_doctor.sh
-. "$SRC/cmd_doctor.sh"
 
 # --- argument dispatch ---
-sub="${1:-validate}"
+sub="${1:-doctor}"
 case "$sub" in
   help|-h|--help)
     cmd_help
@@ -91,24 +86,14 @@ case "$sub" in
     cmd_install "$@"
     exit $?
     ;;
-  framework)
+  sync)
     shift
-    fw_sub="${1:-help}"
-    shift || true
-    case "$fw_sub" in
-      sync) cmd_framework_sync "$@"; exit $? ;;
-      help|-h|--help) cmd_framework_sync_help; exit 0 ;;
-      *) red "Unknown framework subcommand: $fw_sub"; cmd_framework_sync_help; exit 2 ;;
-    esac
+    cmd_sync "$@"
+    exit $?
     ;;
   intake)
     shift
     cmd_intake "$@"
-    exit $?
-    ;;
-  update)
-    shift
-    cmd_update "$@"
     exit $?
     ;;
   specs)
@@ -135,20 +120,18 @@ case "$sub" in
     ;;
   doctor)
     shift
-    cmd_doctor "$@"
-    exit $?
-    ;;
-  validate)
-    shift
     for arg in "$@"; do
-      [[ "$arg" == "--quiet" ]] && QUIET=1
+      case "$arg" in
+        -h|--help|help) cmd_doctor_help; exit 0 ;;
+        --quiet)        QUIET=1 ;;
+      esac
     done
-    cmd_validate
+    cmd_doctor
     exit $?
     ;;
   --quiet)
     QUIET=1
-    cmd_validate
+    cmd_doctor
     exit $?
     ;;
   *)

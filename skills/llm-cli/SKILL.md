@@ -1,7 +1,7 @@
 ---
 human_revised: false
 name: llm-cli
-description: Use this skill whenever the user wants to operate the `llm` CLI of the .llm/ framework — to install the framework into a project, fetch a Jira issue into the intake mirror, validate the .llm/ tree, sync .llm/ with a fresh framework source, or bootstrap the CLI itself when it is not yet on the PATH. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "install the framework", "validate .llm/", "update / sync the framework", "set up the llm CLI", or any mention of running an `llm` subcommand. Also use when the user describes a workflow in terms of the framework's pillars (intake, plans, specs, archive, exploring) and the right next step is a CLI invocation. If the `llm` command is not found, **bootstrap it first** following the section below — do not give up; do not ask the user to install it manually unless bootstrap fails.
+description: Use this skill whenever the user wants to operate the `dot-llm` or `llm` CLI of the .llm/ framework — to install the framework into a project, fetch a Jira issue into the intake mirror, validate the .llm/ tree, sync .llm/ with a fresh framework source, or bootstrap the CLI itself when it is not yet on the PATH. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "install the framework", "validate .llm/", "update / sync the framework", "set up the llm CLI", or any mention of running an `llm` subcommand. Also use when the user describes a workflow in terms of the framework's pillars (intake, plans, specs, archive, exploring) and the right next step is a CLI invocation. If the `llm` command is not found, **bootstrap it first** following the section below — do not give up; do not ask the user to install it manually unless bootstrap fails.
 ---
 
 # `llm` CLI
@@ -18,9 +18,21 @@ command -v llm
 
 If the command returns a path, the CLI is installed — skip to the subcommands below. If it returns nothing (exit code 1), install it before doing anything else.
 
-### Clone + symlink
+### One-liner (preferred)
 
-The dot-llm repo lives at `git@github.com:rntgspr/dot-llm.git` (or `https://github.com/rntgspr/dot-llm.git` over HTTPS).
+```bash
+curl -fsSL https://pixelpunk.works/dot-llm/install.sh | bash
+```
+
+Installs the checkout to `~/.dot-llm` and symlinks `llm` into `~/.local/bin`. **Re-run the same one-liner to update**: the script does `git pull --ff-only` on `~/.dot-llm` if it already exists, so install and update share one command.
+
+If `~/.local/bin` is not on the user's PATH, instruct the user to add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` (or `~/.bashrc`).
+
+### Clone + symlink (fallback)
+
+Use when the one-liner URL is unreachable, or when the user is developing dot-llm itself and wants the checkout in a known location.
+
+The dot-llm repo lives at `git@github.com:rntgspr/dot-llm.git` (or `https://github.com/rntgspr/dot-llm.git` over HTTPS — the dot-llm repo is currently private; access requires an SSH key authorized for `rntgspr/dot-llm`).
 
 ```bash
 # Pick a stable home for the checkout (default: ~/dot-llm)
@@ -37,14 +49,9 @@ fi
 mkdir -p "$HOME/.local/bin"
 ln -sf "$DOT_LLM_HOME/llm" "$HOME/.local/bin/llm"
 chmod +x "$DOT_LLM_HOME/llm"
-
-# Verify
-command -v llm && llm help | head -3
 ```
 
-If `~/.local/bin` is not on the user's PATH, prefer `/usr/local/bin/llm` (`sudo ln -s ...`) or instruct the user to add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc`.
-
-A `curl | bash` one-liner installer is not yet published. Once it is, this section will document it as the preferred path.
+For a system-wide install, `sudo ln -s "$DOT_LLM_HOME/llm" /usr/local/bin/llm` instead.
 
 ### After bootstrap
 
@@ -52,13 +59,20 @@ Run `llm help` to confirm. Then proceed with the subcommands below — the rest 
 
 ## Subcommands
 
-### `llm validate` (default)
+### `llm doctor` (default)
 
-Validates the `.llm/` tree against `schema.yaml`. Run from any project root that has `.llm/` installed.
 
-- `--quiet` cuts output to errors and the summary (good for hooks).
+Validates the `.llm/` tree end-to-end — **schema conformance** plus **tree-wide structural checks**, in one pass. Run from any project root that has `.llm/` installed.
+
+**Schema conformance** — frontmatter required fields, EARS pattern in `## Acceptance Criteria` and `## Requirements`, `framework-version` ≡ `version:` in `schema.yaml`. Sub-pass detail surfaces only when there are errors; otherwise compressed into a single `[✓]` line.
+
+**Structural checks** — index drift vs disk, tasks marked done without a handoff, lingering archive work files, orphan delta-drafts, file references in `<!-- llm:files:<tag> -->` blocks resolve on disk, external tools (`curl`, `jq`, `git`, `rsync`) available on PATH.
+
+Output: each check emits exactly one of `[✓]` ok, `[⚠]` warning, `[✗]` error, followed by a `Summary: X error(s), Y warning(s), Z ok` line.
+
+- `--quiet` suppresses `[✓]` pass lines (warnings, errors, summary still print).
 - Exit 0 on success (warnings OK), 1 on errors.
-- Override target with `DOT_LLM_DIR=path/to/.llm llm validate`.
+- Override target with `DOT_LLM_DIR=path/to/.llm llm doctor`.
 
 ### `llm install [TARGET] [--with <skill>...]`
 
@@ -73,7 +87,7 @@ After install, the user customizes:
 1. `.llm/index.md` Multi-component table (between `BEGIN/END PROJECT-CUSTOM:multi-component`).
 2. `.llm/schema.yaml` `apps.values` (between `BEGIN/END PROJECT-CUSTOM:apps-values`).
 
-Then `llm validate` confirms the tree is consistent. Open the project in any Claude client (Code or claude.ai) and the framework is wired in via the CLAUDE.md hook — `.llm/index.md` loads automatically.
+Then `llm doctor` confirms the tree is consistent. Open the project in any Claude client (Code or claude.ai) and the framework is wired in via the CLAUDE.md hook — `.llm/index.md` loads automatically.
 
 ### `llm intake <JIRA-KEY>`
 
@@ -96,9 +110,9 @@ Routing by Jira issuetype:
 
 **Your job after `llm intake` runs:** read the file it created, follow the steps in the JIRA-RAW block (refine `## Overview` and `## Acceptance Criteria (EARS)` in English; if `type: bug`, also fill `## Reproduction`, `## Expected`, `## Actual`; set `apps:` in the frontmatter to the affected component(s) using keys from the project's `schema.yaml` `apps.values`), then delete the JIRA-RAW block. The block's instructions are tailored to the issuetype — follow them.
 
-### `llm framework sync [<filter>] [--from <path|git-url>] [--apply]`
+### `llm sync [<filter>] [--from <path|git-url>] [--apply]`
 
-Updates the project's `.llm/` tree from a fresh framework source. **Does not** update the `llm` script itself or `src/*.sh` modules — those are tooling, updated via `llm update`.
+Updates the project's `.llm/` tree from a fresh framework source. **Does not** update the `llm` script itself or `src/*.sh` modules — those are tooling, updated by re-running the install one-liner (`curl -fsSL https://pixelpunk.works/dot-llm/install.sh | bash`), which does `git pull --ff-only` on `~/.dot-llm`.
 
 **Optional filter** restricts the sync to a single dir of the framework starter:
 `intake`, `plans`, `archive`, `specs`, `exploring`, `roles`, `templates`, or `reviews`. Without a filter, all paths are considered.
@@ -186,7 +200,7 @@ Use after any change to entries:
 - After bootstrapping a new spec area or exploring idea
 - Ad-hoc to "resync everything"
 
-**`llm regen <JIRA-KEY>`** — chain-check report on a ticket. Walks the four pillars (intake, plan, archive, specs) and surfaces inconsistencies:
+**`llm regen <JIRA-KEY>`** — chain-check report on a ticket. Walks the canonical work cycle (intake → plan → archive → specs) and surfaces inconsistencies:
 
 - **Intake** present and refined? (warns if JIRA-RAW block still there)
 - **Plan** status and task progress (`done/total tasks`)
@@ -200,46 +214,23 @@ Use to:
 - Diagnose "what's broken" when something feels off.
 - Onboard yourself to a half-finished plan picked up from another session.
 
-### `llm doctor`
+### Updating the `llm` CLI itself
 
-Aggregates health checks on the `.llm/` tree and prints a colored report. Each check is one of `[✓]` ok, `[⚠]` warning, `[✗]` error. Exit 0 if all pass (warnings allowed), 1 if any error.
+There is no dedicated subcommand. **Re-run the install one-liner**:
 
-Checks:
-- **Validate** — runs the same checks as `llm validate` (frontmatter, EARS, framework-version match)
-- **Indexes drift** — compares each shallow index against what `llm regen index` would produce; flags when manual edits or new entries left them stale
-- **Tasks done without handoff** — every `t<N>.md` with `status: done` should have a sibling `handoff-t<N>.md`
-- **Lingering archive work files** — `temp-archive-flow.delete-me.md` left under `archive/<PLAN-ID>/` means Phase 2 is pending
-- **Orphan delta-drafts** — `delta-draft.md` in `plans/<PLAN-ID>/` when `archive/<PLAN-ID>/` already exists (interrupted archive flow)
-- **External tools** — `curl`, `jq`, `git`, `rsync` available on PATH
+```bash
+curl -fsSL https://pixelpunk.works/dot-llm/install.sh | bash
+```
 
-Use when:
-- The user says "is `.llm/` healthy?" / "diagnose" / "health-check" / "verifica isso"
-- Before a big operation (`framework sync`, mass `regen`) to spot pre-existing state issues
-- After picking up a half-finished session — run doctor first to map what was left mid-flight
+The script does `git pull --ff-only` on `~/.dot-llm` if it already exists, so install and update share one command.
 
-### `llm update [--ref <branch|tag>]`
+**Distinction from `llm sync`:**
+- The install one-liner updates the **CLI tooling** globally (script + `src/*.sh` + `skills/` + `dot-llm-framework/` source).
+- `llm sync` updates a **project's `.llm/`** tree per-project; needs an installed target.
 
-Updates the **CLI itself** — the `llm` script, the `src/*.sh` modules, the published `skills/`, and the `dot-llm-framework/` source the `install` and `framework sync` commands rely on. Runs from anywhere; **does not require a project**.
-
-**Source resolution (in priority order):**
-
-1. **`DOT_LLM_ROOT`** — set in the env or in `.env` at the current directory. The value can be:
-   - a **local directory path** (e.g. `/path/to/dot-llm`) — files are rsynced from there into the active checkout. Useful when developing dot-llm locally.
-   - a **git URL** (`https://...`, `ssh://...`, `git@...`, or anything ending in `.git`) — clones shallowly into a tempdir, then rsyncs. Useful for adopters pulling from GitHub/GitLab.
-
-2. **Git remote on the active checkout** — when `DOT_LLM_ROOT` is unset and the checkout backing `llm` is a git working tree with a configured remote, runs `git pull --ff-only` (or fetches and checks out `--ref` when supplied).
-
-If neither applies, the command fails with a hint to re-bootstrap (see Bootstrap section).
-
-**When to run:**
-- The user says "update llm", "atualizar o llm", "atualiza", or asks for a newer CLI feature.
-- Before running `llm framework sync` if the CLI itself might be stale.
-
-**Distinction from `llm framework sync`:**
-- `update` updates the **tooling** globally (CLI + skills + framework source).
-- `framework sync` updates a **project's `.llm/`** tree per-project; needs an installed target.
-
-The command reports the version before/after using `git describe --tags --always --dirty` so the user can see what moved.
+**When to update the CLI:**
+- The user says "update llm", "atualizar o llm", "atualiza", "mise à jour llm", "actualizar llm", "aggiorna llm", "llm güncelle", "llm güncellemesi", "обновить llm", "llm を更新", "llm를 업데이트", "llm güncellenmesi gerekli", "αναβάθμιση llm".
+- Before running `llm sync` if the CLI itself might be stale.
 
 ## Patterns
 
@@ -248,12 +239,12 @@ The command reports the version before/after using `git describe --tags --always
 | "Fetch JET-1234 into intake" | `llm intake JET-1234` | Read the created file, follow the JIRA-RAW block instructions |
 | "Pull this ticket / story into intake" (with a JIRA key) | Same as above | Same |
 | "Set up the framework here" | `llm install` (or `llm install --with git`) | Point the user at the two customization spots |
-| "Validate the .llm/ tree" | `llm validate` (or `llm`) | If errors, surface them and propose fixes |
-| "Update / sync the framework here" | `llm framework sync` (rich dry-run) | Walk the per-file output, apply the heuristic, edit files; or run `--apply` for the default strategies |
-| "Sync only intake / plans / templates / ..." | `llm framework sync <filter>` | Same flow, scoped to one dir |
-| "Update llm" / "atualiza o llm" | `llm update` | Report version before/after |
+| "Validate the .llm/ tree" | `llm doctor` (or `llm`) | If errors, surface them and propose fixes |
+| "Update / sync the framework here" | `llm sync` (rich dry-run) | Walk the per-file output, apply the heuristic, edit files; or run `--apply` for the default strategies |
+| "Sync only intake / plans / templates / ..." | `llm sync <filter>` | Same flow, scoped to one dir |
+| "Update llm" / "atualiza o llm" | `curl -fsSL https://pixelpunk.works/dot-llm/install.sh \| bash` | Same command for install and update — does `git pull` if `~/.dot-llm` exists |
 | "Regenerate the indexes" / "regen tudo" | `llm regen index` | Show row counts |
-| "Is .llm/ healthy?" / "diagnose" / "health-check" | `llm doctor` | Walk through each ⚠/✗; suggest the fix command |
+| "Is .llm/ healthy?" / "diagnose" / "health-check" / "verifica isso" | `llm doctor` (or just `llm`) | Walk through each ⚠/✗; suggest the fix command |
 | "Check the chain for JET-1234" / "raio-x do JET-1234" | `llm regen JET-1234` | Surface ⚠ warnings if any |
 | "Close the plan / archive JET-1234" | `llm archive JET-1234`, follow temp-archive-flow.delete-me, then `llm archive finalize JET-1234`, then `llm regen index` | Walk through phases, finish with regen |
 
@@ -261,7 +252,7 @@ The command reports the version before/after using `git describe --tags --always
 
 - `DOT_LLM_DIR=path/to/.llm llm <cmd>` — operate on a tree in a non-default location.
 - `.env` at the project root is auto-loaded by `llm intake` (and only by `llm intake`).
-- All subcommands accept `help` / `-h` / `--help` (top-level: `llm help`; subcommand-specific: `llm framework help`, `llm intake help`).
+- All subcommands accept `help` / `-h` / `--help` (top-level: `llm help`; subcommand-specific: `llm sync --help`, `llm intake help`).
 
 ## When NOT to use this skill
 

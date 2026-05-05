@@ -1,9 +1,9 @@
-# cmd_framework_sync.sh — sync a project's .llm/ tree with the latest
+# cmd_sync.sh — sync a project's .llm/ tree with the latest
 # framework definition.
 #
 # Two categories of files (declared in schema.yaml under `sync:`):
 #   A. framework_files — replaced wholesale.
-#   B. marked_files    — replaced wholesale OUTSIDE `<!-- llm:<kind>:<tag> -->`
+#   B. marked_files    — replaced wholesale OUTSIDE `<!-- llm:NAME -->`
 #                        blocks; the body of every such block in the target is
 #                        preserved. Tags are auto-detected per file.
 # Anything not listed is project-owned and never touched.
@@ -22,25 +22,33 @@ inject_blocks() {
   local src="$1" tgt="$2"
   local tmp
   tmp=$(mktemp -d)
-  local kind tag
-  while IFS=$'\t' read -r kind tag; do
-    [[ -z "$kind" || -z "$tag" ]] && continue
-    fm_block_extract "$tgt" "$kind" "$tag" > "$tmp/${kind}__${tag}"
+  local name
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    local safe="${name//:/__}"
+    fm_block_extract "$tgt" "$name" > "$tmp/$safe"
   done < <(fm_block_list "$tgt")
   awk -v dir="$tmp" '
+    function marker_line(s,    t) {
+      t = s
+      sub(/^[[:space:]]*(#|\/\/)?[[:space:]]*/, "", t)
+      sub(/[[:space:]]+$/, "", t)
+      return t
+    }
     {
-      if (match($0, /<!-- llm:[a-z0-9_-]+:[a-z0-9_-]+ -->/)) {
-        m = substr($0, RSTART, RLENGTH)
+      ml = marker_line($0)
+      if (ml ~ /^<!-- llm:[a-z0-9_:-]+ -->$/) {
+        m = ml
         sub(/^<!-- llm:/, "", m); sub(/ -->$/, "", m)
-        n = index(m, ":"); kind = substr(m, 1, n-1); tag = substr(m, n+1)
+        safe = m; gsub(/:/, "__", safe)
         print
-        path = dir "/" kind "__" tag
+        path = dir "/" safe
         while ((getline line < path) > 0) print line
         close(path)
         skip = 1
         next
       }
-      if (match($0, /<!-- \/llm:[a-z0-9_-]+:[a-z0-9_-]+ -->/)) { skip = 0 }
+      if (ml ~ /^<!-- \/llm:[a-z0-9_:-]+ -->$/) { skip = 0 }
       if (!skip) print
     }
   ' "$src"
@@ -65,12 +73,12 @@ parse_yaml_list() {
   ' "$file"
 }
 
-cmd_framework_sync_help() {
-  cat <<EOF
-llm framework sync — update .llm/ from the framework source
+cmd_sync_help() {
+  cat <<'EOF'
+llm sync — update .llm/ from the framework source
 
 Usage:
-  llm framework sync [<filter>] [--from <path|git-url>] [--apply]
+  llm sync [<filter>] [--from <path|git-url>] [--apply]
 
 Arguments:
   <filter>       optional single dir name to limit the sync to:
@@ -98,7 +106,7 @@ Behavior:
   command with --apply to take the defaults.
 
   Heuristic:
-    • Content inside `<!-- llm:<kind>:<tag> -->` blocks → KEEP LOCAL.
+    • Content inside `<!-- llm:NAME -->` blocks → KEEP LOCAL.
     • Prose / headers / Rules / structure outside markers → take FROM FRAMEWORK.
     • Outside-marker prose with project-specific content → ANALYZE: keep
       what is project-local, integrate framework changes around it.
@@ -107,7 +115,7 @@ Behavior:
 
 Categories (declared in the source schema's sync: section):
   [A] framework_files — replaced wholesale
-  [B] marked_files    — replaced outside `<!-- llm:<kind>:<tag> -->` blocks
+  [B] marked_files    — replaced outside `<!-- llm:NAME -->` blocks
   Anything not listed is project-owned and never touched.
 
 This command does NOT update the llm script itself or src/*.sh — those live
@@ -116,10 +124,18 @@ llm-cli skill describes how).
 
 After applying, bump framework-version in .llm/index.md to match the source
 schema's version. The validator enforces equality on the next run.
+
+Examples:
+  llm sync                                  dry-run from the active checkout
+  llm sync --apply                          apply defaults (replace A; merge B)
+  llm sync templates --apply                only sync templates/
+  llm sync --from /path/to/dot-llm          sync from a custom local checkout
+  llm sync --from git@github.com:rntgspr/dot-llm.git --apply
+                                            sync from a git URL (shallow clone)
 EOF
 }
 
-cmd_framework_sync() {
+cmd_sync() {
   local from=""
   local apply=0
   local filter=""
@@ -127,11 +143,11 @@ cmd_framework_sync() {
     case "$1" in
       --from)  from="${2:-}"; shift 2 ;;
       --apply) apply=1; shift ;;
-      help|-h|--help) cmd_framework_sync_help; return 0 ;;
-      -*)      red "unknown flag: $1"; cmd_framework_sync_help; return 2 ;;
+      help|-h|--help) cmd_sync_help; return 0 ;;
+      -*)      red "unknown flag: $1"; cmd_sync_help; return 2 ;;
       *)
         if [[ -z "$filter" ]]; then filter="$1"
-        else red "unexpected arg: $1"; cmd_framework_sync_help; return 2
+        else red "unexpected arg: $1"; cmd_sync_help; return 2
         fi
         shift
         ;;
@@ -231,7 +247,7 @@ cmd_framework_sync() {
     expected_tmp=$(mktemp)
     inject_blocks "$src" "$tgt" > "$expected_tmp"
     if ! cmp -s "$expected_tmp" "$tgt"; then
-      tags_csv=$(fm_block_list "$tgt" | awk -F'\t' '{ printf "%s%s:%s", (NR>1?",":""), $1, $2 }')
+      tags_csv=$(fm_block_list "$tgt" | awk '{ printf "%s%s", (NR>1?",":""), $0 }')
       changes_b+=("$f|$tags_csv")
     fi
     rm -f "$expected_tmp"
@@ -289,7 +305,7 @@ cmd_framework_sync() {
   say "═══════════════════════════════════════════════════════════════════════"
   say ""
   say "Heuristic — apply per file:"
-  say "  • Content inside \`<!-- llm:<kind>:<tag> -->\` blocks → KEEP LOCAL."
+  say "  • Content inside \`<!-- llm:NAME -->\` blocks → KEEP LOCAL."
   say "  • Prose / headers / Rules / structure outside markers → take FROM FRAMEWORK."
   say "  • Outside-marker prose that contains project-specific content → ANALYZE: keep"
   say "    what is project-local, integrate framework changes around it."
@@ -323,6 +339,31 @@ cmd_framework_sync() {
     done
   fi
 
+  # Final summary — machine-readable for an LLM to synthesize a one-liner.
+  say "═══════════════════════════════════════════════════════════════════════"
+  say "Summary"
+  say "═══════════════════════════════════════════════════════════════════════"
+  say "Total files needing review: $total"
+  say "  Category A (replace wholesale):  ${#changes_a[@]}"
+  say "  Category B (preserve markers):   ${#changes_b[@]}"
+  if [[ "$source_version" != "$target_version" ]]; then
+    say "  Framework-version drift: target=${target_version:-unset} → source=$source_version"
+  fi
+  say ""
+  say "Files:"
+  if [[ ${#changes_a[@]} -gt 0 ]]; then
+    for f in "${changes_a[@]}"; do
+      say "  [A] $f"
+    done
+  fi
+  if [[ ${#changes_b[@]} -gt 0 ]]; then
+    local entry tags
+    for entry in "${changes_b[@]}"; do
+      f="${entry%%|*}"; tags="${entry##*|}"
+      say "  [B] $f${tags:+ (markers: $tags)}"
+    done
+  fi
+  say ""
   say "═══════════════════════════════════════════════════════════════════════"
   say "Pass --apply to auto-apply default strategies, or edit individual files"
   say "based on the heuristic above."
@@ -344,7 +385,7 @@ _sync_render_review() {
     echo "    keep         do nothing (you decided to diverge)"
     echo "    llm-decide   read both, produce a semantic merge"
   else
-    echo "Category: B (marked_files — preserve <!-- llm:*:* --> blocks)"
+    echo "Category: B (marked_files — preserve <!-- llm:NAME --> blocks)"
     echo "Markers:  ${tags:-none in target}"
     echo "Default:  merge (preserve markers, replace prose around them)"
     echo "Options:"

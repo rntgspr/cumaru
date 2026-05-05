@@ -25,7 +25,7 @@
 # Expects from the entry-point: DOT_LLM_DIR.
 
 cmd_archive_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm archive — close a plan and move it to archive/
 
 Usage:
@@ -53,6 +53,11 @@ Behavior:
 
 The original plans/ tree is kept through Phase 1 (safe to retry). Only the
 finalize step removes it.
+
+Examples:
+  llm archive JET-1234                    Phase 1 — prepare archive entry
+  llm archive finalize JET-1234           Phase 2 — finalize after LLM absorbs delta
+  llm archive maintenance-cleanup-helpers Phase 1 — slug-based plans work the same way
 EOF
 }
 
@@ -162,7 +167,7 @@ cmd_archive_prepare() {
     echo "     - Verify every Acceptance Criterion (EARS) of the plan is"
     echo "       covered by an Added or Modified Requirement, or explicitly"
     echo "       noted as not requiring a spec change. For Jira-backed plans"
-    echo "       the criteria live in \`intake/tickets/<JIRA>/index.md\`;"
+    echo "       the criteria live in \`intake/tickets/<KEY>/index.md\`;"
     echo "       for slug-based plans they live in the plan body."
     echo ""
     echo "  2. Absorb the delta into each affected spec area listed below."

@@ -4,6 +4,14 @@ generated: false
 apps: [meta]
 ---
 
+<!-- llm:reviews -->
+| Reviews | Title | Scope | Tasks | Status | Apps | Updated |
+|---------|-------|-------|-------|--------|------|---------|
+
+_No reviews yet._
+<!-- /llm:reviews -->
+
+
 # Reviews
 
 Optional location for structured reviews written by the Lead when a plan closes.

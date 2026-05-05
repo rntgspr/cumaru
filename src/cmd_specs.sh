@@ -20,7 +20,7 @@
 # Expects from the entry-point: DOT_LLM_DIR, SCRIPT_DIR.
 
 cmd_specs_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm specs — operations on the specs/ pillar
 
 Usage:
@@ -52,7 +52,7 @@ EOF
 }
 
 cmd_specs_consolidate_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm specs consolidate — compact a spec area by absorbing its archive deltas
 
 Usage:
@@ -242,7 +242,7 @@ cmd_specs_consolidate() {
 # ============================================================================
 
 cmd_specs_bootstrap_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm specs bootstrap — light pass discovery for spec areas
 
 Usage:
@@ -258,7 +258,7 @@ EOF
 }
 
 cmd_specs_deep_help() {
-  cat <<EOF
+  cat <<'EOF'
 llm specs deep — deep pass discovery for one spec area
 
 Usage:
