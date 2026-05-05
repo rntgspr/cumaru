@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+# llm — minimal CLI for the .llm/ framework
+#
+# Entry point. Subcommands live as individual scripts under src/, sourced
+# at startup. The dispatch at the bottom routes argv to the matching
+# cmd_<name> function.
+#
+# Subcommands:
+#   validate [--quiet]            validate the .llm/ tree (default)
+#   install [DIR] [--with <s>...] install the framework starter into a project
+#   intake <KEY>                  fetch a Jira issue and mirror it under .llm/intake/
+#   framework sync [...]          update .llm/ from a fresh framework source
+#   archive <PLAN-ID>             prepare a plan for archival (phase 1)
+#   archive finalize <PLAN-ID>    finalize archival after deltas absorbed (phase 2)
+#   regen index [pillar]          regenerate a pillar's shallow index
+#   regen <JIRA-KEY|slug>         chain-check report (intake → plan → archive → specs)
+#   specs bootstrap|deep|consolidate   spec area discovery / delta absorption
+#   doctor                        aggregate health check
+#   update [--ref <branch|tag>]   update CLI checkout + skills + framework source
+#   help                          print top-level help
+#
+# Exit codes:
+#   0 — success
+#   1 — runtime error (validate found errors; subcommand specific)
+#   2 — usage error
+
+set -uo pipefail
+
+# Resolve the real location of this script, following symlinks. Any global
+# symlink (e.g. ~/.local/bin/llm → /path/to/dot-llm/llm) resolves back to
+# the real checkout so SCRIPT_DIR points at the dot-llm repo, where src/
+# and dot-llm-framework/ live.
+_resolve_self() {
+  local p="$1"
+  while [[ -L "$p" ]]; do
+    local link
+    link="$(readlink "$p")"
+    case "$link" in
+      /*) p="$link" ;;
+      *)  p="$(dirname "$p")/$link" ;;
+    esac
+  done
+  printf '%s\n' "$(cd "$(dirname "$p")" && pwd)"
+}
+SCRIPT_DIR="$(_resolve_self "${BASH_SOURCE[0]}")"
+SRC="$SCRIPT_DIR/src"
+FRAMEWORK_SRC="$SCRIPT_DIR/dot-llm-framework"
+SKILLS_SRC="$SCRIPT_DIR/skills"
+
+# --- runtime globals consumed by the sourced subcommands ---
+DOT_LLM_DIR="${DOT_LLM_DIR:-.llm}"
+SCHEMA="$DOT_LLM_DIR/schema.yaml"
+QUIET=0
+errors=0
+warnings=0
+
+# --- load modules ---
+# common.sh first (provides red/green/say used by every other module).
+# shellcheck source=src/common.sh
+. "$SRC/common.sh"
+# shellcheck source=src/cmd_help.sh
+. "$SRC/cmd_help.sh"
+# shellcheck source=src/cmd_install.sh
+. "$SRC/cmd_install.sh"
+# shellcheck source=src/cmd_validate.sh
+. "$SRC/cmd_validate.sh"
+# shellcheck source=src/cmd_framework_sync.sh
+. "$SRC/cmd_framework_sync.sh"
+# shellcheck source=src/cmd_intake.sh
+. "$SRC/cmd_intake.sh"
+# shellcheck source=src/cmd_update.sh
+. "$SRC/cmd_update.sh"
+# shellcheck source=src/cmd_specs.sh
+. "$SRC/cmd_specs.sh"
+# shellcheck source=src/cmd_archive.sh
+. "$SRC/cmd_archive.sh"
+# shellcheck source=src/cmd_regen.sh
+. "$SRC/cmd_regen.sh"
+# shellcheck source=src/cmd_doctor.sh
+. "$SRC/cmd_doctor.sh"
+
+# --- argument dispatch ---
+sub="${1:-validate}"
+case "$sub" in
+  help|-h|--help)
+    cmd_help
+    exit 0
+    ;;
+  install)
+    shift
+    cmd_install "$@"
+    exit $?
+    ;;
+  framework)
+    shift
+    fw_sub="${1:-help}"
+    shift || true
+    case "$fw_sub" in
+      sync) cmd_framework_sync "$@"; exit $? ;;
+      help|-h|--help) cmd_framework_sync_help; exit 0 ;;
+      *) red "Unknown framework subcommand: $fw_sub"; cmd_framework_sync_help; exit 2 ;;
+    esac
+    ;;
+  intake)
+    shift
+    cmd_intake "$@"
+    exit $?
+    ;;
+  update)
+    shift
+    cmd_update "$@"
+    exit $?
+    ;;
+  specs)
+    shift
+    spec_sub="${1:-help}"
+    shift || true
+    case "$spec_sub" in
+      bootstrap)      cmd_specs_bootstrap "$@"; exit $? ;;
+      deep)           cmd_specs_deep "$@"; exit $? ;;
+      consolidate)    cmd_specs_consolidate "$@"; exit $? ;;
+      help|-h|--help) cmd_specs_help; exit 0 ;;
+      *) red "Unknown specs subcommand: $spec_sub"; cmd_specs_help; exit 2 ;;
+    esac
+    ;;
+  archive)
+    shift
+    cmd_archive "$@"
+    exit $?
+    ;;
+  regen)
+    shift
+    cmd_regen "$@"
+    exit $?
+    ;;
+  doctor)
+    shift
+    cmd_doctor "$@"
+    exit $?
+    ;;
+  validate)
+    shift
+    for arg in "$@"; do
+      [[ "$arg" == "--quiet" ]] && QUIET=1
+    done
+    cmd_validate
+    exit $?
+    ;;
+  --quiet)
+    QUIET=1
+    cmd_validate
+    exit $?
+    ;;
+  *)
+    red "Unknown subcommand: $sub"
+    cmd_help
+    exit 2
+    ;;
+esac

@@ -1,0 +1,224 @@
+# Canonical schema for .llm/ entities.
+# Read by llm.sh (the bash validator at project root).
+# Editing this file is editing the framework's contract — keep llm.sh in sync.
+
+version: 2
+
+# Universal rules
+universal:
+  # Every markdown file must have at least one H1 heading.
+  # `purpose:` was removed — the H1 is the canonical "what is this".
+  markdown:
+    required_heading: h1
+
+  # Every index.md must carry these frontmatter fields.
+  index_md:
+    required: [generated, apps]
+
+# Valid values for the apps: field (frontmatter)
+#
+# Add one entry per component your monorepo ships. The two reserved keys —
+# `platform` (monorepo-level) and `meta` (framework metadata) — must remain.
+apps:
+  values:
+    # <!-- llm:custom:apps-values -->
+    # === project components — replace with your own ===
+    # - webapp     # web-app/ component
+    # - api        # api/ component
+    # - mobile     # mobile/ component
+    # <!-- /llm:custom:apps-values -->
+    # === reserved (do not remove) ===
+    - platform   # monorepo-level (cross-component infrastructure or process)
+    - meta       # framework metadata (.llm/ plumbing); never for product/system content
+
+# Per-entity rules
+entities:
+
+  plan:
+    path: plans/<PLAN-ID>/index.md
+    required:
+      - generated      # always: false
+      - apps
+      - status         # drafting | in-progress | blocked | done
+      - summary
+      - scope          # list of <area>/<concern> paths under specs/
+    optional:
+      - jira
+      - type           # task | bug | spike | story
+      - epic
+      - story
+      - aux
+
+  task:
+    path: plans/<PLAN-ID>/t<N>.md
+    required:
+      - plan           # plan id (Jira or slug)
+      - task           # T<N>
+      - depends-on     # list, possibly empty
+      - concerns       # list, possibly empty
+      - files          # list, possibly empty (Lead's prediction; not exhaustive)
+      - status         # pending | in-progress | done | blocked
+      - apps
+      - aux
+
+  handoff:
+    path: plans/<PLAN-ID>/handoff-t<N>.md
+    required:
+      - plan
+      - task
+      - status         # complete | partial | blocked
+      - date
+
+  delta_draft:
+    path: plans/<PLAN-ID>/delta-draft.md
+    required:
+      - plan
+      - status         # always: draft
+      - date
+
+  spec_area:
+    path: specs/<area>/index.md
+    required:
+      - generated      # always: false
+      - name
+      - summary
+      - depends-on     # list of <area> paths
+      - apps
+      - deltas         # list of plan IDs whose deltas built the current state
+
+  spec_concern:
+    path: specs/<area>/<concern>.md (not index.md)
+    required:
+      - generated      # always: false
+      - apps
+
+  exploring_idea:
+    path: exploring/<slug>/index.md
+    required:
+      - generated      # always: false
+      - status         # idea | considering | promoted | dropped
+      - apps
+      - summary
+
+  intake_ticket:
+    path: intake/tickets/<JIRA>/index.md
+    required: [generated, jira, type, status, synced-at, apps]
+
+  intake_story:
+    path: intake/stories/<JIRA>/index.md
+    required: [generated, jira, type, status, synced-at, apps]
+
+  intake_epic:
+    path: intake/epics/<JIRA>/index.md
+    required: [generated, jira, type, status, synced-at, apps]
+
+  archive_plan:
+    path: archive/<PLAN-ID>/index.md
+    required:
+      - generated      # always: false
+      - status         # always: done
+      - summary
+      - apps
+    optional:
+      - jira
+      - completed-at
+      - delta          # path to delta.md (relative)
+      - consolidated
+
+  generated_index:
+    paths:
+      - intake/index.md
+      - plans/index.md
+      - archive/index.md
+      - specs/index.md
+      - exploring/index.md
+    required:
+      - generated      # always: true
+      - generated-at   # ISO datetime
+      - apps           # always: [meta]
+
+# Soft rules — warnings only, do not fail validation
+soft_rules:
+
+  ears:
+    description: |
+      Bullet items under "## Acceptance Criteria (EARS)" in intake tickets and
+      slug-based plans, and under "## Requirements (EARS)" in specs, should
+      match the EARS pattern. Free prose is allowed in narrative sections —
+      this check only inspects explicit acceptance/requirement sections.
+
+      For Jira-backed plans the AC lives in intake/tickets/<JIRA>/index.md;
+      the plan body does not repeat it. For slug-based plans (no Jira) the AC
+      lives in the plan body.
+    pattern: 'WHEN .+ THE SYSTEM SHALL .+'
+    applies_to:
+      - intake/tickets/<JIRA>/index.md (## Acceptance Criteria section)
+      - plans/<PLAN-ID>/index.md (## Acceptance Criteria section, slug-based plans only)
+      - specs/<area>/index.md (## Requirements section)
+
+# Framework sync configuration — read by `llm framework sync`.
+#
+# Two categories define how files inside .llm/ behave on sync:
+#   - framework_files: replaced wholesale on sync.
+#   - marked_files:    files where any `<!-- llm:<kind>:<tag> -->` block found
+#                      in the target is preserved; everything outside the
+#                      markers is replaced from the source. The set of tags
+#                      is auto-detected per file — no per-file declaration.
+#
+# Files NOT listed below are project-owned and never touched. Reviews under
+# reviews/<plan>-review.md are project-owned by exclusion.
+#
+# Updates to the `llm` CLI script and src/*.sh files are out of scope for
+# this command — they live outside .llm/ and are the responsibility of
+# whoever maintains the dot-llm checkout (typically a `git pull` on the
+# global symlink path). The `llm-cli` skill describes how to do that.
+sync:
+  framework_files:
+    - templates/any-index.md
+    - templates/bootstrap.md
+    - templates/delta-draft.md
+    - templates/delta.md
+    - templates/exploration.md
+    - templates/handoff.md
+    - templates/index.md
+    - templates/intake-epic.md
+    - templates/intake-story.md
+    - templates/intake-ticket.md
+    - templates/plan.md
+    - templates/review.md
+    - templates/spec.md
+    - templates/task.md
+    - roles/index.md
+    - roles/dev.md
+    - roles/ghost.md
+    - roles/lead.md
+    - reviews/index.md
+
+  marked_files:
+    # Files whose `<!-- llm:<kind>:<tag> -->` blocks are preserved across sync.
+    # Kinds in use: `custom` (project edits), `entries` (regenerable indexes).
+    - index.md
+    - schema.yaml
+    - intake/index.md
+    - plans/index.md
+    - archive/index.md
+    - specs/index.md
+    - exploring/index.md
+
+# Cross-file checks (deferred — implement when the framework's CLI lands)
+cross_file_checks_deferred:
+  - "Plan scope: paths resolve to existing specs/<area>/<concern>.md"
+  - "Task depends-on: references resolve to existing tasks in the same plan"
+  - "Files listed in '## Files' of specs/<area>/index.md exist on disk"
+  - "deltas: in spec frontmatter reference existing archive/<PLAN-ID>/ entries"
+
+# Compatibility & versioning
+compatibility:
+  framework_version_field: framework-version
+  framework_version_location: .llm/index.md
+  rule: |
+    The `framework-version:` field in .llm/index.md must equal the `version:`
+    field in this schema. The validator (llm.sh) enforces equality. Bumping
+    `version:` here without bumping `framework-version:` in the project's
+    .llm/index.md surfaces an explicit mismatch error — that is the migration
+    signal.
