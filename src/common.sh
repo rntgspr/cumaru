@@ -110,8 +110,13 @@ fm_block_extract() {
 # Args: file, name.
 fm_block_replace() {
   local file="$1" name="$2"
-  local new_content
-  new_content=$(cat)
+  # Stream stdin to a temp file. Passing multi-line content via `awk -v
+  # new_content="$value"` is unsafe — BSD awk (macOS default) rejects real
+  # newlines in `-v` assignments with "awk: newline in string", which
+  # silently breaks any regen producing >1 row.
+  local content_file
+  content_file=$(mktemp)
+  cat > "$content_file"
   local open="<!-- llm:${name} -->"
   local endmark="<!-- /llm:${name} -->"
   # Open marker must exist as its own line (not just a substring in prose).
@@ -120,11 +125,12 @@ fm_block_replace() {
     t == marker { found = 1; exit }
     END { exit !found }
   ' "$file"; then
+    rm -f "$content_file"
     return 1
   fi
   local tmp
   tmp=$(mktemp)
-  awk -v open="$open" -v endmark="$endmark" -v new_content="$new_content" '
+  awk -v open="$open" -v endmark="$endmark" -v content_file="$content_file" '
     function marker_line(s,    t) {
       t = s
       sub(/^[[:space:]]*(#|\/\/)?[[:space:]]*/, "", t)
@@ -133,7 +139,8 @@ fm_block_replace() {
     }
     marker_line($0) == open {
       print
-      if (length(new_content) > 0) print new_content
+      while ((getline line < content_file) > 0) print line
+      close(content_file)
       skip = 1
       next
     }
@@ -144,4 +151,7 @@ fm_block_replace() {
     }
     !skip { print }
   ' "$file" > "$tmp" && mv "$tmp" "$file"
+  local rc=$?
+  rm -f "$content_file"
+  return $rc
 }
