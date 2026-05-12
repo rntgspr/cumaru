@@ -32,9 +32,7 @@ Argument: `$ARGUMENTS` is the Jira key (e.g. `JET-1234`). If empty, ask the user
 
 7. **Drop the JIRA-RAW block.** Once every section in step 5 and the `apps:` field in step 6 are applied and confirmed, remove the entire `<!-- BEGIN JIRA-RAW ... END JIRA-RAW -->` block (including the blank line above it that the CLI inserted). This signals to future `llm intake $ARGUMENTS` re-syncs that the file is refined — only `status:` and `synced-at:` will be touched after this.
 
-8. **Regenerate the intake shallow index.** A new (or first-time refined) entry under `intake/<type>/<KEY>/` does not appear in `intake/index.md`'s `<!-- llm:intake -->` table until `regen` runs. Execute `llm regen index intake` (passing the same `DOT_LLM_DIR` that resolved the file in step 1). Skip this step on a pure re-sync where the file already existed and was already refined (step 2 exit path).
-
-9. **Close out.** Print the final path and run `llm doctor` against the same `DOT_LLM_DIR`. Report: refinement complete, EARS warnings (none expected), `apps:` value applied (or the blocker noted in step 6), and doctor totals.
+8. **Close out.** Print the final path and run `llm doctor` against the same `DOT_LLM_DIR`. If a new entry was created, doctor's shallow-index drift check will flag `intake/index.md` and emit `→ Run: llm regen index` — that regen is **delegated to the user / next `/llm:doctor` run**, not chained here, so the intake refinement stays focused on body content. Report: refinement complete, EARS warnings (none expected), `apps:` value applied (or the blocker noted in step 6), drift state if any, and doctor totals.
 
 Hard rules:
 
