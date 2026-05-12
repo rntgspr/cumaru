@@ -7,11 +7,13 @@ BIN="$HOME/.local/bin"
 
 echo "Installing dot-llm to $DEST..."
 
-if [[ -d "$DEST/.git" ]]; then
-  git -C "$DEST" pull --ff-only
-else
-  git clone --depth=1 "$REPO" "$DEST"
-fi
+# $DEST is treated as a plain framework snapshot, not a working tree the
+# user maintains. Every run replaces it wholesale: wipe, fresh shallow
+# clone, strip .git/ so re-runs cannot diverge or be blocked by a dirty
+# index. This is the upgrade path — no prompt before overwrite by design.
+rm -rf "$DEST"
+git clone --depth=1 "$REPO" "$DEST"
+rm -rf "$DEST/.git"
 
 mkdir -p "$BIN"
 ln -sf "$DEST/llm" "$BIN/llm"
