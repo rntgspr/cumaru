@@ -1,7 +1,7 @@
 ---
 human_revised: false
 name: llm-cli
-description: Use this skill whenever the user wants to operate the `dot-llm` or `llm` CLI of the .llm/ framework — to install the framework into a project, uninstall / remove it, fetch a Jira issue into the intake mirror, validate the .llm/ tree, bootstrap or deepen spec areas, sync .llm/ with a fresh framework source, or bootstrap the CLI itself when it is not yet on the PATH. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "install the framework", "uninstall the framework", "remove .llm/", "validate .llm/", "bootstrap specs", "deepen the auth spec", "update / sync the framework", "set up the llm CLI", or any mention of running an `llm` subcommand. Also use when the user describes a workflow in terms of the framework's pillars (intake, plans, specs, archive, exploring) and the right next step is a CLI invocation. For reading/writing or auditing `<!-- llm:NAME -->` marker blocks specifically, prefer the dedicated `llm-tag` skill. If the `llm` command is not found, **bootstrap it first** following the section below — do not give up; do not ask the user to install it manually unless bootstrap fails.
+description: Use this skill whenever the user wants to operate the `dot-llm` or `llm` CLI of the .llm/ framework — to install or uninstall the framework, fetch a tracker issue into the intake mirror, validate the .llm/ tree (`doctor`), sync .llm/ with a fresh framework source, reconcile pillar indexes with disk, close a plan via the archive flow, or bootstrap the CLI itself when it is not yet on the PATH. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "install the framework", "uninstall the framework", "remove .llm/", "validate .llm/", "update / sync the framework", "reconcile the indexes", "set up the llm CLI", or any mention of running an `llm` subcommand. Also use when the user describes a workflow in terms of the framework's pillars (intake, plans, specs, archive, exploring) and the right next step is a CLI invocation. For working on `specs/` (bootstrap, deepen, consolidate), prefer the dedicated `llm-specs` skill. For reading/writing or auditing `<!-- llm:NAME -->` marker blocks specifically, prefer the dedicated `llm-tag` skill. If the `llm` command is not found, **bootstrap it first** following the section below — do not give up; do not ask the user to install it manually unless bootstrap fails.
 ---
 
 # `llm` CLI
@@ -197,70 +197,33 @@ Closes a plan: copies its files to `archive/<PLAN-ID>/`, prepares a work file wi
 
 The original `plans/` tree is preserved through Phase 1 — safe to retry. Only `archive finalize` removes it.
 
-### `llm specs bootstrap [--path <dir>] [--apply]`
+### `llm reconcile [<pillar>] [--apply]`
 
-**Light pass** — the first step in seeding the `specs/` pillar from an existing codebase. Discovers top-level areas under the scan path (`src/`, `app/`, `lib/`, or `--path <dir>`) and, with `--apply`, writes a persistent `specs/<area>/bootstrap.md` per area.
+Aligns each pillar's shallow index table with the truth on disk. Pillars are discovered from `root.entities` in `schema.yaml`; columns come from each pillar's array-tag declaration. The cell values are read from each entity's frontmatter using a fixed convention — `Key`/`Idea` = dir name; `Path` = relative path under the pillar; `Title` = the H1; `Tasks` = count of `t*.md` files; otherwise lowercase the column name and read it from the entity's frontmatter (lists joined with `, `). `specs` is walked recursively (subareas are rows).
 
-- **Default is dry-run** — prints the areas it would scaffold; nothing is written. Use it to preview the area split before committing.
-- **With `--apply`** — creates `specs/<area>/bootstrap.md` for each detected area. Each carries discovery output plus instructions for **you** (the LLM) to draft `specs/<area>/index.md` and populate a `## Topics` list of things worth deepening later.
-
-**Your job after `--apply`:** open each `bootstrap.md`, follow its instructions to author the area's `index.md` (Overview + EARS Requirements), and list candidate topics. `bootstrap.md` is **persistent** — it grows across deep passes; do not delete it unless asked.
-
-This is also offered interactively at the end of `llm install` (TTY only), as a dry-run, so the adopter sees the proposed area split immediately.
-
-### `llm specs deep <area> [--topic <slug>] [--apply]`
-
-**Incremental pass** — deepens an area that already has a `bootstrap.md`. Appends a new `## Discovery (deep pass <ISO>) — <scope>` section to that file. Scope is `all topics` by default, or a single `topic: <slug>` with `--topic`.
-
-- **Default is dry-run**; `--apply` appends the section.
-- **Your job after `--apply`:** read the appended discovery section and use it to refine `specs/<area>/index.md` (add Requirements, split concerns into `<concern>.md` files or `<subarea>/` when they outgrow the index).
-
-Run `deep` repeatedly as understanding of an area grows — each pass stacks another dated `## Discovery` section onto `bootstrap.md`.
-
-### `llm specs consolidate <area> [--apply]`
-
-Prepares an LLM-driven **compaction** of a spec area. Over time, a `specs/<area>/` accumulates a long `deltas:` list as plans archive their changes into it. Without compaction, the spec body grows in layers and the loaded context bloats.
-
-**Default is dry-run** — prints the target work file path, delta count, and plan IDs that would be absorbed; nothing is written. Pass `--apply` to create the work file.
-
-**Behavior (with `--apply`):**
-1. The CLI reads `specs/<area>/index.md` and the archive deltas its `deltas:` list references.
-2. Writes `specs/<area>/history.md` with the current spec body, every delta in chronological order, and step-by-step instructions for an LLM to rewrite the spec compactly.
-3. **You** (the LLM in this chat) open the work file, follow the instructions, rewrite `specs/<area>/index.md` into a single coherent spec, and replace the long `deltas:` list with a single `consolidated-at: <ISO date>` field in the frontmatter.
-
-The `history.md` file is **persistent**, not temporary. It is the area's chronological history of absorbed deltas — leave it on disk after consolidation. Only delete it when the user explicitly asks (e.g. "drop the history for auth", "limpa o history").
-
-Archive entries are **never deleted** — history is preserved on disk; only the frontmatter reference shape changes (long list → single date). After consolidation, drilling into archive still works for anyone who needs the verbose wording, and `history.md` provides the same view consolidated per area.
-
-When to run:
-- The user asks to "compact" / "consolidate" / "compactar" a spec area.
-- A spec area's `deltas:` list has grown long (≥5 entries is a reasonable trigger), increasing the loaded context.
-
-### `llm regen index [pillar]` / `llm regen <JIRA-KEY>`
-
-Regenerates derived state inside `.llm/` from disk. Two modes:
-
-**`llm regen index [pillar]`** — rebuilds the entries block of the 5 shallow indexes (`intake/`, `plans/`, `archive/`, `specs/`, `exploring/`). Without arg, regenerates all 5; with a pillar name, regenerates only that one. Replaces only the content between `BEGIN/END PROJECT-CUSTOM:entries` markers — the header, Rules, When-to-use sections are preserved.
+**Default (no `--apply`)** prints a structured per-pillar diff (`actual → expected`) for **you** to adjudicate — useful when a column's value depends on something the convention can't capture (e.g. a derived summary). **`--apply`** mechanically rewrites the tag body in each drifted `<pillar>/index.md` to the expected table.
 
 Use after any change to entries:
-- After `llm intake <KEY>` (intake/index.md is stale)
-- After `llm archive finalize <PLAN-ID>` (plans/index.md and archive/index.md are stale)
-- After bootstrapping a new spec area or exploring idea
-- Ad-hoc to "resync everything"
+- After a new `intake/<KEY>/` is created (intake index is stale).
+- After `llm archive finalize <PLAN-ID>` (plans + archive indexes are stale).
+- After bootstrapping a new spec area or exploring idea.
+- Whenever `llm doctor` reports "Shallow indexes drifted from disk".
 
-**`llm regen <JIRA-KEY>`** — chain-check report on a ticket. Walks the canonical work cycle (intake → plan → archive → specs) and surfaces inconsistencies:
+The schema is the single source of truth for which pillars exist and which columns they carry — adding a new pillar in `schema.yaml` is enough; no CLI code change.
 
-- **Intake** present and refined? (warns if JIRA-RAW block still there)
-- **Plan** status and task progress (`done/total tasks`)
-- **Tasks vs handoffs** — flags tasks with `status: done` lacking a `handoff-t<N>.md`
-- **Archive** present and finalized? (warns if `temp-archive-flow.delete-me.md` lingers)
-- **Specs `deltas:` integrity** — for each path in the plan's `scope:`, checks that `<JIRA-KEY>` is in the area's `deltas:` list (skipped step of the archive flow if missing)
-- **EARS coverage** — every `WHEN ... THE SYSTEM SHALL ...` line in the intake should appear in `archive/<KEY>/delta.md`. Coarse (text matching), but catches forgotten criteria.
+For spec discovery and consolidation see the **`llm-specs` skill** (concept-level guidance, no dedicated subcommand).
 
-Use to:
-- Verify a ticket after `llm archive` finishes (did everything land?).
-- Diagnose "what's broken" when something feels off.
-- Onboard yourself to a half-finished plan picked up from another session.
+#### Chain-check by key (LLM procedure)
+
+There is no dedicated subcommand for this. To audit a ticket end-to-end, walk the canonical work cycle yourself:
+
+1. **Intake** — `.llm/intake/<KEY>/index.md` exists; the JIRA-RAW block has been removed (refined).
+2. **Plan** — `.llm/plans/<PLAN-ID>/index.md` exists or has been archived; every `t<N>.md` carries `status: done`; every done task has a `handoff-t<N>.md`.
+3. **Archive** — `.llm/archive/<PLAN-ID>/` exists; no `temp-archive-flow.delete-me.md` residue; `delta.md` is present.
+4. **Specs** — for each path in the plan's `scope:`, the area's frontmatter `deltas:` list contains `<PLAN-ID>` (the absorb step ran).
+5. **EARS coverage** — every `WHEN ... THE SYSTEM SHALL ...` line in `intake/<KEY>/index.md` appears, by text match, in `archive/<PLAN-ID>/delta.md`.
+
+This is what the old `llm regen <KEY>` did mechanically; in v3 it's an LLM procedure because the steps are easy to walk with Read/Grep and surfacing structured output isn't worth a subcommand.
 
 ### Updating the `llm` CLI itself
 
@@ -288,13 +251,14 @@ The script does `git pull --ff-only` on `~/.dot-llm` if it already exists, so in
 | "Pull this ticket / story into intake" (with a JIRA key) | Same as above | Same |
 | "Set up the framework here" | `llm install` (or `llm install --with git`) | Point the user at the two customization spots |
 | "Validate the .llm/ tree" | `llm doctor` (or `llm`) | If errors, surface them and propose fixes |
-| "Update / sync the framework here" | `llm sync` (rich dry-run) | Walk the per-file output, apply the heuristic, edit files; or run `--apply` for the default strategies |
-| "Sync only intake / plans / templates / ..." | `llm sync <filter>` | Same flow, scoped to one dir |
+| "Update / sync the framework here" | `llm sync` (rich dry-run) | Walk the per-file review, edit per the heuristic; or `--apply` for the mechanical merge |
+| "Sync only intake / plans / templates / ..." | `llm sync <path>` | Same flow, scoped to a dir or single file |
 | "Update llm" / "atualiza o llm" | `curl -fsSL https://pixelpunk.works/dot-llm/install.sh \| bash` | Same command for install and update — does `git pull` if `~/.dot-llm` exists |
-| "Regenerate the indexes" / "regen tudo" | `llm regen index` | Show row counts |
-| "Is .llm/ healthy?" / "diagnose" / "health-check" / "verifica isso" | `llm doctor` (or just `llm`) | Walk through each ⚠/✗; suggest the fix command |
-| "Check the chain for JET-1234" / "raio-x do JET-1234" | `llm regen JET-1234` | Surface ⚠ warnings if any |
-| "Close the plan / archive JET-1234" | `llm archive JET-1234`, follow temp-archive-flow.delete-me, then `llm archive finalize JET-1234`, then `llm regen index` | Walk through phases, finish with regen |
+| "Reconcile / align the indexes" / "atualiza os índices" | `llm reconcile` (or `--apply` for the rewrite) | Walk the per-pillar diff; rewrite the drifted tag bodies |
+| "Is .llm/ healthy?" / "diagnose" / "verifica isso" | `llm doctor` (or just `llm`) | Walk through each ⚠/✗; suggest the fix command |
+| "Check the chain for JET-1234" / "raio-x do JET-1234" | (LLM procedure — no subcommand) | Walk intake → plan → archive → specs.deltas; see the Chain-check section above |
+| "Close the plan / archive JET-1234" | `llm archive JET-1234`, follow `temp-archive-flow.delete-me`, then `llm archive finalize JET-1234`, then `llm reconcile` | Walk through phases, finish by aligning indexes |
+| "Bootstrap / deepen / consolidate a spec area" | (no subcommand — `llm-specs` skill) | Use the `llm-specs` skill; the LLM does the work directly |
 
 ## Defaults and overrides
 

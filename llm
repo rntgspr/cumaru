@@ -12,9 +12,8 @@
 #   sync [...]                    update .llm/ from a fresh framework source
 #   archive <PLAN-ID>             prepare a plan for archival (phase 1)
 #   archive finalize <PLAN-ID>    finalize archival after deltas absorbed (phase 2)
-#   regen index [pillar]          regenerate a pillar's shallow index
-#   regen <JIRA-KEY|slug>         chain-check report (intake → plan → archive → specs)
-#   specs bootstrap|deep|consolidate   spec area discovery / delta absorption
+#   reconcile [<pillar>] [--apply] align each pillar's shallow index with disk
+#                                (schema-driven; replaces the v2 `regen index`)
 #   help                          print top-level help
 #
 # Exit codes:
@@ -69,12 +68,10 @@ warnings=0
 . "$SRC/cmd_sync.sh"
 # shellcheck source=src/cmd_intake.sh
 . "$SRC/cmd_intake.sh"
-# shellcheck source=src/cmd_specs.sh
-. "$SRC/cmd_specs.sh"
 # shellcheck source=src/cmd_archive.sh
 . "$SRC/cmd_archive.sh"
-# shellcheck source=src/cmd_regen.sh
-. "$SRC/cmd_regen.sh"
+# shellcheck source=src/cmd_reconcile.sh
+. "$SRC/cmd_reconcile.sh"
 # shellcheck source=src/cmd_tag.sh
 . "$SRC/cmd_tag.sh"
 
@@ -105,26 +102,14 @@ case "$sub" in
     cmd_intake "$@"
     exit $?
     ;;
-  specs)
-    shift
-    spec_sub="${1:-help}"
-    shift || true
-    case "$spec_sub" in
-      bootstrap)      cmd_specs_bootstrap "$@"; exit $? ;;
-      deep)           cmd_specs_deep "$@"; exit $? ;;
-      consolidate)    cmd_specs_consolidate "$@"; exit $? ;;
-      help|-h|--help) cmd_specs_help; exit 0 ;;
-      *) red "Unknown specs subcommand: $spec_sub"; cmd_specs_help; exit 2 ;;
-    esac
-    ;;
   archive)
     shift
     cmd_archive "$@"
     exit $?
     ;;
-  regen)
+  reconcile)
     shift
-    cmd_regen "$@"
+    cmd_reconcile "$@"
     exit $?
     ;;
   tag)

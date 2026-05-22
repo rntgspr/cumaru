@@ -23,15 +23,14 @@ Subcommands
     tag set <file> <tag>                     replace the block body (stdin)
 
   State maintenance
-    regen index [pillar]                    regenerate shallow pillar indexes (default: all 5)
-    regen <JIRA-KEY>                        chain-check a ticket across all pillars
-    specs bootstrap [--path <dir>] [--apply]  light pass: discover areas, write bootstrap.md per area
-    specs deep <area> [--topic <slug>] [--apply]  deep pass: append discovery section to bootstrap.md
-    specs consolidate <area> [--apply]      compact a spec area by absorbing its deltas
+    reconcile [<pillar>] [--apply]          align each pillar's index table with disk (schema-driven)
     sync [<path>] [--from <src>] [--keep-prose] [--apply]  steady-state update of .llm/ from the framework source
                                             (<path> = a dir or single file under .llm/; version mismatch ⇒ migration, see llm-cli skill)
 
   help                                      this message
+
+Working on `specs/` (bootstrap, deepen, consolidate) is LLM-driven in v3 — no
+subcommand; use the `llm-specs` skill.
 
 Examples
   llm                                  doctor ./.llm (default)
@@ -41,8 +40,8 @@ Examples
   llm intake JET-1234                  pull a ticket into intake
   llm archive JET-1234                 prepare a plan for closure
   llm archive finalize JET-1234        finalize after the LLM absorbs deltas
-  llm regen index                      regenerate all shallow indexes
-  llm regen JET-1234                   chain-check the ticket
+  llm reconcile                        diff every pillar index vs disk
+  llm reconcile --apply                rewrite drifted index tag bodies
   DOT_LLM_DIR=path/to/.llm llm         operate on a non-default tree
 EOF
 }
