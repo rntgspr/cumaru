@@ -19,7 +19,7 @@
 # listed in schema.yaml under cross_file_checks.deferred and not yet enforced.
 #
 # Expects from the entry-point: DOT_LLM_DIR, SCHEMA, QUIET. Reuses fm_*
-# helpers from common.sh and _regen_table_* from cmd_regen.sh.
+# helpers from common.sh and _reconcile_check_quiet from cmd_reconcile.sh.
 
 cmd_doctor_help() {
   cat <<'EOF'
@@ -307,35 +307,15 @@ _doctor_check_schema_pass() {
 }
 
 _doctor_check_indexes_drift() {
-  local drifted=()
-  local pillar index_file table tmp
-  for pillar in intake plans archive specs exploring; do
-    index_file="$DOT_LLM_DIR/$pillar/index.md"
-    [[ -f "$index_file" ]] || continue
-
-    case "$pillar" in
-      intake)    table=$(_regen_table_intake)    ;;
-      plans)     table=$(_regen_table_plans)     ;;
-      archive)   table=$(_regen_table_archive)   ;;
-      specs)     table=$(_regen_table_specs)     ;;
-      exploring) table=$(_regen_table_exploring) ;;
-    esac
-
-    tmp=$(mktemp)
-    cp "$index_file" "$tmp"
-    if echo "$table" | fm_block_replace "$tmp" "$pillar" 2>/dev/null; then
-      if ! cmp -s "$tmp" "$index_file"; then
-        drifted+=("$pillar/index.md")
-      fi
-    fi
-    rm -f "$tmp"
-  done
-
-  if [[ ${#drifted[@]} -eq 0 ]]; then
-    _doctor_pass "Shallow indexes are up to date"
-  else
-    _doctor_warn_emit "Shallow indexes drifted from disk: ${drifted[*]}" "→ Run: llm regen index"
-  fi
+  # Delegates to the schema-driven reconcile walker — no hardcoded pillar list,
+  # no per-pillar table builders. Pillars come from `root.entities` in schema.yaml.
+  _reconcile_check_quiet
+  case $? in
+    0) _doctor_pass "Shallow indexes are up to date" ;;
+    1) _doctor_warn_emit "Shallow indexes drifted from disk" "→ Run: llm reconcile" ;;
+    2) _doctor_warn_emit "Schema has no v3 pillars (root.entities) — likely a pre-v3 tree" \
+         "→ Run the v2 → v3 migration (see the llm-cli skill); reconcile cannot validate until then" ;;
+  esac
 }
 
 _doctor_check_tasks_handoffs() {

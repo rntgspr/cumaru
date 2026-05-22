@@ -90,6 +90,8 @@ Skills live under `skills/<name>/SKILL.md` and follow the official Anthropic for
 
 **Published skills:**
 - [`skills/llm-cli/SKILL.md`](skills/llm-cli/SKILL.md) — operating the `llm` CLI itself (bootstrap from scratch + all subcommands). Recommended as a global skill in your Claude.
+- [`skills/llm-tag/SKILL.md`](skills/llm-tag/SKILL.md) — reading, writing, and auditing `<!-- llm:NAME -->` marker blocks against the schema (`llm tag`).
+- [`skills/llm-specs/SKILL.md`](skills/llm-specs/SKILL.md) — working on the `specs/` pillar (bootstrap a fresh tree from a codebase, deepen an area, consolidate accumulated deltas). No CLI subcommand backs this — the skill is the procedure.
 - [`skills/git/SKILL.md`](skills/git/SKILL.md) — unlocks mutating git commands (commit/push/reset/...) under the framework's skill-gated capability rule. Add per project with `llm install --with git`.
 
 **Using with Claude Code:** clone this repo and point Claude Code at the `skills/` directory (project skills, or `~/.claude/skills/` if you want it global). `git pull` updates the skills in place.
@@ -113,10 +115,11 @@ Run `llm help` (or `llm <cmd> --help`) for full usage. Each row links to a per-c
 | [`uninstall`](docs/uninstall.md) `[DIR] [-y]` | Reverse of install: remove byte-identical commands, strip the CLAUDE.md hook, drop `.llm/` |
 | [`intake`](docs/intake.md) `<KEY>` | Fetch a tracker issue and mirror it as a flat item under `.llm/intake/<KEY>/` |
 | [`tag`](docs/tag.md) `[FILE] [llm:NAME [VALUE]]` | Inspect / get / set `<!-- llm:* -->` marker blocks against the schema; `audit` cross-checks |
-| [`sync`](docs/sync.md) `[filter] [--apply]` | Update `.llm/` from a fresh framework source; preserves `<!-- llm:*:* -->` blocks. Drives v2 → v3 migration |
+| [`sync`](docs/sync.md) `[<path>] [--keep-prose] [--apply]` | Steady-state update of `.llm/` from the framework source; preserves frontmatter values + tag bodies. Refuses on version mismatch (triggers v2 → v3 migration via the `llm-cli` skill) |
 | [`archive`](docs/archive.md) `<PLAN-ID>` / `archive finalize` | Two-phase plan closure: copy to `archive/`, absorb deltas into specs, then drop `plans/<ID>/` |
-| [`regen`](docs/regen.md) `index [pillar]` / `regen <KEY>` | Regenerate shallow pillar indexes; chain-check (intake → plan → archive → specs) |
-| [`specs`](docs/specs.md) `bootstrap / deep / consolidate` | Spec area discovery (light → incremental → heavy delta absorption) |
+| [`reconcile`](docs/reconcile.md) `[<pillar>] [--apply]` | Align each pillar's shallow index table with disk. Schema-driven (pillars + columns come from `schema.yaml`); `--apply` rewrites drifted tag bodies |
+
+Working on `specs/` (bootstrap, deepen, consolidate) is **LLM-driven** in v3 — no CLI subcommand; use the [`llm-specs`](skills/llm-specs/SKILL.md) skill.
 
 `llm intake` requires `ATLASSIAN_DOMAIN`, `ATLASSIAN_EMAIL`, and `ATLASSIAN_API_TOKEN` (auto-loaded from `.env`).
 
