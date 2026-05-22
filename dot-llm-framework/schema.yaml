@@ -1,329 +1,233 @@
-# Canonical schema for .llm/ entities.
-# Read by `llm doctor` (logic in src/cmd_doctor.sh).
-# Editing this file is editing the framework's contract — keep src/cmd_doctor.sh in sync.
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║  HOW TO READ THIS SCHEMA — do not delete (LLM + humans rely on it)        ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+#
+# Root sections:
+#   rules:    cross-cutting contracts every file / index satisfies.
+#   root:     the .llm/ node tree. `root` is the top node; its children
+#             (intake, plans, …) are the pillars. Every node shares one shape
+#             { path?, frontmatter?, tags?, entities? } and nests recursively.
+#   meta:     framework metadata + this project's component registry.
+#
+# frontmatter:  a list of frontmatter keys. Suffix `!` = required, no suffix =
+#               optional.  e.g. [key!, type, status!] → key & status required.
+#               `human_revised` is universal (rules.markdown) — never repeated.
+#
+# tags:  marker blocks `<!-- llm:NAME --> ... <!-- /llm:NAME -->`. The marker
+#        NAME is the path through the node tree, colon-joined: a node's index
+#        tag is just its key (-> llm:intake); a tag deeper in the tree joins the
+#        ancestor keys (-> llm:plans:plan:handoff:files). The VALUE TYPE decides
+#        the block's content format:
+#          array   → markdown table; items are the column headers. `!` marks a
+#                    required column. (LLM can diff / edit / resolve conflicts.)
+#          string  → free prose; the string is the minimal description the prose
+#                    content must stay related to.
+#          number  → a single scalar value (int or float); the number is the
+#                    default / seed.
+#          object  → an extended definition; sub-keys configure the tag, e.g.
+#                    {host_file: …, columns: […]} / {description: …} / {format: …}.
+#                    Node index tags don't need it — host_file derives from path.
+#
+# path:  see the `root` section below — RELATIVE to the parent node; implicit =
+#        the node's key; a directory path resolves to that dir's index.md.
 
-version: 2
+version: 3
 
-# Universal rules
-universal:
-  # Every markdown file must have at least one H1 heading.
-  # `purpose:` was removed — the H1 is the canonical "what is this".
-  # `human_revised:` is required everywhere — defaults to `false`; flip to
-  # `true` after a human eyeballs the file end-to-end.
+# ─────────────────────────────────────────────────────────────────────────
+# rules — cross-cutting, not specific to any single pillar.
+# ─────────────────────────────────────────────────────────────────────────
+rules:
+  # Every markdown file: at least one H1, and `human_revised` in frontmatter
+  # (defaults to false; flip to true after a human reads it end-to-end).
   markdown:
     required_heading: h1
-    required_frontmatter: [human_revised]
+    frontmatter: [human_revised!]
 
-  # Every index.md must carry these frontmatter fields (in addition to the
-  # universal markdown requirements above).
+  # Every index.md carries these (in addition to the markdown rule above).
   index_md:
-    required: [generated, apps]
+    frontmatter: [generated!, apps!]
 
-# Valid values for the apps: field (frontmatter)
-#
-# Add one entry per component your monorepo ships. The two reserved keys —
-# `platform` (monorepo-level) and `meta` (framework metadata) — must remain.
-apps:
-  values:
-    # <!-- llm:custom:apps-values -->
-    # === project components — replace with your own ===
-    # - webapp     # web-app/ component
-    # - api        # api/ component
-    # - mobile     # mobile/ component
-    # <!-- /llm:custom:apps-values -->
-    # === reserved (do not remove) ===
-    - platform   # monorepo-level (cross-component infrastructure or process)
-    - meta       # framework metadata (.llm/ plumbing); never for product/system content
+  # Every pillar's shallow index.md (the generated one) carries these.
+  # Pillar-specific extras go in that node's frontmatter (e.g. intake adds tracker).
+  pillar_index:
+    frontmatter: [generated!, generated-at!, apps!]   # generated: true; apps: [meta]
+    # No `count`: the table's row count IS the count; a separate field is redundant.
 
-# Per-entity rules
-entities:
-
-  plan:
-    path: plans/<PLAN-ID>/index.md
-    required:
-      - generated      # always: false
-      - apps
-      - status         # drafting | in-progress | blocked | done
-      - summary
-      - scope          # list of <area>[/<subarea>...]/<concern> paths under specs/
-    optional:
-      - jira
-      - type           # task | bug | spike | story
-      - epic
-      - story
-      - aux
-
-  task:
-    path: plans/<PLAN-ID>/t<N>.md
-    required:
-      - plan           # plan id (Jira or slug)
-      - task           # T<N>
-      - depends-on     # list, possibly empty
-      - concerns       # list, possibly empty
-      - files          # list, possibly empty (Lead's prediction; not exhaustive)
-      - status         # pending | in-progress | done | blocked
-      - apps
-      - aux
-
-  handoff:
-    path: plans/<PLAN-ID>/handoff-t<N>.md
-    required:
-      - plan
-      - task
-      - status         # complete | partial | blocked
-      - date
-
-  delta_draft:
-    path: plans/<PLAN-ID>/delta-draft.md
-    required:
-      - plan
-      - status         # always: draft
-      - date
-
-  spec_area:
-    # Areas may nest as subareas of arbitrary depth; the directory carrying
-    # an index.md is always a spec area, whether at specs/<area>/ or
-    # specs/<area>/<subarea>/ or deeper.
-    path: specs/<area>[/<subarea>...]/index.md
-    required:
-      - generated      # always: false
-      - apps
-      - name
-      - summary
-      - depends-on     # list of <area> paths
-      - deltas         # list of plan IDs whose deltas built the current state
-
-  spec_concern:
-    # A concern sits beside the index.md of an area or subarea, at any depth.
-    path: specs/<area>[/<subarea>...]/<concern>.md (not index.md)
-    required:
-      - generated      # always: false
-      - apps
-      - name
-      - summary
-      - depends-on     # list of <area> paths
-      - deltas         # list of plan IDs whose deltas built the current state
-
-  exploring_idea:
-    path: exploring/<slug>/index.md
-    required:
-      - generated      # always: false
-      - status         # idea | considering — terminal exits (Promote, Drop) move or delete the directory; see exploring/index.md "Lifecycle of an exploration"
-      - apps
-      - summary
-
-  intake_ticket:
-    path: intake/tickets/<KEY>/index.md
-    required: [generated, jira, type, status, synced-at, apps]
-
-  intake_story:
-    path: intake/stories/<KEY>/index.md
-    required: [generated, jira, type, status, synced-at, apps]
-
-  intake_epic:
-    path: intake/epics/<KEY>/index.md
-    required: [generated, jira, type, status, synced-at, apps]
-
-  archive_plan:
-    path: archive/<PLAN-ID>/index.md
-    required:
-      - generated      # always: false
-      - status         # always: done
-      - summary
-      - apps
-    optional:
-      - jira
-      - completed-at
-      - delta          # path to delta.md (relative)
-      - consolidated
-
-  delta_finalized:
-    path: archive/<PLAN-ID>/delta.md
-    required:
-      - plan           # plan ID (Jira or slug)
-      - date           # ISO date of finalization
-    optional:
-      - apps           # often platform-only when the delta is cross-component
-
-  review:
-    path: reviews/<PLAN-ID>-review.md
-    required:
-      - plan           # plan ID being reviewed
-      - apps
-    optional:
-      - reviewer       # name or role
-      - date
-      - status         # pending | accepted | rejected
-
-  generated_index:
-    paths:
-      - intake/index.md
-      - plans/index.md
-      - archive/index.md
-      - specs/index.md
-      - exploring/index.md
-    required:
-      - generated      # always: true
-      - generated-at   # ISO datetime
-      - apps           # always: [meta]
-
-# Soft rules — warnings only, do not fail validation
-soft_rules:
-
+  # Soft rule — warning only, never fails validation. Bullet items under the
+  # named acceptance/requirement sections should match the EARS pattern;
+  # free prose elsewhere is fine.
   ears:
-    description: |
-      Bullet items under "## Acceptance Criteria (EARS)" in intake tickets and
-      slug-based plans, and under "## Requirements (EARS)" in specs, should
-      match the EARS pattern. Free prose is allowed in narrative sections —
-      this check only inspects explicit acceptance/requirement sections.
-
-      For Jira-backed plans the AC lives in intake/tickets/<KEY>/index.md;
-      the plan body does not repeat it. For slug-based plans (no Jira) the AC
-      lives in the plan body.
-    pattern: 'WHEN .+ THE SYSTEM SHALL .+'
+    severity: warning
+    pattern: "WHEN .+ THE SYSTEM SHALL .+"
     applies_to:
-      - intake/tickets/<KEY>/index.md (## Acceptance Criteria section)
-      - plans/<PLAN-ID>/index.md (## Acceptance Criteria section, slug-based plans only)
-      - specs/<area>[/<subarea>...]/index.md (## Requirements section)
+      - intake tickets — "## Acceptance Criteria (EARS)"
+      - slug-based plans — "## Acceptance Criteria (EARS)"
+      - specs — "## Requirements (EARS)"
 
-# Marker tags inside .llm/ files. Each declares the format and placement
-# rules for `<!-- llm:NAME -->` blocks (NAME being a single token like
-# `intake` or, for pattern-based tags, a `kind:tag` pair like `files:touched`).
-# Tags appear **immediately after the YAML frontmatter, before any prose**
-# (including the `# H1`). The frontmatter is the stable anchor; prose is
-# framework-owned and may be rewritten between versions. Project-owned
-# content lives inside the markers, above the prose, so it survives
-# `llm sync` regardless of how the framework's narrative evolves.
-tags:
-  # Pillar entries — table of what exists in each pillar; regenerated by
-  # `llm regen index [pillar]` from disk; preserved verbatim by `llm sync`.
-  intake:
-    host_file: intake/index.md
-    placement: after-frontmatter
-    format: markdown-table
-    columns: [Key, Type, Title, Epic, Story, Status, Synced]
-  plans:
-    host_file: plans/index.md
-    placement: after-frontmatter
-    format: markdown-table
-    columns: [Plan, Title, Scope, Tasks, Status, Apps, Updated]
-  archive:
-    host_file: archive/index.md
-    placement: after-frontmatter
-    format: markdown-table
-    columns: [Plan, Type, Apps, Story, Epic, Completed, Summary]
-  specs:
-    host_file: specs/index.md
-    placement: after-frontmatter
-    format: markdown-table
-    columns: [Path, Summary, Apps, Depends-on]
-  exploring:
-    host_file: exploring/index.md
-    placement: after-frontmatter
-    format: markdown-table
-    columns: [Idea, Status, Apps, Updated, Summary]
+# ─────────────────────────────────────────────────────────────────────────
+# root — the .llm/ tree. `root` is the top node; its children (intake, plans, …)
+# are the pillars. EVERY node — root and every descendant — shares one shape:
+#   path        the node's dir/file, RELATIVE to its parent. Implicit = the key;
+#               explicit only when the segment differs (e.g. <KEY>, t<N>.md).
+#               Ends in a directory → the node's file is that dir's index.md.
+#   frontmatter the index.md frontmatter of THIS node (beyond the rules.* baseline).
+#   tags        marker blocks in THIS node's index.md (array=table, string=prose, …).
+#   entities    child nodes (recursive, same shape) — the files/dirs inside.
+# The parser is a single recursion. `root` lists all four (even when empty) as
+# the reference; children list only what they use.
+# ─────────────────────────────────────────────────────────────────────────
+root:
+  # The .llm/ root. index.md = .llm/index.md (static, generated: false). Carries
+  # framework-version plus the project-owned components/root marker blocks.
+  path:                              # implicit — the .llm/ root itself
+  frontmatter: [framework-version!]  # generated/apps come from rules.index_md
+  tags:
+    components: {columns: [Key, Folder, Stack/Notes]}
+    root: {description: "project context / orientation prose"}
+  entities:
+    intake:
+      # Tracker-agnostic mirror. `tracker` (on intake/index.md) names which
+      # tracker backs it: jira | linear | clickup | … plans/ and archive/ don't
+      # carry it — they link to intake via `key`, and the tracker is known there.
+      frontmatter: [tracker!]
+      tags:
+        # The index table is what enters context by default — carry only what
+        # orients a decision. synced-at lives in each item's frontmatter.
+        intake: [Key, Type, Title, Status, Relates]
+      entities:
+        item:
+          # Flat: every intake item is a sibling — no enforced hierarchy. `type`
+          # is the tracker issuetype (epic | story | task | bug | …); teams that
+          # skip a level simply never create items of that type. `relates` links
+          # items many-to-many and non-blocking (other <KEY>s) — distinct from
+          # the blocking `depends-on` in plans/specs.
+          path: <KEY>
+          frontmatter: [generated!, key!, type!, status!, synced-at!, apps!, relates]
 
-  # Customs — project-edited content; preserved verbatim by `llm sync`.
-  components:
-    host_file: index.md
-    placement: after-frontmatter
-    format: markdown-table
-    columns: [Key, Folder, Stack/Notes]
-  root:
-    host_file: index.md
-    placement: after-frontmatter
-    format: free-text
-  "custom:apps-values":
-    host_file: schema.yaml
-    placement: inline-yaml
-    format: yaml-list-of-strings
+    plans:
+      tags:
+        # Lean index — dropped Scope (too detailed for a scan) and Status (plans/
+        # holds only active plans; done ones live in archive). Tasks hints size.
+        plans: [Key, Title, Tasks, Apps]
+      entities:
+        plan:
+          # key optional: slug-based plans (maintenance-<slug>) have no tracker id.
+          path: <PLAN-ID>
+          frontmatter: [generated!, scope!, status!, summary!, apps!, key, type, epic, story, aux]
+          entities:
+            # task, handoff, delta_draft live at the same level inside the plan dir.
+            task:
+              path: t<N>.md
+              frontmatter: [plan!, task!, depends-on!, concerns!, files!, status!, apps!, aux!]
+            handoff:
+              path: handoff-t<N>.md
+              frontmatter: [plan!, task!, status!, date!]
+              tags:
+                files: {format: path-list}   # path-list block of files touched
+            delta_draft:
+              path: delta-draft.md
+              frontmatter: [plan!, status!, date!]   # status: always draft
 
-  # Pattern tags — two-token names `<kind>:<tag>` where the body is a list
-  # of repo-relative paths. Used in templates (e.g. `files:touched` in
-  # handoff.md) and in entity files that declare aux paths checked by
-  # `llm doctor`'s file-references pass.
-  "files:*":
-    placement: anywhere
-    format: markdown-bullet-list
-    item_pattern: "- `<path>`"
+    archive:
+      tags:
+        # Lean index — dropped Story/Epic (drill in) and Completed (timestamp).
+        archive: [Key, Type, Apps, Summary]
+      entities:
+        plan:
+          # An archived plan IS the plan's index.md: the archive flow copies it,
+          # forces status: done, and adds completed-at + delta. Inherits the
+          # plan's frontmatter (scope, type, epic, story, key, aux).
+          path: <PLAN-ID>
+          frontmatter: [generated!, scope!, status!, summary!, apps!, completed-at!, delta!, key, type, epic, story, aux]
+          entities:
+            delta:
+              path: delta.md
+              frontmatter: [plan!, date!, apps]
 
-# Framework sync configuration — read by `llm sync`.
-#
-# Two categories define how files inside .llm/ behave on sync:
-#   - framework_files: replaced wholesale on sync.
-#   - marked_files:    files where any `<!-- llm:NAME -->` block found
-#                      in the target is preserved; everything outside the
-#                      markers is replaced from the source. The set of tags
-#                      is auto-detected per file — no per-file declaration.
-#
-# Files NOT listed below are project-owned and never touched. Reviews under
-# reviews/<plan>-review.md are project-owned by exclusion.
-#
-# Updates to the `llm` CLI script and src/*.sh files are out of scope for
-# this command — they live outside .llm/ and are the responsibility of
-# whoever maintains the dot-llm checkout (typically a `git pull` on the
-# global symlink path). The `llm-cli` skill describes how to do that.
-sync:
-  framework_files:
-    - templates/any-index.md
-    - templates/bootstrap.md
-    - templates/delta-draft.md
-    - templates/delta.md
-    - templates/exploration.md
-    - templates/handoff.md
-    - templates/index.md
-    - templates/intake-epic.md
-    - templates/intake-story.md
-    - templates/intake-ticket.md
-    - templates/plan.md
-    - templates/review.md
-    - templates/spec.md
-    - templates/task.md
-    - roles/index.md
-    - roles/dev.md
-    - roles/ghost.md
-    - roles/lead.md
-    - reviews/index.md
+    specs:
+      # An `area` may nest child `area`s to arbitrary depth (recursive).
+      # depends-on = hard, blocking prerequisites (load them WITH this area);
+      # relates = soft, non-blocking cross-links (mirrors intake's relates). The
+      # index surfaces both so the LLM can tree-shake: pull the required closure
+      # (depends-on), then weigh the related set (relates) before loading more.
+      # deltas / consolidated-at are alternative states: an area lists the plan
+      # IDs whose deltas built it, until `specs consolidate` compacts them into a
+      # single consolidated-at date.
+      tags:
+        specs: [Path, Summary, Apps, Depends-on, Relates]
+      entities:
+        area:
+          path: <area>
+          frontmatter: [generated!, name!, summary!, depends-on!, relates, apps!, deltas, consolidated-at]
+          entities:
+            concern:
+              path: <concern>.md
+              frontmatter: [generated!, name!, summary!, depends-on!, relates, apps!, deltas, consolidated-at]
+            # an area may also nest child areas here (same shape as `area`).
 
-  marked_files:
-    # Files whose `<!-- llm:NAME -->` blocks are preserved across sync.
-    # Kinds in use: `custom` (project edits), `entries` (regenerable indexes).
-    - index.md
-    - schema.yaml
-    - intake/index.md
-    - plans/index.md
-    - archive/index.md
-    - specs/index.md
-    - exploring/index.md
+    exploring:
+      tags:
+        # Lean index — Status barely differentiates: only live ideas (idea /
+        # considering) stay here; promoted/dropped exit the directory.
+        exploring: [Idea, Apps, Summary]
+      entities:
+        idea:
+          # status: idea | considering | promoted | dropped — terminal exits
+          # (promote / drop) move or delete the directory.
+          path: <slug>
+          frontmatter: [generated!, status!, summary!, apps!]
 
-# Cross-file checks across the .llm/ tree.
-#
-# `implemented` runs as part of CLI commands today (e.g. `llm regen <JIRA-KEY>`).
-# `deferred` describes checks the validator does not yet enforce — landing in a
-# future version of `llm doctor`.
-cross_file_checks:
-  implemented:
-    # Pointwise (per Jira key), via `llm regen <JIRA-KEY>`:
-    - "Intake refinement: no leftover <!-- BEGIN JIRA-RAW --> block"
-    - "Plan status and task progress (done/total)"
-    - "Tasks marked done that lack a handoff-t<N>.md"
-    - "Archive presence and finalization (no temp-archive-flow.delete-me.md residue)"
-    - "Spec deltas: integrity — each path in the plan's scope: has the plan's <KEY> in its deltas: list"
-    - "EARS coverage — every intake AC line appears in archive/<KEY>/delta.md"
-  deferred:
-    # Global tree-wide checks not yet implemented:
-    - "Plan scope: paths resolve to existing specs/<area>[/<subarea>...]/<concern>.md"
-    - "Task depends-on: references resolve to existing tasks in the same plan"
-    - "Files listed in '## Files' of specs/<area>[/<subarea>...]/index.md exist on disk"
-    - "deltas: in spec frontmatter reference existing archive/<PLAN-ID>/ entries"
+# ─────────────────────────────────────────────────────────────────────────
+# meta — framework metadata and the project's component registry.
+# ─────────────────────────────────────────────────────────────────────────
+meta:
+  # Valid values for the apps: frontmatter field. Add one entry per component
+  # your monorepo ships. `platform` (cross-component) and `meta` (framework
+  # plumbing) are reserved and must remain.
+  apps:
+    values:
+      # <!-- llm:framework:apps:values -->
+      # === project components — replace with your own ===
+      # - webapp     # web-app/ component
+      # - api        # api/ component
+      # <!-- /llm:framework:apps:values -->
+      # === reserved (do not remove) ===
+      - platform
+      - meta
 
-# Compatibility & versioning
-compatibility:
-  framework_version_field: framework-version
-  framework_version_location: .llm/index.md
-  rule: |
-    The `framework-version:` field in .llm/index.md must equal the `version:`
-    field in this schema. The validator (llm.sh) enforces equality. Bumping
-    `version:` here without bumping `framework-version:` in the project's
-    .llm/index.md surfaces an explicit mismatch error — that is the migration
-    signal.
+  # Marker tags that live OUTSIDE the node tree (the root index.md tags —
+  # components, root — now live on `root` above). These carry an explicit
+  # host_file because it can't be derived from a node's path.
+  tags:
+    framework:
+      apps:
+        values: {host_file: schema.yaml, format: yaml-list}
+    # Pattern tag — body is a bullet list of repo-relative paths. Used for aux
+    # declarations and the handoff files block; can appear anywhere.
+    files: {host_file: "*", format: path-list}
+
+  # Cross-file checks across the .llm/ tree.
+  #   implemented — run today by CLI commands (e.g. `llm regen <KEY>`).
+  #   deferred    — not yet enforced by the validator.
+  cross_file_checks:
+    implemented:
+      - "Intake refinement: no leftover raw-import block"
+      - "Plan status and task progress (done/total)"
+      - "Tasks marked done that lack a handoff-t<N>.md"
+      - "Archive presence and finalization (no temp-archive-flow.delete-me.md residue)"
+      - "Spec deltas integrity — each path in the plan's scope: lists the plan's key in its deltas:"
+      - "EARS coverage — every intake AC line appears in archive/<KEY>/delta.md"
+    deferred:
+      - "Plan scope: paths resolve to existing specs/<area>[/<subarea>...]/<concern>.md"
+      - "Task depends-on: references resolve to existing tasks in the same plan"
+      - "Files listed in '## Files' of specs/<area>[/<subarea>...]/index.md exist on disk"
+      - "deltas: in spec frontmatter reference existing archive/<PLAN-ID>/ entries"
+
+  # Compatibility & versioning.
+  compatibility:
+    framework_version_field: framework-version
+    framework_version_location: .llm/index.md
+    rule:
+      - The `framework-version:` field in .llm/index.md must equal the `version:` field in this schema.
+      - The validator enforces equality.
+      - Bumping `version:` here without bumping `framework-version:` surfaces an explicit mismatch error — that is the migration signal.

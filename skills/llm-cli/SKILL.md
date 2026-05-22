@@ -1,7 +1,7 @@
 ---
 human_revised: false
 name: llm-cli
-description: Use this skill whenever the user wants to operate the `dot-llm` or `llm` CLI of the .llm/ framework — to install the framework into a project, fetch a Jira issue into the intake mirror, validate the .llm/ tree, sync .llm/ with a fresh framework source, or bootstrap the CLI itself when it is not yet on the PATH. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "install the framework", "validate .llm/", "update / sync the framework", "set up the llm CLI", or any mention of running an `llm` subcommand. Also use when the user describes a workflow in terms of the framework's pillars (intake, plans, specs, archive, exploring) and the right next step is a CLI invocation. If the `llm` command is not found, **bootstrap it first** following the section below — do not give up; do not ask the user to install it manually unless bootstrap fails.
+description: Use this skill whenever the user wants to operate the `dot-llm` or `llm` CLI of the .llm/ framework — to install the framework into a project, uninstall / remove it, fetch a Jira issue into the intake mirror, validate the .llm/ tree, bootstrap or deepen spec areas, sync .llm/ with a fresh framework source, or bootstrap the CLI itself when it is not yet on the PATH. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "install the framework", "uninstall the framework", "remove .llm/", "validate .llm/", "bootstrap specs", "deepen the auth spec", "update / sync the framework", "set up the llm CLI", or any mention of running an `llm` subcommand. Also use when the user describes a workflow in terms of the framework's pillars (intake, plans, specs, archive, exploring) and the right next step is a CLI invocation. For reading/writing or auditing `<!-- llm:NAME -->` marker blocks specifically, prefer the dedicated `llm-tag` skill. If the `llm` command is not found, **bootstrap it first** following the section below — do not give up; do not ask the user to install it manually unless bootstrap fails.
 ---
 
 # `llm` CLI
@@ -89,6 +89,22 @@ After install, the user customizes:
 
 Then `llm doctor` confirms the tree is consistent. Open the project in any Claude client (Code or claude.ai) and the framework is wired in via the CLAUDE.md hook — `.llm/index.md` loads automatically.
 
+### `llm uninstall [TARGET] [--yes]`
+
+The exact reverse of `install` — removes only what install created, in reverse order. Use when the user wants to take the framework out of a project, or to reset the bench to a clean slate before re-installing.
+
+**What it removes:**
+1. **Slash commands** under `<parent>/.claude/commands/` — but **only** those byte-identical to the source in the dot-llm checkout (`cmp -s`). A command the user edited is **kept** and reported (`· keeping (modified, …)`), mirroring install's skip-if-exists. Empty command dirs and `.claude/` are pruned only if nothing else lives there.
+2. **The `<!-- BEGIN/END DOT-LLM-HOOK -->` block** in `<parent>/CLAUDE.md`, plus the single blank line install inserted before it. If only install-created boilerplate remains (empty, or just a `# Project instructions` header), the whole file is removed; otherwise the user's other content is preserved.
+3. **The TARGET tree** (`.llm/`, default `./.llm`).
+
+**Flags & safety:**
+- `-y` / `--yes` skips the confirmation prompt. **Required for non-interactive runs** (agent / CI): without a TTY and without `--yes`, it refuses rather than guessing.
+- **Idempotent** — running it again when nothing is installed prints `Nothing to uninstall …` and exits 0.
+- It prints a summary of what will be removed before acting; review it.
+
+**When the bench is involved:** the documented test cycle starts with `llm uninstall <target> --yes` to guarantee a clean slate, then re-installs. A real adopter project's `.llm/` is usually committed — confirm before removing if the user might want it back from git.
+
 ### `llm intake <JIRA-KEY>`
 
 Fetches a Jira issue and creates or refreshes its mirror under `.llm/intake/`.
@@ -110,43 +126,55 @@ Routing by Jira issuetype:
 
 **Your job after `llm intake` runs:** read the file it created, follow the steps in the JIRA-RAW block (refine `## Overview` and `## Acceptance Criteria (EARS)` in English; if `type: bug`, also fill `## Reproduction`, `## Expected`, `## Actual`; set `apps:` in the frontmatter to the affected component(s) using keys from the project's `schema.yaml` `apps.values`), then delete the JIRA-RAW block. The block's instructions are tailored to the issuetype — follow them.
 
-### `llm sync [<filter>] [--from <path|git-url>] [--apply]`
+### `llm sync [<path>] [--from <path|git-url>] [--keep-prose] [--apply]`
 
-Updates the project's `.llm/` tree from a fresh framework source. **Does not** update the `llm` script itself or `src/*.sh` modules — those are tooling, updated by re-running the install one-liner (`curl -fsSL https://pixelpunk.works/dot-llm/install.sh | bash`), which does `git pull --ff-only` on `~/.dot-llm`.
+Steady-state update of the project's `.llm/` tree from a fresh framework source. **Does not** update the `llm` script itself or `src/*.sh` modules — those are tooling, updated by re-running the install one-liner (`curl -fsSL https://pixelpunk.works/dot-llm/install.sh | bash`), which does `git pull --ff-only` on `~/.dot-llm`.
 
-**Optional filter** restricts the sync to a single dir of the framework starter:
-`intake`, `plans`, `archive`, `specs`, `exploring`, `roles`, `templates`, or `reviews`. Without a filter, all paths are considered.
+**The command enforces a version gate.** It reads `version:` in the source `schema.yaml` and `framework-version:` in `.llm/index.md`. If they differ it **refuses to run** and tells you this is a *migration*, not a sync — follow the **v2 → v3 migration** procedure below. Steady-state sync only operates when both versions match.
 
-**Two categories** of files (declared in the source schema's `sync:` section):
-- **A. framework_files** — replaced wholesale by default (templates, roles, reviews stub).
-- **B. customizable_files** — replaced outside `BEGIN/END PROJECT-CUSTOM:<tag>` blocks; content inside markers is preserved. Includes the root `index.md` (Multi-component), `schema.yaml` (apps.values), and the five pillar shallow indexes (`intake`, `plans`, `archive`, `specs`, `exploring`) where the table of entries inside `BEGIN/END PROJECT-CUSTOM:entries` is kept.
+**`<path>`** (optional) scopes the sync, relative to `.llm/`. It may be a **directory** (`templates`, `specs`, …) to limit to that subtree, or a **single file** (`intake/index.md`) to review just one file — useful for migrating/upgrading in defined chunks. A path with no framework-source counterpart (adopter-created entities like `specs/<area>/`, `plans/<PLAN-ID>/`) is **rejected** with a clear message; only files shipped in the starter are syncable.
 
-**Source resolution:**
-- `--from <path>` — local path to a dot-llm checkout.
-- `--from <git-url>` — shallow clone into a tempdir (cleaned up on exit).
-- Without `--from` — uses the dot-llm checkout the `llm` script itself was sourced from.
+**Source resolution:** `--from <path>` (local checkout), `--from <git-url>` (shallow clone, cleaned up), or none (the checkout this `llm` was sourced from).
 
-**Default (no `--apply`) — rich dry-run for the LLM (you).** For every file that differs, the output prints:
-- Path, category (A or B), blocks (for B), default strategy, and the four available strategies.
-- The full unified diff (local → source).
+**Per-file model — three regions, mostly mechanical:**
+- **Frontmatter** — adopter **values are kept verbatim**. The command only reports *key drift* (keys the source has that local lacks, and vice-versa) so you can reconcile against `schema.yaml`. It never rewrites frontmatter.
+- **Tag bodies** (`<!-- llm:NAME --> … <!-- /llm:NAME -->`) — local body is **preserved**. A marker present in source but absent locally is added **empty**. A *table* tag whose column header drifted is flagged `[Δ]` (reshape the body, keep the rows). A *string/prose* tag is flagged `[?]` for you to verify it still matches the schema subject. Local markers with no source counterpart are flagged `[orphan]`.
+- **Prose** (everything else) — taken **FROM SOURCE** by default; framework rule updates land here.
 
-Then **you** apply the heuristic per file and edit the affected files using your standard tools. The four strategies:
+**Default (no `--apply`)** is a structured per-file review: frontmatter key drift, the tag analysis above, and a unified diff of *local → the actual merge result* (so the diff shows what `--apply` would do — prose changes, bodies/frontmatter preserved). The summary lists each file as `[merge]` or `[new]`, and prints the `schema.yaml` path to reconcile against. **`--apply`** performs the merge mechanically. **`--keep-prose`** keeps the adopter's prose instead of taking it from source, printing a per-file warning that framework updates are skipped and the tree may diverge from its spec.
 
-| Strategy | What it does |
-|---|---|
-| `replace` | Overwrite local with source (loses local edits, including marker contents) |
-| `merge` (B only) | Replace prose around markers; preserve marker contents (default for B) |
-| `keep` | Do nothing (you intentionally diverge) |
-| `llm-decide` | Read both versions and produce a semantic merge per the heuristic below |
+After applying anything touching `index.md` or `schema.yaml`, bump `framework-version:` in `.llm/index.md` to match the source `version:`. The validator enforces equality.
 
-**Heuristic — apply per file:**
-- **Lists / tables / entries inside `BEGIN/END PROJECT-CUSTOM` markers → KEEP LOCAL.** These are project-owned data (apps values, multi-component table, pillar entries) and must not be overwritten.
-- **Prose / headers / Rules / structure outside markers → take FROM FRAMEWORK.** This is the framework's rules; updates land here.
-- **Outside-marker prose with project-specific content → ANALYZE:** keep what is project-local, integrate framework changes around it. This is the only case that needs your judgement; the rest is mechanical.
+#### v2 → v3 migration (existing projects)
 
-**`--apply`** — skips the LLM review and auto-applies the default strategy for every changed file (replace for A, merge for B). Good for routine updates with no project-specific drift expected.
+v3 reshaped the tree: a single recursive node model, **flat tracker-agnostic intake**, lean indexes, and tag markers named by their path through the node tree. A v2 project cannot be steady-state-synced into v3 — the structure moved. Run this as an **LLM-orchestrated, multi-phase** procedure: bash does the mechanical swaps and prints diffs; **you** adjudicate every discrepancy against the v3 `schema.yaml` model. Detect first, apply second — never rename a marker before its old form has been recorded in the plan.
 
-After applying any path that touches `index.md` or `schema.yaml`, bump `framework-version:` in `.llm/index.md` to match the source schema's `version:`. The validator enforces equality on the next run.
+**Preconditions (you check before starting):**
+- `git status` must be clean. Abort and tell the user if there are uncommitted changes — the phases below rewrite the tree in place.
+- This migration **does** mutate git, via the explicit `git mv` calls in Phase 2 (rename detection keeps intake history through the move). That is a one-shot, user-authorized reshape — distinct from the ambient git mutation the project rule forbids. **Confirm authorization with the user before starting**; if they decline `git mv`, fall back to plain `mv` and have them stage the moves themselves.
+- `framework-version:` stays `2` until **every** phase below succeeds. A half-done migration must leave the project at `2` (a known state) so it can be re-run.
+
+**Phase 1 — schema first.** The new schema is the reference for everything after, so swap it before touching structure. Replace `.llm/schema.yaml` with the v3 source, **carrying over the project's component list**: copy the body of the old `<!-- llm:custom:apps-values -->` block into the new `<!-- llm:framework:apps:values -->` block (both markers live in `.llm/schema.yaml` — the marker was renamed, the host file is the same). Keep `platform` + `meta` reserved.
+
+**Phase 2 — folder structure (read from the new schema's `root.entities`).** v2 nested intake by issuetype; v3 is flat. Plan and show the moves, then `git mv`:
+- `intake/tickets/<KEY>/` , `intake/stories/<KEY>/` , `intake/epics/<KEY>/` → `intake/<KEY>/` (flatten — every item becomes a sibling).
+- `roles/`, `templates/`, `reviews/` stay on disk but have **no node-tree index tag** in v3; leave their dirs, their old `<!-- llm:roles -->` / `<!-- llm:templates -->` / `<!-- llm:reviews -->` index markers are simply no longer schema-tracked (harmless — remove them only if you regenerate those indexes).
+
+**Phase 3 — frontmatter per node.** For each `index.md` and entity file, diff its actual frontmatter keys against the schema's declared list for that node. Bash prints the delta; **you** apply, taking the schema as ground truth on any discrepancy:
+- intake items: `jira:` → `key:`; add `type:` (the tracker issuetype: epic | story | task | bug) and `relates:` (was hierarchy, now many-to-many links).
+- `intake/index.md`: add `tracker:` (jira | linear | clickup | …) — required in v3.
+- plans/archive: `jira:` → `key:` (now optional — slug-based plans have none).
+- specs areas: add `relates:` where a soft cross-link exists (alongside the existing `depends-on:`).
+- all pillar indexes: remove `count:` (the table's row count is the count).
+
+**Phase 4 — tags.** Tag **body content is always preserved** across the whole project — never discard a table or prose body. Only marker **names** change (the v3 path-joined convention):
+- `<!-- llm:files:touched -->` → `<!-- llm:plans:plan:handoff:files -->` (in every `handoff-t<N>.md`).
+- `<!-- llm:custom:apps-values -->` → `<!-- llm:framework:apps:values -->` (already handled in Phase 1).
+Bash does the in-place rename and prints a diff. If a tag's body differs from what the schema's value-type now expects (e.g. a table whose columns changed), **show the diff and decide** — reshape the body to the new contract while preserving its data; never drop rows.
+
+**Phase 5 — finalize.** Only after Phases 1–4 succeed: bump `framework-version:` to `3` in `.llm/index.md`, then run `llm doctor` to confirm the tree validates against the v3 schema.
+
+This is LLM-orchestrated from the skill — there is **no** `--migrate` subcommand. The bash you run is ordinary `git mv`, `grep`, `diff`, and in-place marker rewrites; the skill is the orchestrator that sequences the phases and adjudicates discrepancies.
 
 ### `llm archive <PLAN-ID>` / `llm archive finalize <PLAN-ID>`
 
@@ -168,6 +196,26 @@ Closes a plan: copies its files to `archive/<PLAN-ID>/`, prepares a work file wi
 - Removes `plans/<PLAN-ID>/` entirely.
 
 The original `plans/` tree is preserved through Phase 1 — safe to retry. Only `archive finalize` removes it.
+
+### `llm specs bootstrap [--path <dir>] [--apply]`
+
+**Light pass** — the first step in seeding the `specs/` pillar from an existing codebase. Discovers top-level areas under the scan path (`src/`, `app/`, `lib/`, or `--path <dir>`) and, with `--apply`, writes a persistent `specs/<area>/bootstrap.md` per area.
+
+- **Default is dry-run** — prints the areas it would scaffold; nothing is written. Use it to preview the area split before committing.
+- **With `--apply`** — creates `specs/<area>/bootstrap.md` for each detected area. Each carries discovery output plus instructions for **you** (the LLM) to draft `specs/<area>/index.md` and populate a `## Topics` list of things worth deepening later.
+
+**Your job after `--apply`:** open each `bootstrap.md`, follow its instructions to author the area's `index.md` (Overview + EARS Requirements), and list candidate topics. `bootstrap.md` is **persistent** — it grows across deep passes; do not delete it unless asked.
+
+This is also offered interactively at the end of `llm install` (TTY only), as a dry-run, so the adopter sees the proposed area split immediately.
+
+### `llm specs deep <area> [--topic <slug>] [--apply]`
+
+**Incremental pass** — deepens an area that already has a `bootstrap.md`. Appends a new `## Discovery (deep pass <ISO>) — <scope>` section to that file. Scope is `all topics` by default, or a single `topic: <slug>` with `--topic`.
+
+- **Default is dry-run**; `--apply` appends the section.
+- **Your job after `--apply`:** read the appended discovery section and use it to refine `specs/<area>/index.md` (add Requirements, split concerns into `<concern>.md` files or `<subarea>/` when they outgrow the index).
+
+Run `deep` repeatedly as understanding of an area grows — each pass stacks another dated `## Discovery` section onto `bootstrap.md`.
 
 ### `llm specs consolidate <area> [--apply]`
 

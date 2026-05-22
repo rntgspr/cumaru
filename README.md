@@ -21,7 +21,7 @@ Two opposite trade-offs show up across current spec-driven approaches:
 1. **Frameworks like GitHub Spec Kit and OpenSpec lean toward loading a lot.** Specs and change files often land in the prompt by default; on bigger projects the context window fills quickly.
 2. **Without any framework, the LLM tends to re-explore the codebase each session** — which can be slow and inconsistent across runs.
 
-`.llm/` splits durable context into **five pillars** — four for the canonical work cycle (`intake → plans → archive → specs`) plus `exploring/` for ideation — with explicit declaration rules for what loads. The LLM reads only what the active task points to; the rest stays on disk, version-controlled, but out of context.
+`.llm/` is one recursive node tree (described under `schema.yaml`'s `root:` key) whose top-level children are **five pillars** — four for the canonical work cycle (`intake → plans → archive → specs`) plus `exploring/` for ideation — with explicit declaration rules for what loads. The LLM reads only what the active task points to; the rest stays on disk, version-controlled, but out of context.
 
 > **Load only what is declared. Everything else stays on disk but out of context.**
 
@@ -32,10 +32,10 @@ Once installed, a project's `.llm/` looks like this:
 ```
 .llm/
 ├── index.md         ← front door: component table, load rules, framework-version
-├── schema.yaml      ← canonical contract (frontmatter fields, apps enum, EARS, sync config)
-├── intake/          ← issue-tracker mirror (Jira today; tracker-agnostic by design)
-├── plans/           ← active execution plans (EARS criteria, scope, DAG of tasks)
-├── archive/         ← completed plans — never loaded by default
+├── schema.yaml      ← canonical contract: one recursive node tree (root), rules, meta
+├── intake/          ← tracker-agnostic mirror of work items (jira / linear / clickup / …)
+├── plans/           ← active execution plans (each: a plan + its tasks/handoffs/delta-draft)
+├── archive/         ← completed plans + finalized deltas — never loaded by default
 ├── specs/           ← living spec, updated on plan close via delta absorption
 ├── exploring/       ← pre-plan ideas — never loaded by default
 ├── reviews/         ← review artifacts
@@ -47,10 +47,10 @@ Once installed, a project's `.llm/` looks like this:
 
 Five pillars, each loaded only on demand:
 
-- **`intake/`** — issue-tracker mirror, synced mechanically (today: Jira; the structure is tracker-agnostic and could mirror Linear, Basecamp, GitHub Issues, etc.).
-- **`plans/<PLAN-ID>/`** — execution plans (with EARS criteria, scope, DAG of tasks).
-- **`archive/<PLAN-ID>/`** — completed plans, never loaded by default.
-- **`specs/<area>/`** — living spec, kept current via delta absorption on plan close.
+- **`intake/`** — tracker-agnostic mirror of work items, synced mechanically. Each item is a flat sibling at `intake/<KEY>/` carrying `key` + `type` (the tracker issuetype) and `relates` (many-to-many, non-blocking). The backing tracker (jira / linear / clickup / …) is named once by `tracker` on `intake/index.md`.
+- **`plans/<PLAN-ID>/`** — execution plans; the plan's `index.md` plus its `task`, `handoff`, and `delta-draft` files at the same level.
+- **`archive/<PLAN-ID>/`** — completed plans + their finalized deltas, never loaded by default.
+- **`specs/<area>/`** — living spec, kept current via delta absorption on plan close. Areas nest subareas; `depends-on` is a hard prerequisite, `relates` a soft cross-link — together they drive tree-shaking.
 - **`exploring/<slug>/`** — pre-plan ideas, never loaded by default.
 
 Roles are lean: **Lead** (authors `.llm/`, runs archive flow), **Dev** (implements code, writes hand-off and delta-draft inside the active plan only), **Ghost** (IDE-pair, read-only by default).
@@ -60,7 +60,7 @@ The full structure, universal rules, and instructions are in `dot-llm-framework/
 ## How it compares
 
 - **vs. OpenSpec** — OpenSpec keeps specs monolithic per capability. `.llm/` splits by concern, supports per-component divergence, allows slug-based plans alongside ticket IDs, and separates pre-plan ideas in `exploring/`.
-- **vs. GitHub Spec Kit** — Spec Kit recreates intake locally and grows verbose; the archive becomes context noise. `.llm/` mirrors the issue tracker instead of duplicating it (Jira today, any tracker in principle), and curates the archive so it never loads by default.
+- **vs. GitHub Spec Kit** — Spec Kit recreates intake locally and grows verbose; the archive becomes context noise. `.llm/` mirrors the work tracker instead of duplicating it (tracker-agnostic: jira / linear / clickup / …), and curates the archive so it never loads by default.
 - **vs. Kiro / EARS notation** — `.llm/` adopts EARS for acceptance criteria as a **warning**, not a blocker. Narrative sections (overview, decisions, history, notes) stay free prose. EARS is encouraged where the requirement is testable, not enforced everywhere.
 - **vs. memory bank (Cline / Roo)** — memory bank focuses on session state. `.llm/` focuses on durable system state (living spec) plus operational plan plus curated archive plus pre-plan ideation.
 
@@ -98,7 +98,7 @@ Skills live under `skills/<name>/SKILL.md` and follow the official Anthropic for
 
 ## Versioning
 
-The schema declares a `version:` (currently `1`). Each project that adopts the framework copies the schema and declares `framework-version: <N>` in its `.llm/index.md`. The validator enforces equality — version drift between the schema and the project's declaration surfaces as an explicit error.
+The schema declares a `version:` (currently `3`). Each project that adopts the framework copies the schema and declares `framework-version: <N>` in its `.llm/index.md`. The validator enforces equality — version drift between the schema and the project's declaration surfaces as an explicit error.
 
 When the framework introduces a breaking change, bump `schema.yaml` `version:` and document the migration in this repo. Adopting projects bump `framework-version:` in their `.llm/index.md` after applying the migration.
 
@@ -110,14 +110,16 @@ Run `llm help` (or `llm <cmd> --help`) for full usage. Each row links to a per-c
 |---|---|
 | [`doctor`](docs/doctor.md) *(default)* | Schema checks + tree-wide health (index drift, missing handoffs, lingering work files, file refs, external tools) |
 | [`install`](docs/install.md) `[DIR] [--with <skill>...]` | Copy `dot-llm-framework/` into a project's `.llm/`; opt-in skills |
-| [`intake`](docs/intake.md) `<JIRA-KEY>` | Fetch a Jira issue and mirror it under `.llm/intake/` (epic / story / ticket) |
-| [`sync`](docs/sync.md) `[filter] [--apply]` | Update `.llm/` from a fresh framework source; preserves `<!-- llm:*:* -->` blocks |
+| [`uninstall`](docs/uninstall.md) `[DIR] [-y]` | Reverse of install: remove byte-identical commands, strip the CLAUDE.md hook, drop `.llm/` |
+| [`intake`](docs/intake.md) `<KEY>` | Fetch a tracker issue and mirror it as a flat item under `.llm/intake/<KEY>/` |
+| [`tag`](docs/tag.md) `[FILE] [llm:NAME [VALUE]]` | Inspect / get / set `<!-- llm:* -->` marker blocks against the schema; `audit` cross-checks |
+| [`sync`](docs/sync.md) `[filter] [--apply]` | Update `.llm/` from a fresh framework source; preserves `<!-- llm:*:* -->` blocks. Drives v2 → v3 migration |
 | [`archive`](docs/archive.md) `<PLAN-ID>` / `archive finalize` | Two-phase plan closure: copy to `archive/`, absorb deltas into specs, then drop `plans/<ID>/` |
-| [`regen`](docs/regen.md) `index [pillar]` / `regen <JIRA-KEY>` | Regenerate shallow pillar indexes; chain-check (intake → plan → archive → specs) |
+| [`regen`](docs/regen.md) `index [pillar]` / `regen <KEY>` | Regenerate shallow pillar indexes; chain-check (intake → plan → archive → specs) |
 | [`specs`](docs/specs.md) `bootstrap / deep / consolidate` | Spec area discovery (light → incremental → heavy delta absorption) |
 
 `llm intake` requires `ATLASSIAN_DOMAIN`, `ATLASSIAN_EMAIL`, and `ATLASSIAN_API_TOKEN` (auto-loaded from `.env`).
 
 ## Status
 
-Framework version: **1** (initial extraction).
+Framework version: **3** (recursive node tree, tracker-agnostic intake, lean indexes). The `dot-llm-framework/` starter, the `llm` CLI, and the published skills are mid-migration from v2 — see the `llm-cli` skill's **v2 → v3 migration** section to upgrade an existing project.

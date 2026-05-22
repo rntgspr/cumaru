@@ -85,7 +85,7 @@ When a plan transitions to done:
    - Aux that explains the ticket → inline into `archive/<PLAN-ID>/index.md` under `## Appendix`.
    - Track destinations via `consolidated:` in the archived `index.md` frontmatter.
 8. Regenerate the shallow indexes by hand (until the CLI exists):
-   - `archive/index.md` — append the new row to the table; bump `count`.
+   - `archive/index.md` — append the new row to the table.
    - `plans/index.md` — remove the row.
    - `specs/index.md` — only if the area set changed.
 
