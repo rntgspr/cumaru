@@ -61,6 +61,8 @@ warnings=0
 . "$SRC/cmd_help.sh"
 # shellcheck source=src/cmd_install.sh
 . "$SRC/cmd_install.sh"
+# shellcheck source=src/cmd_uninstall.sh
+. "$SRC/cmd_uninstall.sh"
 # shellcheck source=src/cmd_doctor.sh
 . "$SRC/cmd_doctor.sh"
 # shellcheck source=src/cmd_sync.sh
@@ -73,6 +75,8 @@ warnings=0
 . "$SRC/cmd_archive.sh"
 # shellcheck source=src/cmd_regen.sh
 . "$SRC/cmd_regen.sh"
+# shellcheck source=src/cmd_tag.sh
+. "$SRC/cmd_tag.sh"
 
 # --- argument dispatch ---
 sub="${1:-doctor}"
@@ -84,6 +88,11 @@ case "$sub" in
   install)
     shift
     cmd_install "$@"
+    exit $?
+    ;;
+  uninstall)
+    shift
+    cmd_uninstall "$@"
     exit $?
     ;;
   sync)
@@ -116,6 +125,11 @@ case "$sub" in
   regen)
     shift
     cmd_regen "$@"
+    exit $?
+    ;;
+  tag)
+    shift
+    cmd_tag "$@"
     exit $?
     ;;
   doctor)

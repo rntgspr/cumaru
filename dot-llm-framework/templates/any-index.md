@@ -2,7 +2,6 @@
 human_revised: false
 generated: true
 generated-at: <ISO datetime>
-count: 0
 apps: [meta]
 ---
 
