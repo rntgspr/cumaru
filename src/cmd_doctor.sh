@@ -328,6 +328,11 @@ _doctor_check_schema() {
   done < <(find "$DOT_LLM_DIR" -name '*.md' -type f 2>/dev/null | sort)
 
   # Schema-pass returns based on local error count; orchestrator owns the overall summary.
+  # Clean up inner helpers — bash functions defined inside a function are NOT
+  # scoped to it; they persist in the global namespace after return. Remove them
+  # explicitly so they don't shadow unrelated code in future callers.
+  unset -f fm has_key check_required check_apps_value \
+            check_required_from_csv check_ears check_h1 check_human_revised
   if [[ $errors -gt 0 ]]; then
     return 1
   fi
