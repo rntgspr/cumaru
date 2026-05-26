@@ -201,7 +201,7 @@ cmd_intake() {
     ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
 
     # If a raw block is still present, refresh its body.
-    if grep -q "BEGIN.*RAW" "$target_file"; then
+    if grep -qF "<!-- BEGIN RAW" "$target_file"; then
       awk '
         /<!-- BEGIN.*RAW/ { skip=1; next }
         /END.*RAW -->/    { skip=0; next }
@@ -252,7 +252,7 @@ cmd_intake() {
   else
     green "✓ created $target_file"
   fi
-  if grep -q "BEGIN.*RAW" "$target_file"; then
+  if grep -qF "<!-- BEGIN RAW" "$target_file"; then
     say "  → RAW block at the bottom carries the source description and instructions for the LLM to refine."
   fi
 }
@@ -299,23 +299,23 @@ _intake_append_raw_block() {
       ;;
   esac
 
-  cat >> "$file" <<EOF
-
-<!-- BEGIN RAW (tracker: jira)
-INSTRUCTION FOR LLM:
-This is the unedited tracker source. Use it to refine the file above:
-${steps}
-The frontmatter \`status:\` and \`synced-at:\` are managed by \`llm intake\`
-and will be refreshed on each re-sync. Body content above is yours to edit.
-
-TRACKER SOURCE:
-  Title:  ${title}
-  Type:   ${itype}
-  Status: ${istatus}
-
-  Description:
-${desc}
-
-END RAW -->
-EOF
+  # Use printf instead of an unquoted heredoc so that content coming from the
+  # tracker (title, description) is never subject to shell expansion — a Jira
+  # description containing `${VAR}` or backtick sequences would be expanded
+  # unexpectedly in an unquoted <<EOF heredoc.
+  {
+    printf '\n<!-- BEGIN RAW (tracker: jira)\n'
+    printf 'INSTRUCTION FOR LLM:\n'
+    printf 'This is the unedited tracker source. Use it to refine the file above:\n'
+    printf '%s\n' "$steps"
+    printf 'The frontmatter `status:` and `synced-at:` are managed by `llm intake`\n'
+    printf 'and will be refreshed on each re-sync. Body content above is yours to edit.\n'
+    printf '\nTRACKER SOURCE:\n'
+    printf '  Title:  %s\n' "$title"
+    printf '  Type:   %s\n' "$itype"
+    printf '  Status: %s\n' "$istatus"
+    printf '\n  Description:\n'
+    printf '%s\n' "$desc"
+    printf '\nEND RAW -->\n'
+  } >> "$file"
 }
