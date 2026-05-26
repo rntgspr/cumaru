@@ -419,7 +419,13 @@ cmd_update() {
         fi
         [[ $keep_prose -eq 1 ]] && yellow "    (kept local prose) $rel"
         local has_fm=0; _update_has_fm "$src" && has_fm=1
-        _update_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$tgt.tmp" && mv "$tgt.tmp" "$tgt"
+        if _update_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$tgt.tmp"; then
+          mv "$tgt.tmp" "$tgt" || { rm -f "$tgt.tmp"; red "  ✗ failed to replace $rel (mv error)"; continue; }
+        else
+          rm -f "$tgt.tmp"
+          red "  ✗ failed to build merge for $rel (skipped)"
+          continue
+        fi
         green "  ✓ merged $rel"
       done
     else
