@@ -1,55 +1,89 @@
-# cmd_intake.sh — fetch a Jira issue and create/refresh its mirror under
-# .llm/intake/.
+# cmd_intake.sh — fetch an issue from a tracker and mirror it under
+# .llm/intake/ (flat, v3-shape).
+#
+# Tracker-agnostic by design (v3): the intake pillar's index.md declares
+# `tracker:` as a LIST of trackers the project pulls from, and each item
+# records its OWN tracker (scalar) in its frontmatter. Only the Jira adapter
+# is wired today.
+#
+# TODO — additional adapters to wire (in rough order of priority):
+#   - ClickUp   (REST API v2; auth via Personal API Token; routing on tracker: clickup)
+#   - Linear    (GraphQL API;  auth via API key;             routing on tracker: linear)
+#   - Basecamp  (REST API v3;  auth via OAuth/HTTP basic;    routing on tracker: basecamp)
+# Each new adapter should:
+#   (1) detect the tracker value (from the item's frontmatter on re-sync, or
+#       from a CLI flag / env on first create) and route the fetch accordingly;
+#   (2) emit the same v3 frontmatter shape (key, type, tracker, status,
+#       synced-at, apps, relates) — only the SOURCE differs;
+#   (3) reuse `_intake_append_raw_block` for the RAW instruction block.
 #
 # Required environment (or in a .env at the project root, auto-loaded):
 #   ATLASSIAN_DOMAIN     e.g. "yourcompany" (subdomain in your atlassian.net URL)
 #   ATLASSIAN_EMAIL      account email
 #   ATLASSIAN_API_TOKEN  https://id.atlassian.com/manage-profile/security/api-tokens
 #
-# Mapping by issuetype:
-#   Epic   → intake/epics/<KEY>/index.md
-#   Story  → intake/stories/<KEY>/index.md
-#   else   → intake/tickets/<KEY>/index.md
+# Layout (v3 flat):
+#   intake/<KEY>/index.md   (no per-issuetype subdirs)
 #
-# Expects from the entry-point: SCRIPT_DIR, DOT_LLM_DIR.
+# Type mapping (Jira → frontmatter `type:`):
+#   Epic        → type: epic
+#   Story       → type: story
+#   Bug         → type: bug
+#   Spike/Res.  → type: spike
+#   *           → type: task
+#
+# Cross-item links go in `relates: [<KEY>, …]` (replaces v2's separate
+# `epic:`/`story:` fields). The script populates it from the Jira parent /
+# epic link.
+#
+# Expects from the entry-point: DOT_LLM_DIR. Templates are read from the
+# adopter's installed `.llm/templates/` (decoupled from the source checkout —
+# whatever flavor was installed provides them).
 
 cmd_intake_help() {
   cat <<'EOF'
-llm intake — fetch a Jira issue and mirror it under .llm/intake/
+llm intake — fetch a tracker issue and mirror it under .llm/intake/
 
 Usage:
-  llm intake <JIRA-KEY>
+  llm intake <KEY>
 
-Required env (or in .env at project root, auto-loaded):
+Required env (or in .env at project root, auto-loaded; only Jira is wired today):
   ATLASSIAN_DOMAIN     subdomain in your atlassian.net URL (e.g. "acme")
   ATLASSIAN_EMAIL      account email
   ATLASSIAN_API_TOKEN  https://id.atlassian.com/manage-profile/security/api-tokens
 
+Layout (v3 flat — no per-issuetype subdirs):
+  intake/<KEY>/index.md
+
+Frontmatter:
+  key:       the issue id (e.g. JET-1234)
+  type:      epic | story | task | bug | spike
+  tracker:   jira  (only adapter wired today; v3 supports linear / clickup later)
+  status:    upstream status (refreshed on re-sync)
+  synced-at: ISO datetime (refreshed on re-sync)
+  apps:      []  (you set after refining)
+  relates:   list of related <KEY>s — epic link, parent story, etc.
+
 Behavior:
-  - First run: creates intake/<epics|stories|tickets>/<KEY>/index.md from the
-    matching template, fills frontmatter (jira, type, epic, story, status,
-    synced-at), sets H1 to the Jira summary, and appends a JIRA-RAW block
-    at the bottom of the file. The block carries the unedited Jira source
-    plus explicit instructions for an LLM to refine the body sections and
-    then delete the block.
-  - Re-sync: refreshes only status: and synced-at: in the frontmatter. If a
-    JIRA-RAW block is still present (issue not yet refined), its body is
-    updated with the latest description. If the block has already been
-    removed (LLM has refined the file), nothing else is changed — the body
-    is preserved.
+  - First run: creates intake/<KEY>/index.md from the type-specific template
+    (intake-{epic,story,ticket}.md), fills frontmatter, sets H1 to summary,
+    and appends a RAW block at the bottom with the source description plus
+    instructions for the LLM to refine the body and delete the block.
+  - Re-sync: refreshes only status, synced-at (and tracker if missing). If a
+    RAW block is still present, its body is updated with the latest source.
 
 Dependencies: curl, jq.
 
 Examples:
-  llm intake JET-1234        first run — pulls template + JIRA-RAW block
+  llm intake JET-1234        first run — pulls template + RAW block
   llm intake JET-1234        later — refresh status/synced-at only
 EOF
 }
 
 cmd_intake() {
-  local jira_id="${1:-}"
-  case "$jira_id" in
-    ""|help|-h|--help) cmd_intake_help; [[ -z "$jira_id" ]] && return 2 || return 0 ;;
+  local key="${1:-}"
+  case "$key" in
+    ""|help|-h|--help) cmd_intake_help; [[ -z "$key" ]] && return 2 || return 0 ;;
   esac
 
   # 1) Auto-load .env if present at project root
@@ -73,7 +107,7 @@ cmd_intake() {
   fi
 
   # 2) Fetch from Jira (API v2 returns description as plain string)
-  local url="https://${ATLASSIAN_DOMAIN}.atlassian.net/rest/api/2/issue/${jira_id}"
+  local url="https://${ATLASSIAN_DOMAIN}.atlassian.net/rest/api/2/issue/${key}"
   local resp http_code tmp
   tmp=$(mktemp)
   http_code=$(curl -sS -o "$tmp" -w "%{http_code}" \
@@ -81,7 +115,7 @@ cmd_intake() {
     -H 'Accept: application/json' "$url" || echo "000")
 
   if [[ "$http_code" != "200" ]]; then
-    red "✗ Jira fetch failed (HTTP $http_code) for $jira_id"
+    red "✗ tracker fetch failed (HTTP $http_code) for $key"
     [[ -s "$tmp" ]] && red "  $(head -c 300 "$tmp")"
     rm -f "$tmp"
     return 1
@@ -97,61 +131,87 @@ cmd_intake() {
   parent_type=$(echo "$resp"  | jq -r '.fields.parent.fields.issuetype.name // ""')
   description=$(echo "$resp"  | jq -r '.fields.description // ""')
 
-  # 3) Determine path + relationships
-  local subdir tmpl_name epic="" story="" jtype=""
+  # 3) Determine type + body template + relates
+  local tmpl_name jtype="" relates_list=()
   case "$issuetype" in
     Epic)
-      subdir="epics"; tmpl_name="intake-epic.md"; jtype="epic"
+      jtype="epic"
+      tmpl_name="intake-epic.md"
       ;;
     Story)
-      subdir="stories"; tmpl_name="intake-story.md"; jtype="story"
-      epic="$epic_link"; [[ -z "$epic" && "$parent_type" == "Epic" ]] && epic="$parent_key"
+      jtype="story"
+      tmpl_name="intake-story.md"
+      [[ -n "$epic_link" ]] && relates_list+=("$epic_link")
+      [[ "$parent_type" == "Epic" && -n "$parent_key" ]] && {
+        # Avoid duplicate
+        local already=0 r
+        for r in "${relates_list[@]+"${relates_list[@]}"}"; do [[ "$r" == "$parent_key" ]] && already=1; done
+        [[ $already -eq 0 ]] && relates_list+=("$parent_key")
+      }
       ;;
     *)
-      subdir="tickets"; tmpl_name="intake-ticket.md"
+      tmpl_name="intake-ticket.md"
       case "$issuetype" in
-        Bug) jtype="bug" ;;
-        Spike|Research) jtype="spike" ;;
-        *) jtype="task" ;;
+        Bug)             jtype="bug" ;;
+        Spike|Research)  jtype="spike" ;;
+        *)               jtype="task" ;;
       esac
-      epic="$epic_link"; [[ -z "$epic" && "$parent_type" == "Epic" ]] && epic="$parent_key"
-      [[ "$parent_type" == "Story" ]] && story="$parent_key"
+      [[ -n "$epic_link" ]] && relates_list+=("$epic_link")
+      [[ "$parent_type" == "Epic" && -n "$parent_key" ]] && {
+        local already=0 r
+        for r in "${relates_list[@]+"${relates_list[@]}"}"; do [[ "$r" == "$parent_key" ]] && already=1; done
+        [[ $already -eq 0 ]] && relates_list+=("$parent_key")
+      }
+      [[ "$parent_type" == "Story" && -n "$parent_key" ]] && relates_list+=("$parent_key")
       ;;
   esac
 
   local synced_at
   synced_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-  local target_dir="${DOT_LLM_DIR}/intake/${subdir}/${jira_id}"
+  # 4) Flat layout (v3): intake/<KEY>/index.md
+  local target_dir="${DOT_LLM_DIR}/intake/${key}"
   local target_file="${target_dir}/index.md"
 
-  # 4) Re-sync vs first-time
+  # Compose relates inline-list form: [A, B] or [] if empty
+  local relates_inline="[]"
+  if [[ ${#relates_list[@]} -gt 0 ]]; then
+    relates_inline="[$(IFS=,; echo "${relates_list[*]}")]"
+    # Tidy spacing
+    relates_inline="${relates_inline//,/, }"
+  fi
+
+  # 5) Re-sync vs first-time
   local existed=0
   if [[ -f "$target_file" ]]; then
     existed=1
-    # Refresh status: and synced-at: in frontmatter; preserve everything else.
+    # Refresh status / synced-at; preserve everything else.  If `tracker:` is
+    # missing (e.g. an item created before the v3 field), add it.
     awk -v new_status="$status" -v new_synced="$synced_at" '
-      BEGIN { fm_count=0; in_fm=0 }
-      /^---$/ { fm_count++; in_fm=(fm_count==1); print; next }
-      in_fm && /^status:[[:space:]]/ { print "status: " new_status; next }
-      in_fm && /^synced-at:[[:space:]]/ { print "synced-at: " new_synced; next }
+      BEGIN { fm_count=0; in_fm=0; saw_tracker=0 }
+      /^---$/ {
+        fm_count++; in_fm=(fm_count==1)
+        if (fm_count==2 && saw_tracker==0) print "tracker: jira"
+        print; next
+      }
+      in_fm && /^tracker:[[:space:]]/    { saw_tracker=1; print; next }
+      in_fm && /^status:[[:space:]]/     { print "status: " new_status; next }
+      in_fm && /^synced-at:[[:space:]]/  { print "synced-at: " new_synced; next }
       { print }
     ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
 
-    # If a JIRA-RAW block is still present, the issue hasn't been refined yet —
-    # update its body with the latest description. If it's been removed (LLM
-    # already processed it), don't re-inject; that would undo the refinement.
-    if grep -q "BEGIN JIRA-RAW" "$target_file"; then
+    # If a raw block is still present, refresh its body.
+    if grep -q "BEGIN.*RAW" "$target_file"; then
       awk '
-        /<!-- BEGIN JIRA-RAW/ { skip=1; next }
-        /END JIRA-RAW -->/    { skip=0; next }
+        /<!-- BEGIN.*RAW/ { skip=1; next }
+        /END.*RAW -->/    { skip=0; next }
         !skip { print }
       ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
       _intake_append_raw_block "$target_file" "$summary" "$issuetype" "$status" "$description"
     fi
   else
-    # First-time creation from template
-    local src_template="${SCRIPT_DIR}/dot-llm-framework/templates/${tmpl_name}"
+    # First-time creation from the type-specific body template.
+    local src_template="${DOT_LLM_DIR}/templates/${tmpl_name}"
     if [[ ! -f "$src_template" ]]; then
       red "✗ template not found: $src_template"
       return 1
@@ -160,14 +220,15 @@ cmd_intake() {
 
     {
       echo "---"
+      echo "human_revised: false"
       echo "generated: false"
-      echo "jira: $jira_id"
+      echo "key: $key"
+      echo "tracker: jira"
       [[ -n "$jtype" ]] && echo "type: $jtype"
-      [[ -n "$epic"  ]] && echo "epic: $epic"
-      [[ -n "$story" ]] && echo "story: $story"
       echo "status: $status"
       echo "synced-at: $synced_at"
       echo "apps: []"
+      echo "relates: $relates_inline"
       echo "---"
       echo ""
       echo "# $summary"
@@ -185,25 +246,20 @@ cmd_intake() {
     _intake_append_raw_block "$target_file" "$summary" "$issuetype" "$status" "$description"
   fi
 
-  # 5) Console output: minimal
+  # 6) Console output: minimal
   if [[ $existed -eq 1 ]]; then
     green "✓ refreshed $target_file"
   else
     green "✓ created $target_file"
   fi
-  if grep -q "BEGIN JIRA-RAW" "$target_file"; then
-    say "  → JIRA-RAW block at the bottom carries the source description and instructions for the LLM to refine."
+  if grep -q "BEGIN.*RAW" "$target_file"; then
+    say "  → RAW block at the bottom carries the source description and instructions for the LLM to refine."
   fi
 }
 
-# Append (or replace) a JIRA-RAW block at the end of $1, with explicit
-# instructions for an LLM to refine the file and then delete the block.
-# Instructions are tailored to the issuetype:
-#   Epic   → only ## Overview (no AC)
-#   Story  → ## Overview + ## Acceptance Criteria (EARS)
-#   Ticket → ## Overview + ## Acceptance Criteria (EARS); plus the four bug
-#            sections (## Reproduction, ## Expected, ## Actual, ## Root cause)
-#            when the frontmatter type is bug.
+# Append (or replace) a RAW block at the end of $1, with explicit instructions
+# for an LLM to refine the file and then delete the block. Instructions are
+# tailored to the issuetype.
 _intake_append_raw_block() {
   local file="$1" title="$2" itype="$3" istatus="$4" desc="$5"
 
@@ -213,8 +269,10 @@ _intake_append_raw_block() {
       steps="  1. Replace the placeholder text under \`## Overview\` with an English
      restatement (1-3 paragraphs) of the epic-level vision.
   2. Set \`apps: [...]\` in the frontmatter to the affected component(s),
-     using keys from the project's schema.yaml apps.values.
-  3. Delete this entire BEGIN JIRA-RAW / END JIRA-RAW block when done."
+     using keys from the project's schema.yaml meta.apps.values.
+  3. If you know related items (parent epics, child stories), populate
+     \`relates: [...]\` in the frontmatter.
+  4. Delete this entire BEGIN/END RAW block when done."
       ;;
     Story)
       steps="  1. Replace the placeholder text under \`## Overview\` with an English
@@ -223,8 +281,9 @@ _intake_append_raw_block() {
      with story-level criteria in the form
      \`WHEN <trigger> THE SYSTEM SHALL <response>\`.
   3. Set \`apps: [...]\` in the frontmatter to the affected component(s),
-     using keys from the project's schema.yaml apps.values.
-  4. Delete this entire BEGIN JIRA-RAW / END JIRA-RAW block when done."
+     using keys from the project's schema.yaml meta.apps.values.
+  4. Verify \`relates: [...]\` contains the parent epic and any related items.
+  5. Delete this entire BEGIN/END RAW block when done."
       ;;
     *)
       steps="  1. Replace the placeholder text under \`## Overview\` with an English
@@ -234,21 +293,22 @@ _intake_append_raw_block() {
   3. If \`type: bug\` in the frontmatter, also fill \`## Reproduction\`,
      \`## Expected\`, and \`## Actual\` from the description below.
   4. Set \`apps: [...]\` in the frontmatter to the affected component(s),
-     using keys from the project's schema.yaml apps.values.
-  5. Delete this entire BEGIN JIRA-RAW / END JIRA-RAW block when done."
+     using keys from the project's schema.yaml meta.apps.values.
+  5. Verify \`relates: [...]\` lists the parent epic / story / related items.
+  6. Delete this entire BEGIN/END RAW block when done."
       ;;
   esac
 
   cat >> "$file" <<EOF
 
-<!-- BEGIN JIRA-RAW
+<!-- BEGIN RAW (tracker: jira)
 INSTRUCTION FOR LLM:
-This is the unedited Jira source. Use it to refine the file above:
+This is the unedited tracker source. Use it to refine the file above:
 ${steps}
 The frontmatter \`status:\` and \`synced-at:\` are managed by \`llm intake\`
 and will be refreshed on each re-sync. Body content above is yours to edit.
 
-JIRA SOURCE:
+TRACKER SOURCE:
   Title:  ${title}
   Type:   ${itype}
   Status: ${istatus}
@@ -256,6 +316,6 @@ JIRA SOURCE:
   Description:
 ${desc}
 
-END JIRA-RAW -->
+END RAW -->
 EOF
 }

@@ -12,9 +12,8 @@ Subcommands
     doctor [--quiet]                        run health checks on the .llm/ tree (default subcommand)
 
   Ticket lifecycle
-    intake <JIRA-KEY>                       fetch a Jira issue, mirror under .llm/intake/
-    archive <PLAN-ID>                       close a plan: prepare archive entry + work file
-    archive finalize <PLAN-ID>              remove the plan tree after the LLM absorbs deltas
+    intake <KEY>                            fetch a tracker issue, mirror under .llm/intake/<KEY>/ (Jira adapter wired today)
+                                            (archiving a plan: use `llm flow` per the llm-cli skill recipe)
 
   Marker blocks
     tag                                      list the tags declared in schema.yaml
@@ -23,9 +22,10 @@ Subcommands
     tag set <file> <tag>                     replace the block body (stdin)
 
   State maintenance
-    reconcile [<pillar>] [--apply]          align each pillar's index table with disk (schema-driven)
     sync [<path>] [--from <src>] [--keep-prose] [--apply]  steady-state update of .llm/ from the framework source
                                             (<path> = a dir or single file under .llm/; version mismatch ⇒ migration, see llm-cli skill)
+    flow <src> <verb> [<dst>]               safe file ops inside .llm/ (verbs: move | copy | create | remove)
+                                            (the LLM composes workflows from these via the llm-cli skill)
 
   help                                      this message
 
@@ -37,11 +37,10 @@ Examples
   llm install                          install the starter to ./.llm
   llm install path/to/.llm             install the starter to a custom path
   llm install --with git               install + unlock mutating git commands
-  llm intake JET-1234                  pull a ticket into intake
-  llm archive JET-1234                 prepare a plan for closure
-  llm archive finalize JET-1234        finalize after the LLM absorbs deltas
-  llm reconcile                        diff every pillar index vs disk
-  llm reconcile --apply                rewrite drifted index tag bodies
+  llm intake JET-1234                  pull a tracker issue into intake
+  llm doctor                           includes the orphan check (tables vs disk)
+  llm flow plans/JET-1234/delta-draft.md move archive/JET-1234/delta.md
+                                       (file op used by archive recipe in the llm-cli skill)
   DOT_LLM_DIR=path/to/.llm llm         operate on a non-default tree
 EOF
 }

@@ -1,0 +1,135 @@
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║  HOW TO READ THIS SCHEMA — do not delete (LLM + humans rely on it)        ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+#
+# This is the BASE framework — a minimal, domain-agnostic kernel. It ships
+# universal rules + meta scaffolding but no pillars. Use it as the starting
+# point to build a custom domain (research, design, ops, …) by adding pillars
+# under `root.entities:` below.
+#
+# For pre-built domain frameworks (SDLC, …), pick a variant from
+# `dot-llm/frameworks/`. Each flavor is self-contained (its own schema + its
+# own starter files) — they don't compose; you install one.
+#
+# Root sections:
+#   rules:    cross-cutting contracts every file / index satisfies.
+#   root:     the .llm/ node tree. `root` is the top node; its children
+#             (your pillars) follow the shape { path?, frontmatter?, tags?,
+#             entities? }. Base ships an empty `entities:` map — you fill it.
+#   meta:     framework metadata + this project's component registry.
+#
+# frontmatter:  list of frontmatter keys; suffix `!` = required.
+# tags:  marker blocks `<!-- llm:NAME --> ... <!-- /llm:NAME -->`. Every
+#        definition is an OBJECT — sub-keys declare the block shape:
+#          columns: [...]      → markdown table (items = column headers).
+#          description: "..."  → free prose; content stays related to the desc.
+#          format: path-list   → bullet list of repo-relative `paths`.
+#          format: yaml-list   → inline yaml list (used inside non-md files).
+#          host_file: <path|*> → explicit host for tags outside the node tree.
+#          number: <int|float> → single scalar value (the number is the seed).
+# path:  RELATIVE to the parent node; implicit = the node's key; ending in a
+#        directory resolves to that dir's index.md.
+
+version: 3
+flavor: base
+
+# ─────────────────────────────────────────────────────────────────────────
+# rules — cross-cutting, universal.
+# ─────────────────────────────────────────────────────────────────────────
+rules:
+  markdown:
+    required_heading: h1
+    frontmatter: [human_revised!]
+
+  index_md:
+    frontmatter: [generated!, apps!]
+
+  pillar_index:
+    frontmatter: [generated!, generated-at!, apps!]   # generated: true; apps: [meta]
+
+  ears:
+    severity: warning
+    pattern: "WHEN .+ THE SYSTEM SHALL .+"
+    applies_to:
+      - "any acceptance-criteria or requirements section in your pillars"
+
+# ─────────────────────────────────────────────────────────────────────────
+# root — the .llm/ tree. Base ships an EMPTY entities map; add your pillars.
+#
+# Example (uncomment + customise):
+#   root:
+#     frontmatter: [framework-version!]
+#     tags:
+#       components: {columns: [Key, Folder, Stack/Notes]}
+#       root: {description: "project context / orientation prose"}
+#     entities:
+#       my_pillar:                                   # → my_pillar/index.md
+#         tags:
+#           my_pillar: {columns: [Key, Title, Status]}
+#         entities:
+#           item:
+#             path: <KEY>                            # → my_pillar/<KEY>/index.md
+#             frontmatter: [generated!, key!, status!, apps!]
+#
+# `llm flow` enacts structural changes on the tree above. Skills compose
+# flow calls into recipes; paths are relative to .llm/. Guardrails: .md
+# files only (dirs are free); no `..`; index.md and pillar roots are
+# protected from `remove`.
+#
+#   # bootstrap a new pillar (one-time):
+#   llm flow my_pillar             create
+#   llm flow my_pillar/index.md    create
+#
+#   # create an item:
+#   llm flow my_pillar/<KEY>           create
+#   llm flow my_pillar/<KEY>/index.md  create
+#
+#   # move item to another pillar (e.g. active → archive):
+#   llm flow my_pillar/<KEY>  move  other_pillar/<KEY>
+#
+#   # copy a file (e.g. promote a draft):
+#   llm flow my_pillar/<KEY>/draft.md  copy  other_pillar/<KEY>/draft.md
+#
+#   # remove a work file after close (never removes index.md):
+#   llm flow my_pillar/<KEY>/work.md  remove
+# ─────────────────────────────────────────────────────────────────────────
+root:
+  frontmatter: [framework-version!]
+  tags:
+    components: {columns: [Key, Folder, Stack/Notes]}
+    root: {description: "project context / orientation prose"}
+  entities: {}
+
+# ─────────────────────────────────────────────────────────────────────────
+# meta — framework metadata and the project's component registry.
+# ─────────────────────────────────────────────────────────────────────────
+meta:
+  apps:
+    values:
+      # <!-- llm:framework:apps:values -->
+      # === project components — replace with your own ===
+      # - webapp     # web-app/ component
+      # - api        # api/ component
+      # <!-- /llm:framework:apps:values -->
+      # === reserved (do not remove) ===
+      - platform
+      - meta
+
+  # Marker tags that live OUTSIDE the node tree (here: only the framework
+  # config marker on schema.yaml, and the files:* pattern). Pillar index tags
+  # are implicit (host_file derived from path) — when you add pillars under
+  # root.entities, you don't need to declare their tags here.
+  tags:
+    framework:
+      apps:
+        values: {host_file: schema.yaml, format: yaml-list}
+    files: {host_file: "*", format: path-list}
+
+  # Compatibility & versioning.
+  compatibility:
+    framework_version_field: framework-version
+    framework_version_location: .llm/index.md
+    rule:
+      - The `framework-version:` field in .llm/index.md must equal the `version:` field in this schema.
+      - The validator enforces equality.
+      - Bumping `version:` here without bumping `framework-version:` surfaces an explicit mismatch error — that is the migration signal.
