@@ -33,7 +33,6 @@
 #        the node's key; a directory path resolves to that dir's index.md.
 
 version: 3
-flavor: sdlc-it-project-basic
 flavor: sdlc-it-project-basic   # self-identifying so doctor/sync can detect the installed flavor
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -53,7 +52,7 @@ rules:
   # Every pillar's shallow index.md (the generated one) carries these.
   # Pillar-specific extras go in that node's frontmatter (e.g. intake adds tracker).
   pillar_index:
-    frontmatter: [generated!, generated-at!, apps!]   # generated: true; apps: [meta]
+    frontmatter: [generated!, generated-at!, apps!] # generated: true; apps: [meta]
     # No `count`: the table's row count IS the count; a separate field is redundant.
 
   # Soft rule — warning only, never fails validation. Bullet items under the
@@ -82,11 +81,11 @@ rules:
 root:
   # The .llm/ root. index.md = .llm/index.md (static, generated: false). Carries
   # framework-version plus the project-owned components/root marker blocks.
-  path:                              # implicit — the .llm/ root itself
-  frontmatter: [framework-version!]  # generated/apps come from rules.index_md
+  path: # implicit — the .llm/ root itself
+  frontmatter: [framework-version!] # generated/apps come from rules.index_md
   tags:
-    components: {columns: [Key, Folder, Stack/Notes]}
-    root: {description: "project context / orientation prose"}
+    components: { columns: [Key, Folder, Stack/Notes] }
+    root: { description: "project context / orientation prose" }
   entities:
     intake:
       # Tracker-agnostic mirror. `tracker:` on intake/index.md is a LIST of
@@ -99,7 +98,7 @@ root:
       tags:
         # The index table is what enters context by default — carry only what
         # orients a decision. synced-at lives in each item's frontmatter.
-        intake: {columns: [Key, Type, Title, Status, Relates]}
+        intake: { columns: [Key, Type, Title, Status, Relates] }
       entities:
         item:
           # Flat: every intake item is a sibling — no enforced hierarchy. `type`
@@ -110,31 +109,63 @@ root:
           # many-to-many and non-blocking (other <KEY>s) — distinct from the
           # blocking `depends-on` in plans/specs.
           path: <KEY>
-          frontmatter: [generated!, key!, type!, tracker!, status!, synced-at!, apps!, relates]
+          frontmatter:
+            [
+              generated!,
+              key!,
+              type!,
+              tracker!,
+              status!,
+              synced-at!,
+              apps!,
+              relates,
+            ]
 
     plans:
       tags:
         # Lean index — dropped Scope (too detailed for a scan) and Status (plans/
         # holds only active plans; done ones live in archive). Tasks hints size.
-        plans: {columns: [Key, Title, Tasks, Apps]}
+        plans: { columns: [Key, Title, Tasks, Apps] }
       entities:
         plan:
           # key optional: slug-based plans (maintenance-<slug>) have no tracker id.
           path: <PLAN-ID>
-          frontmatter: [generated!, scope!, status!, summary!, apps!, key, type, epic, story, aux]
+          frontmatter:
+            [
+              generated!,
+              scope!,
+              status!,
+              summary!,
+              apps!,
+              key,
+              type,
+              epic,
+              story,
+              aux,
+            ]
           entities:
             # task, handoff, delta_draft live at the same level inside the plan dir.
             task:
               path: t<N>.md
-              frontmatter: [plan!, task!, depends-on!, concerns!, files!, status!, apps!, aux!]
+              frontmatter:
+                [
+                  plan!,
+                  task!,
+                  depends-on!,
+                  concerns!,
+                  files!,
+                  status!,
+                  apps!,
+                  aux!,
+                ]
             handoff:
               path: handoff-t<N>.md
               frontmatter: [plan!, task!, status!, date!]
               tags:
-                files: {format: path-list}   # path-list block of files touched
+                files: { format: path-list } # path-list block of files touched
             delta_draft:
               path: delta-draft.md
-              frontmatter: [plan!, status!, date!]   # status: always draft
+              frontmatter: [plan!, status!, date!] # status: always draft
 
     archive:
       tags:
@@ -171,22 +202,42 @@ root:
       # IDs whose deltas built it, until `specs consolidate` compacts them into a
       # single consolidated-at date.
       tags:
-        specs: {columns: [Path, Summary, Apps, Depends-on, Relates]}
+        specs: { columns: [Path, Summary, Apps, Depends-on, Relates] }
       entities:
         area:
           path: <area>
-          frontmatter: [generated!, name!, summary!, depends-on!, relates, apps!, deltas, consolidated-at]
+          frontmatter:
+            [
+              generated!,
+              name!,
+              summary!,
+              depends-on!,
+              relates,
+              apps!,
+              deltas,
+              consolidated-at,
+            ]
           entities:
             concern:
               path: <concern>.md
-              frontmatter: [generated!, name!, summary!, depends-on!, relates, apps!, deltas, consolidated-at]
+              frontmatter:
+                [
+                  generated!,
+                  name!,
+                  summary!,
+                  depends-on!,
+                  relates,
+                  apps!,
+                  deltas,
+                  consolidated-at,
+                ]
             # an area may also nest child areas here (same shape as `area`).
 
     exploring:
       tags:
         # Lean index — Status barely differentiates: only live ideas (idea /
         # considering) stay here; promoted/dropped exit the directory.
-        exploring: {columns: [Idea, Apps, Summary]}
+        exploring: { columns: [Idea, Apps, Summary] }
       entities:
         idea:
           # status: idea | considering | promoted | dropped — terminal exits
@@ -218,10 +269,10 @@ meta:
   tags:
     framework:
       apps:
-        values: {host_file: schema.yaml, format: yaml-list}
+        values: { host_file: schema.yaml, format: yaml-list }
     # Pattern tag — body is a bullet list of repo-relative paths. Used for aux
     # declarations and the handoff files block; can appear anywhere.
-    files: {host_file: "*", format: path-list}
+    files: { host_file: "*", format: path-list }
 
   # Cross-file checks across the .llm/ tree.
   #   implemented — run today by CLI commands (e.g. `llm regen <KEY>`).
