@@ -75,50 +75,19 @@ cmd_install() {
   parent=$(dirname "$target")
   mkdir -p "$parent"
 
-  # Copy the chosen flavor wholesale.
+  # Copy the chosen flavor wholesale (includes flavor-specific skills/ if any).
   cp -R "$framework_src" "$target"
-
   green "✓ installed framework '$flavor' to $target"
 
-  # Auto-install every UNIVERSAL `llm-*` skill from the dot-llm checkout's
-  # top-level skills/ — these are the operating skills (doctor, install, tag,
-  # flow, sync) every flavor needs. Flavor-specific skills (e.g. `llm-intake`
-  # for sdlc flavors) live under `frameworks/<flavor>/skills/` and are already
-  # copied by the wholesale `cp -R "$framework_src" "$target"` above.
-  #
-  # Skip-if-exists protects flavor overrides: if a flavor ships its own version
-  # of a universal skill (or its own `llm-intake`), the wholesale copy got there
-  # first and we don't clobber it.
-  #
-  # NB: strip the glob's trailing slash — BSD `cp -R src/ dest/` copies CONTENTS
-  # (each iteration would overwrite the previous), not the dir as a subdir.
-  mkdir -p "$target/skills"
-  if [[ -d "$SKILLS_SRC" ]]; then
-    local llm_skill clean name
-    for llm_skill in "$SKILLS_SRC"/llm-*/; do
-      [[ -d "$llm_skill" ]] || continue
-      clean="${llm_skill%/}"
-      name=$(basename "$clean")
-      if [[ -e "$target/skills/$name" ]]; then
-        say "  · skill: $name (flavor-shipped, kept)"
-        continue
-      fi
-      cp -R "$clean" "$target/skills/"
-      green "  + skill: $name (auto)"
-    done
-  fi
-
-  # Apply opt-in skills (--with <name>) on top.
-  for skill in "${with_skills[@]+"${with_skills[@]}"}"; do
-    cp -R "$SKILLS_SRC/${skill}" "$target/skills/"
-    green "  + skill: $skill (opt-in)"
-  done
+  # Install universal llm-* skills + opt-in skills. Skip-if-exists so any
+  # flavor-shipped version (already in $target/skills/ from the cp above) wins.
+  _framework_copy_skills "$target" "0" "${with_skills[@]+"${with_skills[@]}"}"
 
   # Wire CLAUDE.md so the LLM auto-loads .llm/index.md on every session.
   _install_wire_claude_md "$parent" "$target"
 
-  # Install slash commands into $parent/.claude/commands/.
-  _install_wire_claude_commands "$parent"
+  # Install slash commands into $parent/.claude/commands/ (skip-if-exists).
+  _framework_copy_commands "$parent" "0"
 
   local doctor_cmd
   if [[ "$target" == "./.llm" || "$target" == ".llm" ]]; then
@@ -142,30 +111,52 @@ client and the framework is wired in.
 EOF
 }
 
-# Print the dot-llm hook block to stdout. Argument: rel_index (e.g. ".llm/index.md").
-_install_print_hook_block() {
-  local rel_index="$1"
-  cat <<EOF
-<!-- BEGIN DOT-LLM-HOOK -->
-## \`.llm/\` framework
+# --- shared helpers (used by cmd_install and cmd_update) -------------------
 
-This project uses the \`.llm/\` framework — a spec-driven, agent-friendly knowledge structure. Whenever you (the LLM) start a session in this repository, **read \`$rel_index\` first**. It carries the schema, the pillars declared for this project, the loading rule for what enters context, and any role definitions present under \`$rel_index\`'s siblings.
+# Copy universal llm-* skills (from $SKILLS_SRC) into target/skills/.
+# For install (replace=0): skips skills already present (flavor-shipped wins).
+# For update (replace=1): always overwrites.
+# Opt-in skills (--with) are always copied at the end.
+# Args: target replace(0|1) [with_skills...]
+_framework_copy_skills() {
+  local target="$1" replace="$2"; shift 2
+  local with_skills=("$@")
 
-@$rel_index
-<!-- END DOT-LLM-HOOK -->
-EOF
+  mkdir -p "$target/skills"
+
+  if [[ -d "$SKILLS_SRC" ]]; then
+    local llm_skill clean name
+    for llm_skill in "$SKILLS_SRC"/llm-*/; do
+      [[ -d "$llm_skill" ]] || continue
+      clean="${llm_skill%/}"
+      name=$(basename "$clean")
+      if [[ "$replace" == "0" && -e "$target/skills/$name" ]]; then
+        say "  · skill: $name (flavor-shipped, kept)"
+        continue
+      fi
+      rm -rf "$target/skills/$name"
+      cp -R "$clean" "$target/skills/"
+      [[ "$replace" == "1" ]] && green "  ↺ skill: $name" || green "  + skill: $name (auto)"
+    done
+  fi
+
+  local skill
+  for skill in "${with_skills[@]+"${with_skills[@]}"}"; do
+    rm -rf "$target/skills/$skill"
+    cp -R "$SKILLS_SRC/${skill}" "$target/skills/"
+    green "  + skill: $skill (opt-in)"
+  done
 }
 
-# Copy slash commands from $COMMANDS_SRC into $parent/.claude/commands/.
-# Walks recursively so subdirs (namespaces) are preserved: a source file
-# at commands/llm/sync.md becomes <parent>/.claude/commands/llm/sync.md,
-# exposing the slash command as /llm:sync. Idempotent: skips files
-# already present at the destination.
-_install_wire_claude_commands() {
-  local parent="$1"
+# Copy slash commands from $COMMANDS_SRC into parent/.claude/commands/.
+# Walks recursively so subdirs (namespaces) are preserved.
+# For install (replace=0): skips files already present.
+# For update (replace=1): always overwrites.
+# Args: parent replace(0|1)
+_framework_copy_commands() {
+  local parent="$1" replace="$2"
   [[ -d "$COMMANDS_SRC" ]] || return 0
 
-  # Single find pass: collect into an array (null-safe), then act.
   local cmd_files=() cmd_file
   while IFS= read -r -d '' cmd_file; do
     cmd_files+=("$cmd_file")
@@ -181,20 +172,66 @@ _install_wire_claude_commands() {
     dest="$cmds_dir/$rel"
     slash="${rel%.md}"
     slash="/${slash//\//:}"
-    if [[ -f "$dest" ]]; then
-      say "  · ${slash} command already present (skip)"
+    if [[ "$replace" == "0" && -f "$dest" ]]; then
+      say "  · ${slash} already present (skip)"
     else
       mkdir -p "$(dirname "$dest")"
       cp "$cmd_file" "$dest"
-      green "  + ${slash} command added at $dest"
+      [[ "$replace" == "1" ]] && green "  ↺ ${slash}" || green "  + ${slash}"
     fi
   done
+}
+
+# List deprecated skills: names in target/skills/ absent from both SKILLS_SRC
+# and framework_src/skills/. Prints one name per line.
+# Args: target framework_src
+_framework_deprecated_skills() {
+  local target="$1" framework_src="$2"
+  [[ -d "$target/skills" ]] || return 0
+  local skill_dir name
+  for skill_dir in "$target/skills"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    name=$(basename "${skill_dir%/}")
+    [[ -d "$SKILLS_SRC/$name" ]] && continue
+    [[ -d "$framework_src/skills/$name" ]] && continue
+    echo "$name"
+  done
+}
+
+# List deprecated commands: .md files under parent/.claude/commands/ absent
+# from $COMMANDS_SRC. Prints one rel path per line.
+# Args: parent
+_framework_deprecated_commands() {
+  local parent="$1"
+  local cmds_dir="$parent/.claude/commands"
+  [[ -d "$cmds_dir" ]] || return 0
+  [[ -d "$COMMANDS_SRC" ]] || return 0
+  local file rel
+  while IFS= read -r -d '' file; do
+    rel="${file#"$cmds_dir"/}"
+    [[ -f "$COMMANDS_SRC/$rel" ]] || echo "$rel"
+  done < <(find "$cmds_dir" -type f -name '*.md' -print0)
+}
+
+# --- install-private helpers ------------------------------------------------
+
+# Print the dot-llm hook block to stdout. Argument: rel_index (e.g. ".llm/index.md").
+_install_print_hook_block() {
+  local rel_index="$1"
+  cat <<EOF
+<!-- BEGIN DOT-LLM-HOOK -->
+## \`.llm/\` framework
+
+This project uses the \`.llm/\` framework — a spec-driven, agent-friendly knowledge structure. Whenever you (the LLM) start a session in this repository, **read \`$rel_index\` first**. It carries the schema, the pillars declared for this project, the loading rule for what enters context, and any role definitions present under \`$rel_index\`'s siblings.
+
+@$rel_index
+<!-- END DOT-LLM-HOOK -->
+EOF
 }
 
 _install_wire_claude_md() {
   local parent="$1" target="$2"
   local claude_md="$parent/CLAUDE.md"
-  # Compute the import path relative to CLAUDE.md (which lives at $parent).
   local rel_index
   rel_index="$(basename "$target")/index.md"
 
@@ -219,10 +256,6 @@ _install_wire_claude_md() {
 }
 
 # List available framework flavors (one per line): "<name>\t<one-line summary>".
-# Reads from disk so adding a new flavor never requires touching the help text.
-# `__base/` is exposed as the literal `base` (hardcoded first row); other dirs
-# under frameworks/ are listed by their on-disk name. Dirs prefixed with `__`
-# are skipped as "internal" (the convention for kernel / non-flavor entries).
 _install_list_frameworks() {
   printf '%s\t%s\n' "base" "minimal kernel — rules + meta, no pillars."
   if [[ -d "$FRAMEWORKS_DIR" ]]; then
@@ -230,8 +263,7 @@ _install_list_frameworks() {
     for d in "$FRAMEWORKS_DIR"/*/; do
       [[ -d "$d" ]] || continue
       name=$(basename "$d")
-      [[ "$name" == __* ]] && continue   # skip kernel / internal entries
-      # Try first non-blank line after the H1 in <flavor>/index.md as the summary.
+      [[ "$name" == __* ]] && continue
       local summary=""
       if [[ -f "$d/index.md" ]]; then
         summary=$(awk '
@@ -240,26 +272,21 @@ _install_list_frameworks() {
         ' "$d/index.md")
       fi
       [[ -z "$summary" ]] && summary="framework flavor"
-      # Truncate long descriptions for help layout (≈70 chars).
       [[ ${#summary} -gt 70 ]] && summary="${summary:0:67}..."
       printf '%s\t%s\n' "$name" "$summary"
     done
   fi
 }
 
-# List available skills (one per line): "<name>\t<description from frontmatter>".
-# List opt-in skills (non-`llm-*`) for the `--with` flag. `llm-*` skills are
-# auto-installed by cmd_install — they don't appear here.
+# List opt-in skills (non-llm-*) for the --with flag.
 _install_list_skills() {
   [[ -d "$SKILLS_SRC" ]] || return 0
   local d name desc
   for d in "$SKILLS_SRC"/*/; do
     [[ -d "$d" ]] || continue
     name=$(basename "$d")
-    [[ "$name" == llm-* ]] && continue   # auto-installed; skip from --with listing
+    [[ "$name" == llm-* ]] && continue
     [[ -f "$d/SKILL.md" ]] || continue
-    # Extract the `description:` field from frontmatter. Handles inline scalars
-    # AND multiline `>` / `|` forms (concatenates indented continuation lines).
     desc=$(awk '
       /^---$/ { c++; if (c==2) exit; next }
       c==1 && /^description:/ {
@@ -277,7 +304,6 @@ _install_list_skills() {
       c==1 && in_desc && /^[a-zA-Z]/ { in_desc = 0 }
       END { print acc }
     ' "$d/SKILL.md")
-    # Truncate long descriptions for help layout (≈70 chars).
     [[ ${#desc} -gt 70 ]] && desc="${desc:0:67}..."
     printf '%s\t%s\n' "$name" "${desc:-(no description)}"
   done

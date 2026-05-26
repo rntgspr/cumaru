@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Run `llm doctor`, synthesize the findings, and offer to remediate each error/warning before touching anything.
 allowed-tools: Bash, Read, Edit, Write
 ---

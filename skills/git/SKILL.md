@@ -1,5 +1,6 @@
 ---
 human_revised: false
+version: 1
 name: git
 description: Use this skill whenever a role would otherwise be blocked from running mutating git commands. The .llm/ framework gates `git commit`, `git push`, `git reset`, `git checkout`, and similar behind the presence of `.llm/skills/git/SKILL.md`. With this file present, mutating commands are allowed — but only following the policies below. Trigger on any task that involves committing, pushing, branching, or rewriting history.
 ---

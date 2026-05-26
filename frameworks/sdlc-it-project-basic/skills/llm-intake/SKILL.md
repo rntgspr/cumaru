@@ -1,5 +1,6 @@
 ---
 human_revised: false
+version: 1
 name: llm-intake
 description: Use this skill whenever the user wants to fetch a tracker issue and mirror it under `.llm/intake/` — pull a Jira (or Linear / ClickUp / Basecamp, when wired) item, refresh an existing item, or refine a freshly fetched item's body. Trigger on phrases like "fetch JET-1234", "pull this ticket into intake", "import this issue", "refresh JET-9999", "atualizar o intake do JET-X", or any task that frames the work as bringing a tracker item into `.llm/intake/`.
 ---

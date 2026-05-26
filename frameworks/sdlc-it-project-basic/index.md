@@ -26,7 +26,7 @@ Entry point for any LLM (or human) interacting with this repository.
 > **Status (framework-version 3).** This document describes the v3 model: a single
 > recursive node tree (`root`), a tracker-agnostic flat `intake`, and lean indexes.
 > The starter `templates/`, the framework's own pillar `index.md` files, and the
-> `llm` CLI (`regen`/`doctor`/`intake`/`sync`) may still reflect v2 — they are
+> `llm` CLI (`regen`/`doctor`/`intake`/`update`) may still reflect v2 — they are
 > migrated in a later pass. To upgrade an existing project, follow the `llm-cli`
 > skill's **v2 → v3 migration** section.
 
@@ -111,4 +111,4 @@ All content authored under `.llm/` is written in **English** — indexes, plans,
 
 ## Project context
 
-Adopter-specific orientation the LLM should keep in mind: stack, monorepo layout, conventions not yet in `specs/`, external links, current focus, hard constraints. Edit the `<!-- llm:root -->` block at the **top of this file** — its body is preserved across `llm sync` upgrades. List your components in the `<!-- llm:components -->` table and mirror them under `meta.apps.values` in `schema.yaml`.
+Adopter-specific orientation the LLM should keep in mind: stack, monorepo layout, conventions not yet in `specs/`, external links, current focus, hard constraints. Edit the `<!-- llm:root -->` block at the **top of this file** — its body is preserved across `llm update` upgrades. List your components in the `<!-- llm:components -->` table and mirror them under `meta.apps.values` in `schema.yaml`.

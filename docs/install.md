@@ -34,7 +34,7 @@ Adding a new flavor is a disk operation — create `frameworks/<name>/` with its
 ## Available skills
 
 **Universal** (auto-installed for every flavor):
-- `llm-doctor`, `llm-install`, `llm-sync` — multi-step orchestration carried by SKILL.md.
+- `llm-doctor`, `llm-install`, `llm-update` — multi-step orchestration carried by SKILL.md.
 
 **Flavor-shipped** (under `frameworks/<flavor>/skills/`, copied wholesale with the flavor):
 - sdlc-it-project-basic ships `llm-intake`, `llm-explore`, `llm-plan`, `llm-specs`, `llm-archive`.
@@ -48,7 +48,7 @@ Adding a new flavor is a disk operation — create `frameworks/<name>/` with its
 
 ## When to use
 
-Run once per project, at adoption time. To re-install after deleting `.llm/`, just run `llm install` again. To upgrade an existing install with new framework files, see [`llm sync`](sync.md).
+Run once per project, at adoption time. To re-install after deleting `.llm/`, just run `llm install` again. To upgrade an existing install with new framework files, see [`llm update`](update.md).
 
 ## Examples
 
@@ -63,5 +63,5 @@ llm install --framework base --with git                      # base + git
 ## Related
 
 - [`llm doctor`](doctor.md) — first thing to run after install.
-- [`llm sync`](sync.md) — keep an installed `.llm/` up to date with a newer framework version.
+- [`llm update`](update.md) — keep an installed `.llm/` up to date with a newer framework version.
 - [`llm uninstall`](uninstall.md) — reverse of install.

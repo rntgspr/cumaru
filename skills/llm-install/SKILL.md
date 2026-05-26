@@ -1,5 +1,6 @@
 ---
 human_revised: false
+version: 1
 name: llm-install
 description: Use this skill whenever the user wants to adopt the dot-llm framework in a project — install the .llm/ tree, choose a flavor, wire CLAUDE.md, and (post-install) bootstrap the spec areas for an existing codebase. Trigger on phrases like "install the framework", "set up .llm/ here", "adopt dot-llm", "instala o framework", "bootstrap specs from the codebase", "scaffold the spec areas", "compactar / consolidate area X", "deepen the auth spec", or any request to seed/grow the `specs/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the spec bootstrap that follows is LLM-driven via this skill.
 ---

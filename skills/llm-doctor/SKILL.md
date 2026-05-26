@@ -1,5 +1,6 @@
 ---
 human_revised: false
+version: 1
 name: llm-doctor
 description: Use this skill whenever the user wants to validate the `.llm/` tree of a dot-llm project — confirm the schema matches the disk, find orphan files/rows, surface any v3 contract violations. Trigger on phrases like "validate .llm/", "check the framework health", "rodar o doctor", "is .llm/ healthy?", "audit the project", "check for orphans", "find stray files in .llm/", "align the indexes", or any task that needs a health snapshot before another operation. `llm doctor` is the **default** subcommand — bare `llm` runs it.
 ---

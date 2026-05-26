@@ -9,7 +9,7 @@
 #   doctor [--quiet]              run health checks on the .llm/ tree (default)
 #   install [DIR] [--with <s>...] install the framework starter into a project
 #   intake <KEY>                  fetch a Jira issue and mirror it under .llm/intake/
-#   sync [...]                    update .llm/ from a fresh framework source
+#   update [...]                  update .llm/ files, skills, and slash commands from source
 #   flow <src> <verb> [<dst>]     safe file ops inside .llm/ (move/copy/create/remove)
 #                                (replaces the archive workflow — recipes live in the llm-cli skill)
 #   tag [<file> [<tag>]]          read/write/audit <!-- llm:NAME --> blocks
@@ -55,7 +55,7 @@ BASE_FRAMEWORK_SRC="$FRAMEWORKS_DIR/__base"
 DEFAULT_FRAMEWORK="sdlc-it-project-basic"
 # FRAMEWORK_SRC resolves at command time via _resolve_framework_src; defaults
 # below preserve the prior single-source behaviour for modules that only need
-# templates/roles (e.g. cmd_install reads it; cmd_sync resolves its own).
+# templates/roles (e.g. cmd_install reads it; cmd_update resolves its own).
 FRAMEWORK_SRC="$FRAMEWORKS_DIR/$DEFAULT_FRAMEWORK"
 
 # Resolve a framework name (or `base`) to its source directory. Echoes the
@@ -96,8 +96,8 @@ warnings=0
 . "$SRC/cmd_uninstall.sh"
 # shellcheck source=src/cmd_doctor.sh
 . "$SRC/cmd_doctor.sh"
-# shellcheck source=src/cmd_sync.sh
-. "$SRC/cmd_sync.sh"
+# shellcheck source=src/cmd_update.sh
+. "$SRC/cmd_update.sh"
 # shellcheck source=src/cmd_intake.sh
 . "$SRC/cmd_intake.sh"
 # shellcheck source=src/cmd_flow.sh
@@ -122,9 +122,9 @@ case "$sub" in
     cmd_uninstall "$@"
     exit $?
     ;;
-  sync)
+  update)
     shift
-    cmd_sync "$@"
+    cmd_update "$@"
     exit $?
     ;;
   intake)

@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Capture, evolve, promote, or drop an exploration in `.llm/exploring/`. Drives the `llm-explore` skill.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <slug-or-action>

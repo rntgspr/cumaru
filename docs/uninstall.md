@@ -32,7 +32,7 @@ llm uninstall [TARGET] [--yes]
 - Migrating to a different flavor (uninstall, then `llm install --framework <new>`).
 - Removing the framework from a project that won't use it anymore.
 
-**Don't use it to "refresh" the framework** — that's [`llm sync`](sync.md)'s job. Uninstall is destructive; sync is steady-state.
+**Don't use it to "refresh" the framework** — that's [`llm update`](update.md)'s job. Uninstall is destructive; update is steady-state.
 
 ## Examples
 
@@ -46,4 +46,4 @@ llm uninstall /path/.llm -y         # custom target, non-interactive
 ## Related
 
 - [`llm install`](install.md) — installs the inverse.
-- [`llm sync`](sync.md) — for upgrading an existing install, not removing it.
+- [`llm update`](update.md) — for upgrading an existing install, not removing it.

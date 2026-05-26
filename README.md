@@ -95,7 +95,7 @@ llm install --framework sdlc-it-project-basic    # explicit SDLC flavor
 llm install --with git                           # unlocks mutating git commands
 ```
 
-Install always copies the **operating skills** the LLM needs to work in the tree — universal ones (`llm-doctor`, `llm-install`, `llm-sync`) and any the chosen flavor ships (SDLC adds `llm-intake`, `llm-explore`, `llm-plan`, `llm-specs`, `llm-archive`, one per pillar that needs orchestration). Mechanical primitives `llm tag` and `llm flow` are CLI-only — no skill needed; the recipe skills compose them. Opt-in skills like `git` only ship when explicitly added via `--with` (without `git`, roles stay read-only on the repo: `status`, `log`, `diff`, `blame`, `show`).
+Install always copies the **operating skills** the LLM needs to work in the tree — universal ones (`llm-doctor`, `llm-install`, `llm-update`) and any the chosen flavor ships (SDLC adds `llm-intake`, `llm-explore`, `llm-plan`, `llm-specs`, `llm-archive`, one per pillar that needs orchestration). Mechanical primitives `llm tag` and `llm flow` are CLI-only — no skill needed; the recipe skills compose them. Opt-in skills like `git` only ship when explicitly added via `--with` (without `git`, roles stay read-only on the repo: `status`, `log`, `diff`, `blame`, `show`).
 
 The post-install work is **LLM-driven via the installed skills**:
 1. **Components** — the `llm-install` skill walks the user through editing `.llm/index.md`'s components table and `meta.apps.values` in `.llm/schema.yaml`.
@@ -110,7 +110,7 @@ Skills follow the official Anthropic format (`SKILL.md` with frontmatter). They 
 
 - [`skills/llm-doctor/SKILL.md`](skills/llm-doctor/SKILL.md) — run the health checks, interpret orphans, propose fixes.
 - [`skills/llm-install/SKILL.md`](skills/llm-install/SKILL.md) — adopt the framework, then walk the user through the components edit.
-- [`skills/llm-sync/SKILL.md`](skills/llm-sync/SKILL.md) — pull framework-file updates from the source; adjudicate frontmatter key drift and tag-body reshapes.
+- [`skills/llm-update/SKILL.md`](skills/llm-update/SKILL.md) — pull framework-file updates from the source, replace skills and slash commands; adjudicate frontmatter key drift and tag-body reshapes.
 
 **Flavor-specific skills** at `frameworks/<flavor>/skills/llm-*/` — copied into `.llm/skills/` only when the flavor is installed. The SDLC flavor ships:
 
@@ -147,7 +147,7 @@ Run `llm help` (or `llm <cmd> --help`) for full usage.
 | `uninstall` `[DIR] [-y]` | Reverse of install: strip the CLAUDE.md hook, drop `.llm/` |
 | `intake` `<KEY>` | Fetch a tracker issue and mirror it as a flat item under `.llm/intake/<KEY>/` (Jira adapter today) |
 | `tag` `[FILE] [<get\|set> <tag> [<content>]]` | Inspect / get / set `<!-- llm:* -->` marker blocks; schema-validated |
-| `sync` `[<path>] [--from <src>] [--keep-prose] [--apply]` | Steady-state update of `.llm/` from the framework source; preserves frontmatter values + tag bodies. Refuses on version mismatch |
+| `update` `[<path>] [--from <src>] [--keep-prose] [--apply]` | Update `.llm/` files, skills, and slash commands from the source; preserves frontmatter values + tag bodies. Refuses on version mismatch |
 | `flow` `<src> <verb> [<dst>]` | Safe mechanical file ops inside `.llm/` (verbs: `move` \| `copy` \| `create` \| `remove`). Recipe skills compose calls to it |
 
 Per-command details live in `llm <cmd> --help`.
