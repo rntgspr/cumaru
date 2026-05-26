@@ -319,7 +319,11 @@ cmd_update() {
   else
     red "✗ source not found: $from"; return 1
   fi
-  [[ -n "$tmpdir" ]] && trap 'rm -rf "$tmpdir"' EXIT
+  # Use RETURN instead of EXIT so the trap fires when this function returns,
+  # not when the whole process exits. EXIT traps are global — a second call
+  # to cmd_update would overwrite the first trap, leaking the first tmpdir.
+  # RETURN traps are scoped to the current function invocation.
+  [[ -n "$tmpdir" ]] && trap 'rm -rf "$tmpdir"' RETURN
 
   if [[ ! -f "$source_root/llm" || ! -d "$source_root/frameworks" ]]; then
     red "✗ source $source_root does not look like a dot-llm checkout (need llm and frameworks/)"
