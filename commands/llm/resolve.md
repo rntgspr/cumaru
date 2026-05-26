@@ -15,7 +15,7 @@ allowed-tools: Bash, Read, Edit, Write
 
    | Class | Detection | Default proposal |
    |---|---|---|
-   | Shallow index | path matches `.llm/{intake,plans,archive,specs,exploring}/index.md` | Take either side's table, then run `llm regen index <pillar>` to canonicalize. |
+   | Shallow index | path matches a pillar's `index.md` (any direct child dir of `.llm/`) | Union both sides' rows then re-emit the pillar tag via `llm tag set <pillar>/index.md <pillar> <new body>` to canonicalize the marker block. |
    | Marker file | contains any `<!-- llm:NAME -->` block | Same heuristic as `/llm:sync`: inside the marker → keep local (`ours`); outside the marker → take incoming (`theirs`); flag prose with project-specific content outside markers for manual review. |
    | Plain `.llm/` | neither of the above | Per-type heuristics below. |
    | **Marker-header anomaly** | the conflict markers cut across a `<!-- llm:NAME -->` opening/closing line, or the name differs between sides | **Out of scope.** Flag, skip, and tell the user `llm doctor` will surface the structural inconsistency afterwards. Do not attempt to repair marker structure here. |
@@ -35,7 +35,7 @@ allowed-tools: Bash, Read, Edit, Write
    - Show the conflict markers (or the relevant chunk).
    - State the class and the proposed resolution.
    - Apply only after the user confirms.
-   - For Shallow index, run `llm regen index <pillar>` immediately after to keep the table canonical.
+   - For Shallow index, re-emit the pillar tag via `llm tag set <pillar>/index.md <pillar> <new body>` immediately after to keep the marker block canonical.
 
 7. **Closure**. After the walk, summarize: what was resolved, what remains in-scope (if the user declined any), and the out-of-scope list. **Do not** run `git add`, `git merge --continue`, `git rebase --continue`, `git cherry-pick --continue`, or any abort. Git is read-only by default in this project. Print the exact commands the user should run themselves. If the project has the `git` skill enabled (`.llm/skills/git/SKILL.md` exists), the user may explicitly authorize the agent to run them in this turn — otherwise hands off.
 

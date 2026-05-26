@@ -66,6 +66,30 @@ _sync_tag_is_table() {
   [[ -n "$(_sync_tag_header "$1" "$2")" ]]
 }
 
+# Classify the tag body into one of: table | path-list | number | empty | prose.
+# Heuristic — used for the dry-run label only (the mechanical merge preserves
+# any body regardless). The shape mirrors the v3 tag value types declared in
+# schema.yaml (array → table, string → prose, number → number, `files` pattern
+# → path-list). Empty markers fall back to "empty".  Args: file, name.
+_sync_tag_kind() {
+  local body; body=$(fm_block_extract "$1" "$2")
+  if [[ -z "${body//[[:space:]]/}" ]]; then echo empty; return; fi
+  if printf '%s\n' "$body" | grep -qE '^[[:space:]]*\|'; then echo table; return; fi
+  if printf '%s\n' "$body" | awk '
+       /^[[:space:]]*$/                          { next }
+       /^[[:space:]]*-[[:space:]]+`[^`]+`/        { seen=1; next }
+       { bad=1; exit }
+       END { exit !(seen && !bad) }
+     '; then echo path-list; return; fi
+  local non_blank
+  non_blank=$(printf '%s\n' "$body" | grep -cE '^[[:space:]]*[^[:space:]]' || true)
+  if [[ "$non_blank" -eq 1 ]] && \
+     printf '%s\n' "$body" | grep -qE '^[[:space:]]*-?[0-9]+(\.[0-9]+)?[[:space:]]*$'; then
+    echo number; return
+  fi
+  echo prose
+}
+
 # --- expected-content builder ----------------------------------------------
 
 # Build the merged ("expected") content for one both-sides file and print it
@@ -99,7 +123,7 @@ _sync_build_expected() {
 
   # Default: source prose + injected local bodies, then swap in local fm.
   local injected; injected=$(mktemp)
-  inject_blocks "$src" "$tgt" > "$injected"
+  _sync_inject_blocks "$src" "$tgt" > "$injected"
   if [[ "$has_fm" == "1" ]] && _sync_has_fm "$tgt"; then
     _sync_fm_region "$tgt"
     _sync_body_after_fm "$injected"
@@ -179,20 +203,33 @@ _sync_render() {
     while IFS= read -r name; do
       [[ -z "$name" ]] && continue
       if grep -qxF "$name" <<< "$tgt_tags"; then
-        if _sync_tag_is_table "$src" "$name"; then
-          local sh th
-          sh=$(_sync_tag_header "$src" "$name")
-          th=$(_sync_tag_header "$tgt" "$name")
-          if [[ "$sh" == "$th" ]]; then
-            echo "    [=] $name (table) — columns match, rows preserved."
-          else
-            echo "    [Δ] $name (table) — column header changed; reshape body, keep rows:"
-            echo "          source: $sh"
-            echo "          local:  ${th:-<no table>}"
-          fi
-        else
-          echo "    [?] $name (prose) — body preserved; verify it still matches the schema subject."
-        fi
+        local kind; kind=$(_sync_tag_kind "$src" "$name")
+        case "$kind" in
+          table)
+            local sh th
+            sh=$(_sync_tag_header "$src" "$name")
+            th=$(_sync_tag_header "$tgt" "$name")
+            if [[ "$sh" == "$th" ]]; then
+              echo "    [=] $name (table) — columns match, rows preserved."
+            else
+              echo "    [Δ] $name (table) — column header changed; reshape body, keep rows:"
+              echo "          source: $sh"
+              echo "          local:  ${th:-<no table>}"
+            fi
+            ;;
+          path-list)
+            echo "    [=] $name (path-list) — body preserved; verify paths still resolve."
+            ;;
+          number)
+            echo "    [=] $name (number) — scalar preserved."
+            ;;
+          empty)
+            echo "    [?] $name (empty) — source body is empty; verify intent."
+            ;;
+          *)
+            echo "    [?] $name (prose) — body preserved; verify it still matches the schema subject."
+            ;;
+        esac
       else
         echo "    [+] $name — present in source, absent locally → empty block will be added."
       fi
@@ -218,7 +255,7 @@ cmd_sync_help() {
 llm sync — steady-state update of .llm/ from the framework source
 
 Usage:
-  llm sync [<path>] [--from <path|git-url>] [--keep-prose] [--apply]
+  llm sync [<path>] [--framework <name>] [--from <path|git-url>] [--keep-prose] [--apply]
 
 Arguments:
   <path>         optional path filter, relative to .llm/. May be a directory
@@ -236,6 +273,10 @@ Options:
   --apply        apply the merge mechanically (preserve frontmatter values and
                  tag bodies, take prose from source, add missing markers).
                  Without it, prints a structured per-file review for the LLM.
+
+Flavor detection:
+  The framework flavor is read from the `flavor:` field in .llm/schema.yaml
+  (written there at install time). Falls back to `base` if absent.
 
 Per-file model (v3):
   • Frontmatter — adopter values are kept verbatim; only key drift is reported.
@@ -282,10 +323,16 @@ cmd_sync() {
     esac
   done
 
-  # 1) Resolve source
+  # Resolve flavor from the installed schema.yaml (flavor: field). Falls back
+  # to `base` if the field is absent (pre-flavor installs / manual setups).
+  local flavor
+  flavor=$(awk '/^flavor:[[:space:]]/ {print $2; exit}' "$SCHEMA" 2>/dev/null || true)
+  : "${flavor:=base}"
+
+  # 1) Resolve source root (the dot-llm checkout)
   local source_root tmpdir=""
   if [[ -z "$from" ]]; then
-    if [[ -f "$SCRIPT_DIR/llm" && -d "$SCRIPT_DIR/dot-llm-framework" ]]; then
+    if [[ -f "$SCRIPT_DIR/llm" && -d "$SCRIPT_DIR/frameworks" ]]; then
       source_root="$SCRIPT_DIR"
     else
       red "✗ --from required (path to a dot-llm checkout or git URL)"; return 1
@@ -304,11 +351,18 @@ cmd_sync() {
   fi
   [[ -n "$tmpdir" ]] && trap 'rm -rf "$tmpdir"' EXIT
 
-  if [[ ! -f "$source_root/llm" || ! -d "$source_root/dot-llm-framework" ]]; then
-    red "✗ source $source_root does not look like a dot-llm checkout (need llm and dot-llm-framework/)"
+  if [[ ! -f "$source_root/llm" || ! -d "$source_root/frameworks" ]]; then
+    red "✗ source $source_root does not look like a dot-llm checkout (need llm and frameworks/)"
     return 1
   fi
-  local source_framework="$source_root/dot-llm-framework"
+
+  # 2) Resolve source flavor — all flavors (including base) live under frameworks/.
+  local source_framework
+  source_framework="$source_root/frameworks/$( [[ "$flavor" == "base" ]] && echo "__base" || echo "$flavor" )"
+  if [[ ! -d "$source_framework" ]]; then
+    red "✗ framework flavor '$flavor' not found at $source_framework"
+    return 1
+  fi
   local source_schema="$source_framework/schema.yaml"
 
   # 2) Pre-flight: target must be installed
@@ -342,7 +396,8 @@ cmd_sync() {
   local rels=() rel
   while IFS= read -r rel; do
     rel="${rel#"$source_framework"/}"
-    [[ "$rel" == "schema.bkp.yaml" ]] && continue
+    # Skip backup files (matches gitignore `**/*.bkp.*`) — they shouldn't reach adopters.
+    [[ "$rel" == *.bkp.* ]] && continue
     if [[ -n "$path_filter" ]]; then
       [[ "$rel" == "$path_filter" || "$rel" == "$path_filter"/* ]] || continue
     fi
@@ -378,7 +433,6 @@ cmd_sync() {
   # 6) --apply: mechanical merge.
   if [[ $apply -eq 1 ]]; then
     [[ $keep_prose -eq 1 ]] && yellow "⚠ --keep-prose: framework prose updates are NOT applied; the tree may diverge from its spec."
-    local touched_core=0
     for rel in "${changed[@]}"; do
       local src="$source_framework/$rel" tgt="$DOT_LLM_DIR/$rel"
       mkdir -p "$(dirname "$tgt")"
@@ -389,12 +443,11 @@ cmd_sync() {
       local has_fm=0; _sync_has_fm "$src" && has_fm=1
       _sync_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$tgt.tmp" && mv "$tgt.tmp" "$tgt"
       green "  ✓ merged $rel"
-      [[ "$rel" == "index.md" || "$rel" == "schema.yaml" ]] && touched_core=1
     done
     say ""
-    if [[ $touched_core -eq 1 && "$source_version" != "$target_version" ]]; then
-      yellow "Bump framework-version in $DOT_LLM_DIR/index.md to $source_version."
-    fi
+    # Note: no framework-version bump hint here — the version gate (step 3)
+    # refuses to run when source ≠ target, so after a successful sync the two
+    # are already equal.
     green "✓ Sync complete ($total file(s))."
     return 0
   fi
@@ -430,7 +483,7 @@ cmd_sync() {
 # Build the source file with the target's `<!-- llm:NAME -->` block bodies
 # injected. Writes to stdout. Markers absent in the target keep the source's
 # (typically empty) body. Args: src_file, tgt_file
-inject_blocks() {
+_sync_inject_blocks() {
   local src="$1" tgt="$2"
   local tmp; tmp=$(mktemp -d)
   local name

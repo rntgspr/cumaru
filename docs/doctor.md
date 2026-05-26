@@ -2,7 +2,7 @@
 
 Run health checks on a `.llm/` tree end-to-end. The default `llm` command — running `llm` with no args is equivalent to `llm doctor`.
 
-`doctor` runs **schema conformance** plus **tree-wide structural checks** in one pass.
+`doctor` is **schema-driven and pillar-agnostic**: every check reads `schema.yaml` and walks what it declares. Adding or removing a pillar in the schema doesn't require touching this code.
 
 ## Usage
 
@@ -24,35 +24,33 @@ Each top-level check emits exactly one line:
 
 Followed by a summary line: `Summary: X error(s), Y warning(s), Z ok`.
 
-## Checks performed
+## The 5 checks
 
 | # | Check | On issue |
 |---|---|---|
-| 1 | **Schema conformance** — sub-passes [0]..[5] over the `.llm/` tree against `schema.yaml` (frontmatter required fields, EARS pattern in AC/Requirements, `framework-version` ≡ `version:`) | **fail** on any error |
-| 2 | **Shallow index drift** — compares each pillar's current `index.md` against what `llm regen index` would produce | warn if drifted |
-| 3 | **Tasks done w/o handoff** — flags `t<N>.md` with `status: done` lacking a sibling `handoff-t<N>.md` | warn |
-| 4 | **Orphan archive work files** — `temp-archive-flow.delete-me.md` lingering under `archive/` (Phase 2 pending) | warn |
-| 5 | **Orphan delta-drafts** — `delta-draft.md` still in `plans/<ID>/` after `archive/<ID>/` exists | **fail** (inconsistent state) |
-| 6 | **File references** — paths inside `<!-- llm:files:<tag> -->` blocks resolve on disk (relative to the repo root, parent of `.llm/`) | warn for missing |
-| 7 | **External tools** — `curl`, `jq`, `git`, `rsync` available on PATH | warn for missing |
+| 1 | **Schema conformance** — sub-passes [0]..[4] over the `.llm/` tree against `schema.yaml` (universal markdown, index.md frontmatter, pillar index extras, entity frontmatter via schema-driven walk of `root.entities`, EARS pattern). Cross-pass: `framework-version` ≡ `version:`. | **fail** on any error |
+| 2 | **Orphan check** — walks every `index.md` declared by the schema (root + each pillar in `root.entities`), shows every markdown-table tag found, reports both directions: rows pointing at missing paths, and files/dirs on disk not claimed by any row (the reverse check runs for pillars only). | rows: **fail**; files: warn |
+| 3 | **Stale work-marker files** — any `*.delete-me.md` lingering anywhere under `.llm/`. | warn |
+| 4 | **File references** — paths inside any path-list tag block (detection is by **body shape**, not marker name — works for nested marker names like `plans:plan:handoff:files`) resolve on disk relative to the repo root. Template placeholders (`<KEY>`, `<area>`) are skipped. | warn for missing |
+| 5 | **External tools** — `curl`, `jq`, `git`, `rsync` available on PATH. Some subcommands depend on them (intake needs curl+jq; sync via git URL needs git). | warn for missing |
 
 ### Sub-passes inside check 1 (schema conformance)
 
 | Pass | What |
 |------|------|
-| `[0]` | Every `.md` has at least one `# H1` heading |
-| `[1]` | Every `index.md` has frontmatter `generated, apps`; `apps:` values are in `apps.values` |
-| `[2]` | Plans: `index.md` requires `generated, apps, status, summary, scope`; tasks (`t<N>.md`) require `plan, task, depends-on, concerns, files, status, apps`. EARS pattern warned in `## Acceptance Criteria` |
-| `[3]` | Spec areas (recursive — areas may nest as subareas at any depth): `index.md` requires `generated, name, summary, depends-on, apps, deltas`. EARS pattern warned in `## Requirements`. Concerns require `generated, apps` (skips `history.md` and `bootstrap.md`) |
-| `[4]` | Archive: `index.md` requires `generated, status, summary, apps` |
-| `[5]` | Exploring: `index.md` requires `generated, status, apps, summary` |
-| Cross | `framework-version` in `.llm/index.md` must equal `version:` in `schema.yaml` (errors on mismatch) |
+| `[0]` | Universal markdown — H1 heading + `human_revised` frontmatter on every `.md` (`rules.markdown`). |
+| `[1]` | `index.md` universal frontmatter — `generated`, `apps`; `apps:` values must come from `meta.apps.values`. |
+| `[2]` | Pillar `index.md` — `generated-at` + any pillar-specific extras (e.g. `tracker!` on `intake/index.md` for sdlc). |
+| `[3]` | Entity frontmatter — schema-driven walk of `root.entities`; validates each entity's declared `frontmatter:`. |
+| `[4]` | EARS pattern — `WHEN .+ THE SYSTEM SHALL .+`. Warning-only on bullets under `## Acceptance Criteria` / `## Requirements`. Marker is anchored to `^##` so prose that cites the section name (in backticks) doesn't trigger the toggle. |
 
-EARS pattern: `WHEN .+ THE SYSTEM SHALL .+`. Non-conforming bullets emit warnings, not errors. The schema-pass output is captured into a single `[✓]` / `[✗]` line at the orchestrator level — drilling into the sub-pass detail only happens when there are errors.
+The schema-pass output is captured into a single `[✓]` / `[✗]` line at the orchestrator level — drilling into sub-pass detail only happens when there are errors.
 
-## What it does NOT check
+## What doctor does NOT check (LLM's job)
 
-Cross-file consistency (path resolution, `depends-on:` resolution, `## Files` existence on disk, `deltas:` references) is listed in `schema.yaml` under `cross_file_checks.deferred` and not yet enforced. The plan `maintenance-validator-parity` tracks the gap between the schema's declared required fields and the schema-pass coverage.
+- **Workflow integrity** (tasks done without handoff, orphan delta-drafts after archive). These moved out of doctor in v3 — they're audited as part of recipe execution in the flavor's recipe skills (e.g. `llm-archive` for sdlc).
+- **Cross-file semantic links** (every `scope:` path resolves, every `depends-on:` references a real entity). Listed in `schema.yaml > meta.cross_file_checks.deferred`.
+- **Schema intent vs. file content** — e.g. EARS quality, prose accuracy. These are author judgment, not validation.
 
 ## Exit codes
 
@@ -72,11 +70,12 @@ Cross-file consistency (path resolution, `depends-on:` resolution, `## Files` ex
 
 ```bash
 llm                                       # equivalent to llm doctor (default)
-llm doctor --quiet                      # hide pass lines; show warnings + errors
-DOT_LLM_DIR=path/to/.llm llm doctor     # operate on a non-default tree
+llm doctor --quiet                        # hide pass lines; show warnings + errors
+DOT_LLM_DIR=path/to/.llm llm doctor       # operate on a non-default tree
 ```
 
 ## Related
 
-- [`llm regen index`](regen.md) — fix shallow index drift surfaced by check 2.
-- [`llm archive finalize`](archive.md) — clear lingering work files surfaced by checks 4 and 5.
+- [`llm tag`](tag.md) — re-emit a marker block body (used to fix orphan rows surfaced by check 2).
+- [`llm flow`](flow.md) — file ops to delete a stale `*.delete-me.md` (check 3) or fix a missing path-list reference (check 4).
+- `/llm:doctor` slash command — orchestrates doctor + remediation walk with user confirmation.
