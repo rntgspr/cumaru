@@ -36,4 +36,4 @@ The LLM loads only what is **declared** — never what is physically near. Decla
 
 ## Project context
 
-Adopter-specific orientation the LLM should keep in mind: stack, monorepo layout, conventions not yet captured in pillar specs, important external links, current focus, hard constraints. Edit the `<!-- llm:root -->` block above — its body is preserved across `llm sync` upgrades.
+Adopter-specific orientation the LLM should keep in mind: stack, monorepo layout, conventions not yet captured in pillar specs, important external links, current focus, hard constraints. Edit the `<!-- llm:root -->` block above — its body is preserved across `llm update` upgrades.

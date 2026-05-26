@@ -1,10 +1,8 @@
-# cmd_sync.sh — steady-state sync of a project's .llm/ tree with the latest
-# framework definition (same framework-version on both sides).
+# cmd_update.sh — update an installed .llm/ tree from the framework source.
 #
-# v3 model — three regions per file, no `sync:` config:
-#   1. frontmatter  — adopter VALUES are kept verbatim; the script only reports
-#                     key drift (keys the source has that local lacks, and vice
-#                     versa) so the LLM can reconcile against schema.yaml.
+# Three regions per file (v3 model):
+#   1. frontmatter  — adopter VALUES are kept verbatim; key drift is reported so
+#                     the LLM can reconcile against schema.yaml.
 #   2. tag bodies   — `<!-- llm:NAME -->` blocks: local body is preserved; a
 #                     marker present in source but absent locally is added empty.
 #                     Table tags get a column-header diff; string tags are
@@ -15,63 +13,57 @@
 #                     with a per-file warning that the tree may diverge.
 #
 # "Both-sides" files only: every file shipped in the framework starter that
-# also exists locally is synced; a starter file absent locally is created;
+# also exists locally is updated; a starter file absent locally is created;
 # adopter-created entities (intake/<KEY>/, plans/<PLAN-ID>/, specs/<area>/…)
 # have no source counterpart and are left untouched.
 #
+# Skills and slash commands:
+#   Updated deterministically — sources in the dot-llm checkout replace the
+#   installed copies wholesale (no adopter customisation is expected here;
+#   skills/commands are framework-owned artifacts). Deprecated items (present
+#   locally but absent from the source) are listed for review but NOT removed.
+#
 # Version gate: if the source `version:` differs from the local
-# `framework-version:`, this is a MIGRATION, not a sync. The command refuses to
-# run and points to the llm-cli skill's v2 → v3 migration procedure.
+# `framework-version:`, this is a MIGRATION, not an update. The command refuses
+# and points to the llm-cli skill's migration procedure.
 #
-# Updating the `llm` script / src/*.sh is NOT this command's job — those live
-# outside .llm/ and are maintained by pulling the dot-llm checkout.
-#
-# Expects from the entry-point: SCRIPT_DIR, DOT_LLM_DIR, SCHEMA, QUIET.
+# Expects from the entry-point: SCRIPT_DIR, DOT_LLM_DIR, SCHEMA, QUIET,
+# SKILLS_SRC, COMMANDS_SRC, and the _framework_copy_skills /
+# _framework_copy_commands / _framework_deprecated_skills /
+# _framework_deprecated_commands helpers (defined in cmd_install.sh).
 
 # --- frontmatter helpers (markdown files only) -----------------------------
 
-# True (0) if $1 has a frontmatter fence pair.
-_sync_has_fm() {
+_update_has_fm() {
   awk '/^---$/ { c++ } END { exit !(c >= 2) }' "$1"
 }
 
-# Top-level frontmatter keys of $1, one per line (order preserved).
-_sync_fm_keys() {
+_update_fm_keys() {
   awk '
     /^---$/ { c++; if (c == 2) exit; next }
     c == 1 && /^[A-Za-z][A-Za-z0-9_-]*:/ { k = $0; sub(/:.*/, "", k); print k }
   ' "$1"
 }
 
-# Print the frontmatter region of $1 (the two fences inclusive).
-_sync_fm_region() {
+_update_fm_region() {
   awk '/^---$/ { c++; print; if (c == 2) exit; next } c == 1 { print }' "$1"
 }
 
-# Print everything in $1 AFTER the frontmatter region.
-_sync_body_after_fm() {
+_update_body_after_fm() {
   awk 'p { print; next } /^---$/ { c++; if (c == 2) p = 1 }' "$1"
 }
 
 # --- tag helpers -----------------------------------------------------------
 
-# First markdown table header line ("| a | b |") inside tag $2 of file $1.
-# Empty if the body has no table.
-_sync_tag_header() {
+_update_tag_header() {
   fm_block_extract "$1" "$2" | awk 'NF && /^[[:space:]]*\|/ { print; exit }'
 }
 
-# True (0) if tag $2 of file $1 has a table body.
-_sync_tag_is_table() {
-  [[ -n "$(_sync_tag_header "$1" "$2")" ]]
+_update_tag_is_table() {
+  [[ -n "$(_update_tag_header "$1" "$2")" ]]
 }
 
-# Classify the tag body into one of: table | path-list | number | empty | prose.
-# Heuristic — used for the dry-run label only (the mechanical merge preserves
-# any body regardless). The shape mirrors the v3 tag value types declared in
-# schema.yaml (array → table, string → prose, number → number, `files` pattern
-# → path-list). Empty markers fall back to "empty".  Args: file, name.
-_sync_tag_kind() {
+_update_tag_kind() {
   local body; body=$(fm_block_extract "$1" "$2")
   if [[ -z "${body//[[:space:]]/}" ]]; then echo empty; return; fi
   if printf '%s\n' "$body" | grep -qE '^[[:space:]]*\|'; then echo table; return; fi
@@ -92,17 +84,10 @@ _sync_tag_kind() {
 
 # --- expected-content builder ----------------------------------------------
 
-# Build the merged ("expected") content for one both-sides file and print it
-# to stdout. Default: source structure + source prose, with local tag bodies
-# injected and the local frontmatter kept. With keep_prose=1: the local file is
-# kept as-is, only markers missing locally are appended empty.
-# Args: src tgt keep_prose has_fm
-_sync_build_expected() {
+_update_build_expected() {
   local src="$1" tgt="$2" keep_prose="$3" has_fm="$4"
 
   if [[ "$keep_prose" == "1" ]]; then
-    # Keep local prose/frontmatter/bodies; only add markers present in source
-    # but absent locally (empty), so new framework tags still appear.
     local out missing=()
     out=$(cat "$tgt")
     local name
@@ -121,41 +106,34 @@ _sync_build_expected() {
     return 0
   fi
 
-  # Default: source prose + injected local bodies, then swap in local fm.
   local injected; injected=$(mktemp)
-  _sync_inject_blocks "$src" "$tgt" > "$injected"
-  if [[ "$has_fm" == "1" ]] && _sync_has_fm "$tgt"; then
-    _sync_fm_region "$tgt"
-    _sync_body_after_fm "$injected"
+  _update_inject_blocks "$src" "$tgt" > "$injected"
+  if [[ "$has_fm" == "1" ]] && _update_has_fm "$tgt"; then
+    _update_fm_region "$tgt"
+    _update_body_after_fm "$injected"
   else
     cat "$injected"
   fi
   rm -f "$injected"
 }
 
-# True (0) if a file needs attention: the mechanical merge would change it, OR
-# its frontmatter keys drift from source, OR a shared table tag's columns
-# differ, OR it carries a marker with no source counterpart. The latter three
-# are not fixed by the merge (bodies/frontmatter are preserved) but the LLM
-# must still see them — so they count as "needs attention".
-# Args: src tgt keep_prose has_fm
-_sync_needs_attention() {
+_update_needs_attention() {
   local src="$1" tgt="$2" keep_prose="$3" has_fm="$4"
   [[ -f "$tgt" ]] || return 0
   local expected; expected=$(mktemp)
-  _sync_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$expected"
+  _update_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$expected"
   if ! cmp -s "$expected" "$tgt"; then rm -f "$expected"; return 0; fi
   rm -f "$expected"
   if [[ "$has_fm" == "1" ]] && \
-     ! diff -q <(_sync_fm_keys "$src" | sort -u) <(_sync_fm_keys "$tgt" | sort -u) >/dev/null 2>&1; then
+     ! diff -q <(_update_fm_keys "$src" | sort -u) <(_update_fm_keys "$tgt" | sort -u) >/dev/null 2>&1; then
     return 0
   fi
   local name
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
     fm_block_list "$tgt" | grep -qxF "$name" || continue
-    if _sync_tag_is_table "$src" "$name" && \
-       [[ "$(_sync_tag_header "$src" "$name")" != "$(_sync_tag_header "$tgt" "$name")" ]]; then
+    if _update_tag_is_table "$src" "$name" && \
+       [[ "$(_update_tag_header "$src" "$name")" != "$(_update_tag_header "$tgt" "$name")" ]]; then
       return 0
     fi
   done < <(fm_block_list "$src")
@@ -168,8 +146,7 @@ _sync_needs_attention() {
 
 # --- per-file structured review (dry-run) ----------------------------------
 
-# Args: idx total relpath src tgt has_fm keep_prose
-_sync_render() {
+_update_render() {
   local idx="$1" total="$2" f="$3" src="$4" tgt="$5" has_fm="$6" keep_prose="$7"
   echo
   echo "─── [$idx/$total] $f"
@@ -180,11 +157,10 @@ _sync_render() {
     return 0
   fi
 
-  # Frontmatter key drift.
   if [[ "$has_fm" == "1" ]]; then
     local only_src only_local
-    only_src=$(comm -23 <(_sync_fm_keys "$src" | sort -u) <(_sync_fm_keys "$tgt" | sort -u) | paste -sd, -)
-    only_local=$(comm -13 <(_sync_fm_keys "$src" | sort -u) <(_sync_fm_keys "$tgt" | sort -u) | paste -sd, -)
+    only_src=$(comm -23 <(_update_fm_keys "$src" | sort -u) <(_update_fm_keys "$tgt" | sort -u) | paste -sd, -)
+    only_local=$(comm -13 <(_update_fm_keys "$src" | sort -u) <(_update_fm_keys "$tgt" | sort -u) | paste -sd, -)
     if [[ -z "$only_src" && -z "$only_local" ]]; then
       echo "Frontmatter: ✓ keys match (values kept as-is)."
     else
@@ -194,7 +170,6 @@ _sync_render() {
     fi
   fi
 
-  # Tag analysis.
   local src_tags tgt_tags name
   src_tags=$(fm_block_list "$src")
   tgt_tags=$(fm_block_list "$tgt")
@@ -203,12 +178,12 @@ _sync_render() {
     while IFS= read -r name; do
       [[ -z "$name" ]] && continue
       if grep -qxF "$name" <<< "$tgt_tags"; then
-        local kind; kind=$(_sync_tag_kind "$src" "$name")
+        local kind; kind=$(_update_tag_kind "$src" "$name")
         case "$kind" in
           table)
             local sh th
-            sh=$(_sync_tag_header "$src" "$name")
-            th=$(_sync_tag_header "$tgt" "$name")
+            sh=$(_update_tag_header "$src" "$name")
+            th=$(_update_tag_header "$tgt" "$name")
             if [[ "$sh" == "$th" ]]; then
               echo "    [=] $name (table) — columns match, rows preserved."
             else
@@ -234,7 +209,6 @@ _sync_render() {
         echo "    [+] $name — present in source, absent locally → empty block will be added."
       fi
     done <<< "$src_tags"
-    # Orphans: local markers with no source counterpart.
     while IFS= read -r name; do
       [[ -z "$name" ]] && continue
       grep -qxF "$name" <<< "$src_tags" || echo "    [orphan] $name — local only, not in the framework source (decide: keep or remove)."
@@ -244,35 +218,40 @@ _sync_render() {
   echo
   echo "--- Diff (local → result of --apply: prose from source, bodies + frontmatter kept) ---"
   local merged; merged=$(mktemp)
-  _sync_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$merged"
+  _update_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$merged"
   diff -u "$tgt" "$merged" 2>/dev/null || true
   rm -f "$merged"
   echo
 }
 
-cmd_sync_help() {
+cmd_update_help() {
   cat <<'EOF'
-llm sync — steady-state update of .llm/ from the framework source
+llm update — update an installed .llm/ tree + skills + slash commands
 
 Usage:
-  llm sync [<path>] [--framework <name>] [--from <path|git-url>] [--keep-prose] [--apply]
+  llm update [<path>] [--framework <name>] [--from <path|git-url>] [--keep-prose] [--apply]
 
 Arguments:
   <path>         optional path filter, relative to .llm/. May be a directory
-                 (e.g. `templates`, `specs`) to scope the sync to that subtree,
-                 or a single file (e.g. `intake/index.md`) to sync just that
-                 file. Adopter-owned paths (no framework-source counterpart)
-                 are rejected with a clear message.
+                 (e.g. `templates`, `specs`) to scope the .llm/ update to that
+                 subtree, or a single file (e.g. `intake/index.md`). Adopter-
+                 owned paths (no framework source counterpart) are rejected.
 
 Options:
   --from <src>   path to a dot-llm checkout, or a git URL to clone shallowly
                  (default: the checkout this `llm` script was sourced from).
   --keep-prose   keep the adopter's prose instead of taking it from the source.
-                 Prints a per-file warning: framework rule updates are NOT
-                 applied and the tree may diverge from its spec.
+                 Prints a per-file warning when framework prose is skipped.
   --apply        apply the merge mechanically (preserve frontmatter values and
-                 tag bodies, take prose from source, add missing markers).
+                 tag bodies, take prose from source, add missing markers) AND
+                 replace skills + slash commands from the source.
                  Without it, prints a structured per-file review for the LLM.
+
+Skills and commands (always applied with --apply, never in dry-run):
+  Skills (target/.llm/skills/) and slash commands (parent/.claude/commands/)
+  are framework-owned artifacts. --apply replaces them wholesale from the
+  source checkout. Deprecated items (locally present, absent from source) are
+  listed but NOT removed — remove them manually after review.
 
 Flavor detection:
   The framework flavor is read from the `flavor:` field in .llm/schema.yaml
@@ -285,51 +264,42 @@ Per-file model (v3):
                   for a semantic check. Bodies are never rewritten mechanically.
   • Prose       — taken FROM SOURCE by default (--keep-prose to retain local).
 
-Only "both-sides" files are touched: framework-shipped files that also exist
-locally are synced; a starter file absent locally is created; adopter-created
-entities have no source counterpart and are left untouched.
-
 Version gate:
   If the source `version:` differs from the local `framework-version:`, this is
-  a MIGRATION, not a sync. The command refuses and points to the llm-cli skill's
-  v2 → v3 migration procedure.
-
-After applying anything touching index.md or schema.yaml, bump
-framework-version in .llm/index.md to match the source. The validator enforces
-equality on the next run.
+  a MIGRATION, not an update. The command refuses and points to the llm-cli
+  skill's migration procedure.
 
 Examples:
-  llm sync                          dry-run from the active checkout
-  llm sync --apply                  apply the merge to every changed file
-  llm sync templates --apply        only sync templates/
-  llm sync intake/index.md          review just one file
-  llm sync --keep-prose --apply     apply, but keep local prose (warns)
+  llm update                          dry-run from the active checkout
+  llm update --apply                  apply the merge + replace skills/commands
+  llm update templates --apply        only update templates/
+  llm update intake/index.md          review just one file
+  llm update --keep-prose --apply     apply, but keep local prose (warns)
 EOF
 }
 
-cmd_sync() {
+cmd_update() {
   local from="" apply=0 keep_prose=0 path_filter=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --from)       from="${2:-}"; shift 2 ;;
       --apply)      apply=1; shift ;;
       --keep-prose) keep_prose=1; shift ;;
-      help|-h|--help) cmd_sync_help; return 0 ;;
-      -*)           red "unknown flag: $1"; cmd_sync_help; return 2 ;;
+      help|-h|--help) cmd_update_help; return 0 ;;
+      -*)           red "unknown flag: $1"; cmd_update_help; return 2 ;;
       *)
         if [[ -z "$path_filter" ]]; then path_filter="${1%/}"
-        else red "unexpected arg: $1"; cmd_sync_help; return 2; fi
+        else red "unexpected arg: $1"; cmd_update_help; return 2; fi
         shift ;;
     esac
   done
 
-  # Resolve flavor from the installed schema.yaml (flavor: field). Falls back
-  # to `base` if the field is absent (pre-flavor installs / manual setups).
+  # Resolve flavor from the installed schema.yaml.
   local flavor
   flavor=$(awk '/^flavor:[[:space:]]/ {print $2; exit}' "$SCHEMA" 2>/dev/null || true)
   : "${flavor:=base}"
 
-  # 1) Resolve source root (the dot-llm checkout)
+  # 1) Resolve source root (the dot-llm checkout).
   local source_root tmpdir=""
   if [[ -z "$from" ]]; then
     if [[ -f "$SCRIPT_DIR/llm" && -d "$SCRIPT_DIR/frameworks" ]]; then
@@ -356,7 +326,7 @@ cmd_sync() {
     return 1
   fi
 
-  # 2) Resolve source flavor — all flavors (including base) live under frameworks/.
+  # 2) Resolve source flavor.
   local source_framework
   source_framework="$source_root/frameworks/$( [[ "$flavor" == "base" ]] && echo "__base" || echo "$flavor" )"
   if [[ ! -d "$source_framework" ]]; then
@@ -365,22 +335,22 @@ cmd_sync() {
   fi
   local source_schema="$source_framework/schema.yaml"
 
-  # 2) Pre-flight: target must be installed
+  # 3) Pre-flight: target must be installed.
   if [[ ! -f "$DOT_LLM_DIR/index.md" || ! -f "$SCHEMA" ]]; then
     red "✗ target $DOT_LLM_DIR is not an installed framework tree (missing index.md or schema.yaml)"
     return 1
   fi
 
-  # 3) Version gate — mismatch means migration, not steady-state sync.
+  # 4) Version gate.
   local source_version target_version
   source_version=$(awk '/^version:[[:space:]]/ {print $2; exit}' "$source_schema")
   target_version=$(awk '/^---$/{c++; if(c==2) exit; next} c==1 && /^framework-version:[[:space:]]/ {print $2; exit}' "$DOT_LLM_DIR/index.md")
   if [[ -n "$source_version" && -n "$target_version" && "$source_version" != "$target_version" ]]; then
-    red "✗ version mismatch — this is a MIGRATION, not a sync."
+    red "✗ version mismatch — this is a MIGRATION, not an update."
     yellow "  source framework version: $source_version"
     yellow "  local framework-version:  $target_version"
     say ""
-    say "Steady-state sync only runs when both versions match. To upgrade this"
+    say "Steady-state update only runs when both versions match. To upgrade this"
     say "tree, follow the v$target_version → v$source_version migration procedure in the"
     say "llm-cli skill (schema first → folders → frontmatter → tags → bump)."
     return 1
@@ -391,70 +361,130 @@ cmd_sync() {
   say "Schema reference for reconciliation: $SCHEMA"
   say ""
 
-  # 4) Discover both-sides candidates by walking the source framework dir.
-  #    A path filter (dir or file) restricts the set.
+  # Override SKILLS_SRC and COMMANDS_SRC to point at the resolved source root
+  # when --from was given, so the helpers pick up the right artifacts.
+  local skills_src_effective="${source_root}/skills"
+  local commands_src_effective="${source_root}/commands"
+  [[ -d "$SKILLS_SRC" && "$source_root" == "$SCRIPT_DIR" ]] && skills_src_effective="$SKILLS_SRC"
+  [[ -d "$COMMANDS_SRC" && "$source_root" == "$SCRIPT_DIR" ]] && commands_src_effective="$COMMANDS_SRC"
+
+  local parent
+  parent=$(dirname "$DOT_LLM_DIR")
+
+  # 5) Discover both-sides candidates by walking the source framework dir.
   local rels=() rel
   while IFS= read -r rel; do
     rel="${rel#"$source_framework"/}"
-    # Skip backup files (matches gitignore `**/*.bkp.*`) — they shouldn't reach adopters.
     [[ "$rel" == *.bkp.* ]] && continue
+    # Never feed the framework's own skills/ subtree into the .llm/ file merge —
+    # those are handled separately by _framework_copy_skills below.
+    [[ "$rel" == skills/* ]] && continue
     if [[ -n "$path_filter" ]]; then
       [[ "$rel" == "$path_filter" || "$rel" == "$path_filter"/* ]] || continue
     fi
     rels+=("$rel")
   done < <(find "$source_framework" -type f \( -name '*.md' -o -name '*.yaml' \) | sort)
 
-  # If a path filter was given but matched nothing in the source, the path is
-  # adopter-owned (or wrong) — refuse rather than silently no-op.
   if [[ -n "$path_filter" && ${#rels[@]} -eq 0 ]]; then
     if [[ -e "$DOT_LLM_DIR/$path_filter" ]]; then
-      red "✗ '$path_filter' is adopter-owned — no framework source exists for it, so no sync applies."
-      yellow "  Only files shipped in the framework starter can be synced."
+      red "✗ '$path_filter' is adopter-owned — no framework source exists for it, so no update applies."
+      yellow "  Only files shipped in the framework starter can be updated."
     else
       red "✗ '$path_filter' matches nothing in the framework source."
     fi
     return 2
   fi
 
-  # 5) Compute the changed set (needs-attention per file).
+  # 6) Compute the changed set.
   local changed=()
   for rel in "${rels[@]}"; do
     local src="$source_framework/$rel" tgt="$DOT_LLM_DIR/$rel"
-    local has_fm=0; _sync_has_fm "$src" && has_fm=1
-    _sync_needs_attention "$src" "$tgt" "$keep_prose" "$has_fm" && changed+=("$rel")
+    local has_fm=0; _update_has_fm "$src" && has_fm=1
+    _update_needs_attention "$src" "$tgt" "$keep_prose" "$has_fm" && changed+=("$rel")
   done
 
   local total=${#changed[@]}
-  if [[ $total -eq 0 ]]; then
-    green "✓ Already in sync${path_filter:+ (path: $path_filter)}."
-    return 0
-  fi
 
-  # 6) --apply: mechanical merge.
+  # 7) --apply: mechanical merge of .llm/ files + replace skills/commands.
   if [[ $apply -eq 1 ]]; then
-    [[ $keep_prose -eq 1 ]] && yellow "⚠ --keep-prose: framework prose updates are NOT applied; the tree may diverge from its spec."
-    for rel in "${changed[@]}"; do
-      local src="$source_framework/$rel" tgt="$DOT_LLM_DIR/$rel"
-      mkdir -p "$(dirname "$tgt")"
-      if [[ ! -f "$tgt" ]]; then
-        cp "$src" "$tgt"; green "  ✓ created $rel"; continue
-      fi
-      [[ $keep_prose -eq 1 ]] && yellow "    (kept local prose) $rel"
-      local has_fm=0; _sync_has_fm "$src" && has_fm=1
-      _sync_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$tgt.tmp" && mv "$tgt.tmp" "$tgt"
-      green "  ✓ merged $rel"
-    done
+    [[ $keep_prose -eq 1 ]] && yellow "⚠ --keep-prose: framework prose updates are NOT applied; the tree may diverge."
+
+    # .llm/ file merge.
+    if [[ $total -gt 0 ]]; then
+      for rel in "${changed[@]}"; do
+        local src="$source_framework/$rel" tgt="$DOT_LLM_DIR/$rel"
+        mkdir -p "$(dirname "$tgt")"
+        if [[ ! -f "$tgt" ]]; then
+          cp "$src" "$tgt"; green "  ✓ created $rel"; continue
+        fi
+        [[ $keep_prose -eq 1 ]] && yellow "    (kept local prose) $rel"
+        local has_fm=0; _update_has_fm "$src" && has_fm=1
+        _update_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$tgt.tmp" && mv "$tgt.tmp" "$tgt"
+        green "  ✓ merged $rel"
+      done
+    else
+      green "✓ .llm/ files already in sync."
+    fi
+
+    # Skills: replace universal llm-* from the source checkout.
     say ""
-    # Note: no framework-version bump hint here — the version gate (step 3)
-    # refuses to run when source ≠ target, so after a successful sync the two
-    # are already equal.
-    green "✓ Sync complete ($total file(s))."
+    say "Skills:"
+    # Temporarily override SKILLS_SRC for the helper call when --from is set.
+    local _orig_skills_src="$SKILLS_SRC"
+    SKILLS_SRC="$skills_src_effective"
+    _framework_copy_skills "$DOT_LLM_DIR" "1"
+    SKILLS_SRC="$_orig_skills_src"
+
+    # Deprecated skills.
+    local depr_skills=()
+    while IFS= read -r name; do
+      [[ -n "$name" ]] && depr_skills+=("$name")
+    done < <(SKILLS_SRC="$skills_src_effective" _framework_deprecated_skills "$DOT_LLM_DIR" "$source_framework")
+    if [[ ${#depr_skills[@]} -gt 0 ]]; then
+      yellow ""
+      yellow "  Deprecated skills (locally present, absent from source — review and remove manually):"
+      for name in "${depr_skills[@]}"; do
+        yellow "    · $name"
+      done
+    fi
+
+    # Slash commands: replace from the source checkout.
+    say ""
+    say "Slash commands:"
+    local _orig_commands_src="$COMMANDS_SRC"
+    COMMANDS_SRC="$commands_src_effective"
+    _framework_copy_commands "$parent" "1"
+
+    # Deprecated commands.
+    local depr_cmds=()
+    while IFS= read -r rel_cmd; do
+      [[ -n "$rel_cmd" ]] && depr_cmds+=("$rel_cmd")
+    done < <(COMMANDS_SRC="$commands_src_effective" _framework_deprecated_commands "$parent")
+    if [[ ${#depr_cmds[@]} -gt 0 ]]; then
+      yellow ""
+      yellow "  Deprecated commands (locally present, absent from source — review and remove manually):"
+      for rel_cmd in "${depr_cmds[@]}"; do
+        local slash="${rel_cmd%.md}"; slash="/${slash//\//:}"
+        yellow "    · ${slash} ($parent/.claude/commands/$rel_cmd)"
+      done
+    fi
+    COMMANDS_SRC="$_orig_commands_src"
+
+    say ""
+    green "✓ Update complete."
     return 0
   fi
 
-  # 7) Default: structured per-file review for the LLM.
+  # 8) Default: structured per-file review (dry-run). Skills/commands not shown
+  #    in dry-run — they are always replaced deterministically with --apply.
+  if [[ $total -eq 0 ]]; then
+    green "✓ .llm/ files already in sync${path_filter:+ (path: $path_filter)}."
+    say "  Run with --apply to replace skills and slash commands from the source."
+    return 0
+  fi
+
   say "═══════════════════════════════════════════════════════════════════════"
-  say "Sync review (v$source_version steady state) — $total file(s) need attention"
+  say "Update review (v$source_version steady state) — $total file(s) need attention"
   say "═══════════════════════════════════════════════════════════════════════"
   say "Per file: frontmatter values are kept; tag bodies are preserved; prose"
   say "comes from source. Reconcile reported key/column drift against:"
@@ -466,8 +496,8 @@ cmd_sync() {
   for rel in "${changed[@]}"; do
     idx=$((idx + 1))
     local src="$source_framework/$rel" tgt="$DOT_LLM_DIR/$rel"
-    local has_fm=0; _sync_has_fm "$src" && has_fm=1
-    _sync_render "$idx" "$total" "$rel" "$src" "$tgt" "$has_fm" "$keep_prose"
+    local has_fm=0; _update_has_fm "$src" && has_fm=1
+    _update_render "$idx" "$total" "$rel" "$src" "$tgt" "$has_fm" "$keep_prose"
   done
 
   say "═══════════════════════════════════════════════════════════════════════"
@@ -476,14 +506,14 @@ cmd_sync() {
     [[ -f "$DOT_LLM_DIR/$rel" ]] && say "  [merge] $rel" || say "  [new]   $rel"
   done
   say ""
-  say "Re-run with --apply to merge mechanically, or edit files per the review."
+  say "Skills and slash commands will also be replaced from the source on --apply."
+  say "Re-run with --apply to merge .llm/ files and replace skills/commands."
   return 0
 }
 
-# Build the source file with the target's `<!-- llm:NAME -->` block bodies
-# injected. Writes to stdout. Markers absent in the target keep the source's
-# (typically empty) body. Args: src_file, tgt_file
-_sync_inject_blocks() {
+# Build the source file with the target's tag bodies injected.
+# Args: src_file, tgt_file
+_update_inject_blocks() {
   local src="$1" tgt="$2"
   local tmp; tmp=$(mktemp -d)
   local name

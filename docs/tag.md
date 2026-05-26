@@ -70,4 +70,4 @@ Skills exist when there's multi-step orchestration that doesn't fit in `--help`.
 
 - [`llm flow`](flow.md) — the other CLI primitive (file ops). Recipe skills compose both.
 - [`llm doctor`](doctor.md) — orphan check surfaces row drift that `llm tag set` fixes.
-- [`llm sync`](sync.md) — uses `llm tag` internally for marker-preserving merges.
+- [`llm update`](update.md) — uses `llm tag` internally for marker-preserving merges.

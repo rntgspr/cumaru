@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Bootstrap, grow, or advance a plan in `.llm/plans/` — new plan (tracker-backed or slug-based), add task, write handoff, draft delta, ready-for-archive. Drives the `llm-plan` skill.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <plan-id-or-action>

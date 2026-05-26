@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Close a plan — move `plans/<KEY>/` into `archive/<KEY>/`, absorb its delta into `specs/`, and clean up. Drives the `llm-archive` skill.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <PLAN-ID>

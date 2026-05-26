@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Bootstrap, deepen, or consolidate a `specs/<area>/`. Drives the `llm-specs` skill.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <area-or-action>

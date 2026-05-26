@@ -22,7 +22,7 @@ Subcommands
     tag set <file> <tag>                     replace the block body (stdin)
 
   State maintenance
-    sync [<path>] [--from <src>] [--keep-prose] [--apply]  steady-state update of .llm/ from the framework source
+    update [<path>] [--from <src>] [--keep-prose] [--apply]  update .llm/ files, skills, and slash commands from source
                                             (<path> = a dir or single file under .llm/; version mismatch ⇒ migration, see llm-cli skill)
     flow <src> <verb> [<dst>]               safe file ops inside .llm/ (verbs: move | copy | create | remove)
                                             (the LLM composes workflows from these via the llm-cli skill)

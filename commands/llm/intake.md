@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Run `llm intake <KEY>` to mirror a tracker issue under `.llm/intake/<KEY>/`, then refine the generated file per the embedded RAW instructions (Overview, EARS criteria, apps, bug sections) before deleting the block.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <JIRA-KEY>

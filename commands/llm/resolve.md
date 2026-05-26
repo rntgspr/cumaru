@@ -1,4 +1,5 @@
 ---
+version: 1
 description: Resolve in-flight git conflicts that fall inside `.llm/`. Diagnoses each file's class (shallow index / marker file / plain), proposes a fix, and asks before editing. Non-`.llm/` conflicts are listed but never touched.
 allowed-tools: Bash, Read, Edit, Write
 ---
@@ -16,7 +17,7 @@ allowed-tools: Bash, Read, Edit, Write
    | Class | Detection | Default proposal |
    |---|---|---|
    | Shallow index | path matches a pillar's `index.md` (any direct child dir of `.llm/`) | Union both sides' rows then re-emit the pillar tag via `llm tag set <pillar>/index.md <pillar> <new body>` to canonicalize the marker block. |
-   | Marker file | contains any `<!-- llm:NAME -->` block | Same heuristic as `/llm:sync`: inside the marker → keep local (`ours`); outside the marker → take incoming (`theirs`); flag prose with project-specific content outside markers for manual review. |
+   | Marker file | contains any `<!-- llm:NAME -->` block | Same heuristic as `/llm:update`: inside the marker → keep local (`ours`); outside the marker → take incoming (`theirs`); flag prose with project-specific content outside markers for manual review. |
    | Plain `.llm/` | neither of the above | Per-type heuristics below. |
    | **Marker-header anomaly** | the conflict markers cut across a `<!-- llm:NAME -->` opening/closing line, or the name differs between sides | **Out of scope.** Flag, skip, and tell the user `llm doctor` will surface the structural inconsistency afterwards. Do not attempt to repair marker structure here. |
 
@@ -28,7 +29,7 @@ allowed-tools: Bash, Read, Edit, Write
 4. **Synthesize** a one-paragraph report: in-flight op, total in-scope conflicts, count per class, and the out-of-scope list. State explicitly that out-of-scope files will not be touched.
 
 5. **Ask the user how to proceed**:
-   - `walk` — go file by file, confirming each fix. Same per-file confirmation rule as `/llm:sync` and `/llm:doctor`.
+   - `walk` — go file by file, confirming each fix. Same per-file confirmation rule as `/llm:update` and `/llm:doctor`.
    - `skip` — do nothing; exit with the report.
 
 6. **Walk** processes files in this order: Shallow index → Marker file → Plain `.llm/`. For each:
