@@ -1,20 +1,22 @@
 ---
 human_revised: false
 generated: false
-jira: <JIRA-ID>
+key: <KEY>
+tracker: jira
 type: epic
-status: <jira status>
+status: <tracker status>
 synced-at: <ISO datetime>
-apps: [newapp] | [legacy] | [mockoon] | [platform]
+apps: []
+relates: []
 ---
 
-# <Jira epic title>
+# <Tracker epic title>
 
 ## Overview
 
 Epic-level vision in English — what space this epic addresses and why it matters at this scale. 1-3 paragraphs. Stories under this epic break this down into deliverable units.
 
-Re-sync from Jira when the upstream description changes materially.
+Re-sync from the tracker when the upstream description changes materially.
 
 ## Stories
 
