@@ -1,19 +1,20 @@
-# cmd_tag.sh — read/write/audit <!-- llm:NAME --> marker blocks (v3 schema-aware).
+# cmd_tag.sh — read/write/audit <!-- llm:NAME --> marker blocks in .md files.
 #
 # Forms:
 #   llm tag                                 list tags declared for the root index.md (.llm/index.md)
 #   llm tag <file>                          list the file's actual tags + the schema's expected; flag diffs
-#   llm tag [<file>] get <tag>              print the body of <tag> in <file>; <file> defaults to root index.md
-#   llm tag [<file>] set <tag> [<content>]  replace the body of <tag>; content is positional or stdin
+#   llm tag [<file>] get <tag>              print the body of <tag>; <file> defaults to root index.md
+#   llm tag [<file>] set <tag> [<content>]  replace the body; content is positional or stdin
+#   llm tag get [<file>] <tag>              equivalent verb-first form
+#   llm tag set [<file>] <tag> [<content>]  equivalent verb-first form
 #
 # Schema-awareness (v3):
 #   The schema-declared tag list for a given file is resolved from:
 #     - root index.md  → keys of `root.tags`
 #     - <pillar>/index.md → keys of `root.entities.<pillar>.tags`
-#     - schema.yaml or any file → entries under `meta.tags` whose `host_file:`
-#       matches the file path literally, or `*` (catch-all, anywhere).
-#   Deeper-nested entity tags (e.g. handoff's `files` block) match via the
-#   `host_file: "*"` catch-all in meta.tags.
+#     - meta.tags entries whose `host_file:` matches the .md file literally.
+#   Wildcard meta tags (`host_file: "*"`) are allowed anywhere but are not
+#   expected in every file during audits.
 #
 # Strictness:
 #   `get` and `set` REFUSE if <tag> is not declared in the schema for <file>.
@@ -26,15 +27,18 @@ _TAG_NAME_RE='^[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)?$'
 
 cmd_tag_help() {
   cat <<'EOF'
-llm tag — read/write/audit <!-- llm:NAME --> marker blocks (v3 schema-aware)
+llm tag — read/write/audit <!-- llm:NAME --> marker blocks in .md files
 
 Usage:
   llm tag                                  list tags declared for the root index.md
   llm tag <file>                           list the file's actual tags + schema's expected; flag diffs
   llm tag [<file>] get <tag>               print the body of <tag>
   llm tag [<file>] set <tag> [<content>]   replace the body; content positional or stdin
+  llm tag get [<file>] <tag>               equivalent verb-first form
+  llm tag set [<file>] <tag> [<content>]   equivalent verb-first form
 
-<file> defaults to the root index.md (.llm/index.md).
+<file> must end in .md and is relative to DOT_LLM_DIR unless absolute.
+When omitted, <file> defaults to the root index.md (.llm/index.md).
 Tag name format: [a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)?  (the `llm:` prefix in
 the file is implicit — pass `specs` or `llm:specs`, both resolve to the same).
 
@@ -64,11 +68,15 @@ _tag_relpath() {
   fi
 }
 
-# Resolve the file argument — empty means root index.md.
+# Resolve the file argument — empty means root index.md. Explicit file paths
+# must be markdown files.
 _tag_resolve_file() {
   local arg="${1:-}"
   if [[ -z "$arg" ]]; then
     printf '%s\n' "$DOT_LLM_DIR/index.md"
+  elif [[ "$arg" != *.md ]]; then
+    red "✗ file paths passed to 'llm tag' must end in .md: $arg" >&2
+    return 2
   elif [[ "$arg" == /* ]]; then
     printf '%s\n' "$arg"
   elif [[ -f "$arg" ]]; then
@@ -117,15 +125,9 @@ _tag_schema_pillar_keys() {
 }
 
 # Emit each top-level meta.tags entry as "<name>\t<host_file>".
-# Nested forms (e.g. meta.tags.framework.apps.values) yield the dotted-colon
-# composite name (`framework:apps:values`).
 _tag_schema_meta_table() {
   [[ -f "$SCHEMA" ]] || return 0
   awk '
-    function flush_pending(   k) {
-      # If we left the meta.tags region with a pending key that we never matched
-      # a host_file for, drop it silently — its host is unknown.
-    }
     /^meta:/                          { st="meta"; depth_stack=""; next }
     st=="meta" && /^[^ ]/             { st=""; next }
     st=="meta" && /^  tags:[[:space:]]*$/ { st="mtags"; path=""; next }
@@ -134,9 +136,8 @@ _tag_schema_meta_table() {
     # 4-space indent: top-level meta.tags entry
     st=="mtags" && /^    [a-z"]/ {
       line=$0; sub(/^    /, "", line); gsub(/"/, "", line)
-      # Two forms: inline object `name: {host_file: X, ...}` or block (followed by deeper lines)
+      # Inline object: `name: {host_file: X, ...}`.
       if (match(line, /^[a-z][a-z0-9_-]*:[[:space:]]*\{/)) {
-        # inline object: extract name and host_file
         name=line; sub(/:.*$/, "", name)
         host=""
         if (match(line, /host_file:[[:space:]]*[^,}]+/)) {
@@ -146,52 +147,15 @@ _tag_schema_meta_table() {
         print name "\t" host
         next
       }
-      # block form: this is a branch (key:) — track the branch path
-      if (match(line, /^[a-z][a-z0-9_-]*:[[:space:]]*$/)) {
-        path=line; sub(/:.*$/, "", path)
-        depth=4
-        next
-      }
-    }
-    # Deeper levels under a tracked branch
-    st=="mtags" && /^      / && path != "" {
-      # 6-space indent: sub-branch or leaf
-      line=$0
-      indent=0
-      while (substr(line, indent+1, 1) == " ") indent++
-      content=substr(line, indent+1)
-      if (match(content, /^[a-z][a-z0-9_-]*:[[:space:]]*\{/)) {
-        name=content; sub(/:.*$/, "", name)
-        host=""
-        if (match(content, /host_file:[[:space:]]*[^,}]+/)) {
-          host=substr(content, RSTART+10, RLENGTH-10)
-          sub(/^[[:space:]]*/, "", host); sub(/[[:space:]]*$/, "", host)
-        }
-        # Compose dotted-colon name from the path stack
-        composite=path
-        # walk back from current depth: simplified — just join with ":"
-        sub(/^.*/, "", composite)
-        composite=path
-        # Track only one level of nesting for now (path is the parent branch)
-        # Actual composite = path + ":" + name
-        print path ":" name "\t" host
-        next
-      }
-      if (match(content, /^[a-z][a-z0-9_-]*:[[:space:]]*$/)) {
-        # deeper branch: extend path
-        sub_name=content; sub(/:.*$/, "", sub_name)
-        path=path ":" sub_name
-        next
-      }
     }
   ' "$SCHEMA"
 }
 
-# Emit the schema-declared tag NAMES for <file>. Combines:
+# Emit expected tag NAMES for <file>. Combines:
 #   - root.tags keys when file is the root index
 #   - root.entities.<pillar>.tags keys when file is a pillar's index.md
-#   - meta.tags entries whose host_file matches the file (literal) or `*`
-_tag_schema_tags_for_file() {
+#   - meta.tags entries whose host_file matches the .md file (literal)
+_tag_schema_expected_tags_for_file() {
   local file="$1"
   local rel
   rel=$(_tag_relpath "$file")
@@ -210,21 +174,32 @@ _tag_schema_tags_for_file() {
     fi
   fi
 
-  # 3) meta.tags entries with matching host_file
+  # 3) meta.tags entries with matching .md host_file
   local mname mhost basename_rel
   basename_rel=$(basename "$rel")
   while IFS=$'\t' read -r mname mhost; do
     [[ -z "$mname" ]] && continue
     case "$mhost" in
       "")        ;;   # no host_file → skip
-      '*')       printf '%s\n' "$mname" ;;       # catch-all
-      "$rel")    printf '%s\n' "$mname" ;;       # literal file path
-      "$basename_rel") printf '%s\n' "$mname" ;; # literal basename
+      "$rel")    [[ "$mhost" == *.md ]] && printf '%s\n' "$mname" ;;
+      "$basename_rel") [[ "$mhost" == *.md ]] && printf '%s\n' "$mname" ;;
     esac
   done < <(_tag_schema_meta_table)
-  # Explicit success — `while read … done < <(…)` returns 1 on EOF, and with
-  # `set -o pipefail` (active in the entry script) the downstream `grep` in
-  # callers gets the read's 1 instead of grep's own exit. Force 0 here.
+  return 0
+}
+
+_tag_schema_wildcard_tags() {
+  local mname mhost
+  while IFS=$'\t' read -r mname mhost; do
+    [[ -z "$mname" ]] && continue
+    [[ "$mhost" == '*' ]] && printf '%s\n' "$mname"
+  done < <(_tag_schema_meta_table)
+  return 0
+}
+
+_tag_schema_allowed_tags_for_file() {
+  _tag_schema_expected_tags_for_file "$1"
+  _tag_schema_wildcard_tags
   return 0
 }
 
@@ -235,7 +210,7 @@ _tag_schema_tags_for_file() {
 _tag_in_schema_for_file() {
   local file="$1" tag="$2"
   local tags
-  tags=$(_tag_schema_tags_for_file "$file")
+  tags=$(_tag_schema_allowed_tags_for_file "$file")
   grep -qxF "$tag" <<< "$tags"
 }
 
@@ -251,7 +226,9 @@ _tag_list() {
 
   # Schema-declared
   local schema_list
-  schema_list=$(_tag_schema_tags_for_file "$file" | sort -u)
+  schema_list=$(_tag_schema_expected_tags_for_file "$file" | sort -u)
+  local allowed_list
+  allowed_list=$(_tag_schema_allowed_tags_for_file "$file" | sort -u)
 
   if [[ -z "$schema_list" ]]; then
     yellow "Schema: no tags declared for this file."
@@ -279,11 +256,11 @@ _tag_list() {
   # Diff
   local only_schema only_file
   only_schema=$(comm -23 <(printf '%s\n' "$schema_list") <(printf '%s\n' "$actual_list") | grep -v '^$' || true)
-  only_file=$(comm -13 <(printf '%s\n' "$schema_list") <(printf '%s\n' "$actual_list") | grep -v '^$' || true)
+  only_file=$(comm -13 <(printf '%s\n' "$allowed_list") <(printf '%s\n' "$actual_list") | grep -v '^$' || true)
 
   if [[ -z "$only_schema" && -z "$only_file" ]]; then
     printf '\n'
-    green "✓ aligned — every declared tag is present, no extras."
+    green "✓ aligned — every expected tag is present, no extras."
     return 0
   fi
 
@@ -393,6 +370,8 @@ _tag_dispatch_verb() {
   [[ -n "$tag" ]] || { red "✗ $verb: missing <tag>"; cmd_tag_help; return 2; }
 
   file=$(_tag_resolve_file "$file")
+  local rc=$?
+  [[ $rc -eq 0 ]] || return $rc
   [[ -f "$file" ]] || { red "✗ file not found: $file"; return 1; }
 
   # Strip llm: prefix and validate name shape.
@@ -414,6 +393,88 @@ _tag_dispatch_verb() {
   esac
 }
 
+_tag_arg_is_md_file() {
+  [[ "${1:-}" == *.md ]]
+}
+
+_tag_arg_looks_like_file() {
+  local arg="${1:-}"
+  [[ "$arg" == */* || "$arg" == *.* ]]
+}
+
+_tag_parse_error_non_md_file() {
+  red "✗ file paths passed to 'llm tag' must end in .md: $1"
+  return 2
+}
+
+_tag_dispatch_verb_first() {
+  local verb="$1"; shift
+  local file="" tag="" content=""
+
+  [[ $# -gt 0 ]] || { red "✗ $verb: missing <tag>"; cmd_tag_help; return 2; }
+
+  if _tag_arg_is_md_file "$1"; then
+    file="$1"; shift
+    [[ $# -gt 0 ]] || { red "✗ $verb: missing <tag>"; cmd_tag_help; return 2; }
+  elif _tag_arg_looks_like_file "$1"; then
+    _tag_parse_error_non_md_file "$1"
+    return $?
+  fi
+
+  tag="$1"; shift
+  case "$verb" in
+    get)
+      [[ $# -eq 0 ]] || { red "✗ get: unexpected extra arg: $1"; cmd_tag_help; return 2; }
+      _tag_dispatch_verb get "$file" "$tag"
+      ;;
+    set)
+      if [[ $# -gt 1 ]]; then
+        red "✗ set: unexpected extra arg: $2"
+        cmd_tag_help
+        return 2
+      fi
+      content="${1-}"
+      _tag_dispatch_verb set "$file" "$tag" "$content"
+      ;;
+  esac
+}
+
+_tag_dispatch_file_first() {
+  local file="$1"; shift
+
+  if [[ $# -eq 0 ]]; then
+    local resolved
+    resolved=$(_tag_resolve_file "$file")
+    local rc=$?
+    [[ $rc -eq 0 ]] || return $rc
+    _tag_list "$resolved"
+    return $?
+  fi
+
+  local verb="$1"; shift
+  case "$verb" in
+    get)
+      [[ $# -gt 0 ]] || { red "✗ get: missing <tag>"; cmd_tag_help; return 2; }
+      [[ $# -eq 1 ]] || { red "✗ get: unexpected extra arg: $2"; cmd_tag_help; return 2; }
+      _tag_dispatch_verb get "$file" "$1"
+      ;;
+    set)
+      [[ $# -gt 0 ]] || { red "✗ set: missing <tag>"; cmd_tag_help; return 2; }
+      if [[ $# -gt 2 ]]; then
+        red "✗ set: unexpected extra arg: $3"
+        cmd_tag_help
+        return 2
+      fi
+      _tag_dispatch_verb set "$file" "$1" "${2:-}"
+      ;;
+    *)
+      red "✗ expected get or set after file path: $verb"
+      cmd_tag_help
+      return 2
+      ;;
+  esac
+}
+
 # ── main ──────────────────────────────────────────────────────────────────
 
 cmd_tag() {
@@ -425,30 +486,25 @@ cmd_tag() {
       return $?
       ;;
     get|set)
-      # First arg is a verb → file defaults to root index.md.
+      # First arg is a verb → file defaults to root index.md unless the next
+      # arg is an explicit .md file.
       local verb="$1"; shift
-      _tag_dispatch_verb "$verb" "" "${1:-}" "${2:-}"
+      _tag_dispatch_verb_first "$verb" "$@"
       return $?
       ;;
     *)
-      # First arg is a file (or schema-relative path).
-      local file="$1"; shift
-      if [[ $# -eq 0 ]]; then
-        _tag_list "$(_tag_resolve_file "$file")"
+      if _tag_arg_is_md_file "$1"; then
+        local file="$1"; shift
+        _tag_dispatch_file_first "$file" "$@"
         return $?
       fi
-      case "$1" in
-        get|set)
-          local verb="$1"; shift
-          _tag_dispatch_verb "$verb" "$file" "${1:-}" "${2:-}"
-          return $?
-          ;;
-        *)
-          red "✗ unexpected arg: $1"
-          cmd_tag_help
-          return 2
-          ;;
-      esac
+      if _tag_arg_looks_like_file "$1"; then
+        _tag_parse_error_non_md_file "$1"
+        return $?
+      fi
+      red "✗ expected a .md file path or get/set: $1"
+      cmd_tag_help
+      return 2
       ;;
   esac
 }

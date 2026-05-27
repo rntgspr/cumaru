@@ -2,16 +2,18 @@
 
 Read, write, and audit `<!-- llm:NAME --> ... <!-- /llm:NAME -->` marker blocks. **Schema-validated**: `get` and `set` refuse if `<tag>` is not declared for the target file. The mechanical primitive composed by recipe skills (`llm-archive`, `llm-explore`, `llm-plan`, `llm-specs`, `llm-intake`) — no skill of its own; semantics fit in this doc plus `llm tag --help`.
 
-## Usage — four forms
+## Usage
 
 ```
 llm tag                                  list tags declared for the root index.md
 llm tag <file>                           list the file's actual tags + schema's expected; flag diffs
 llm tag [<file>] get <tag>               print the body of <tag>
 llm tag [<file>] set <tag> [<content>]   replace the body; content positional or stdin
+llm tag get [<file>] <tag>               equivalent verb-first form
+llm tag set [<file>] <tag> [<content>]   equivalent verb-first form
 ```
 
-`<file>` defaults to the root `index.md` (`.llm/index.md`).
+`<file>` must end in `.md` and is relative to `DOT_LLM_DIR` unless absolute. When omitted, it defaults to the root `index.md` (`.llm/index.md`).
 
 Tag name format: `[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)?`. The `llm:` prefix in the file is implicit — pass `specs` or `llm:specs`, both resolve to the same.
 
@@ -24,7 +26,6 @@ Every `get` / `set` is validated against the schema:
   - `columns: [...]` → markdown table (the items are column headers; `!` marks a required column; LLM-diffable rows).
   - `description: "..."` → free prose; content stays related to the description.
   - `format: path-list` → bullet list of repo-relative `paths`.
-  - `format: yaml-list` → inline yaml list (used inside non-md files).
   - `number: <int|float>` → single scalar value (the seed).
 
 `list` views show schema's expectation alongside what's in the file.
@@ -43,12 +44,14 @@ llm tag get components
 
 # Get a pillar index's table.
 llm tag get plans/index.md plans
+llm tag plans/index.md get plans
 
 # Set a body via positional arg (multi-line works with $'...').
 llm tag set intake/index.md intake "$body"
+llm tag intake/index.md set intake "$body"
 
 # Set a body via stdin (preferred for long content).
-cat <<'EOF' | llm tag set specs/index.md specs
+cat <<'EOF' | llm tag specs/index.md set specs
 | Path | Summary | Apps | Depends-on | Relates |
 |------|---------|------|------------|---------|
 | auth/ | OIDC + session refresh | [api, webapp] | [crypto] | [users] |

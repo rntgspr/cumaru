@@ -24,8 +24,7 @@
 #          columns: [...]      → markdown table (items = column headers).
 #          description: "..."  → free prose; content stays related to the desc.
 #          format: path-list   → bullet list of repo-relative `paths`.
-#          format: yaml-list   → inline yaml list (used inside non-md files).
-#          host_file: <path|*> → explicit host for tags outside the node tree.
+#          host_file: <*.md|*> → explicit markdown host for tags outside the node tree.
 #          number: <int|float> → single scalar value (the number is the seed).
 # path:  RELATIVE to the parent node; implicit = the node's key; ending in a
 #        directory resolves to that dir's index.md.
@@ -106,23 +105,17 @@ root:
 meta:
   apps:
     values:
-      # <!-- llm:framework:apps:values -->
       # === project components — replace with your own ===
       # - webapp     # web-app/ component
       # - api        # api/ component
-      # <!-- /llm:framework:apps:values -->
       # === reserved (do not remove) ===
       - platform
       - meta
 
-  # Marker tags that live OUTSIDE the node tree (here: only the framework
-  # config marker on schema.yaml, and the files:* pattern). Pillar index tags
+  # Marker tags that live outside the node tree. Pillar index tags
   # are implicit (host_file derived from path) — when you add pillars under
   # root.entities, you don't need to declare their tags here.
   tags:
-    framework:
-      apps:
-        values: {host_file: schema.yaml, format: yaml-list}
     files: {host_file: "*", format: path-list}
 
   # Compatibility & versioning.
