@@ -1,19 +1,20 @@
 ---
 human_revised: false
 generated: false
-jira: <JIRA-ID>
+key: <KEY>
+tracker: jira
 type: story
-epic: <EPIC-ID>
-status: <jira status>
+status: <tracker status>
 synced-at: <ISO datetime>
-apps: [newapp] | [legacy] | [mockoon] | [newapp, legacy] | [platform]
+apps: []
+relates: []
 ---
 
-# <Jira story title>
+# <Tracker story title>
 
 ## Overview
 
-Story-level objective in English — what is being built and why it matters as a unit. 1-3 paragraphs. Refined as understanding sharpens; re-sync from Jira when the upstream description changes materially.
+Story-level objective in English — what is being built and why it matters as a unit. 1-3 paragraphs. Refined as understanding sharpens; re-sync from the tracker when the upstream description changes materially.
 
 ## Acceptance Criteria (EARS)
 
