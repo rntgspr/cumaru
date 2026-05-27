@@ -23,8 +23,7 @@
 #                                  marks a required column; LLM-diffable rows).
 #          description: "..."    → free prose; content must stay related to it.
 #          format: path-list     → bullet list of repo-relative `paths`.
-#          format: yaml-list     → inline yaml list (used inside non-md files).
-#          host_file: <path|*>   → explicit host (only needed for tags outside
+#          host_file: <*.md|*>   → explicit markdown host (only needed for tags outside
 #                                  the node tree, e.g. meta.tags. Node index tags
 #                                  derive host_file from the path automatically).
 #          number: <int|float>   → single scalar value (the number is the seed).
@@ -254,22 +253,16 @@ meta:
   # plumbing) are reserved and must remain.
   apps:
     values:
-      # <!-- llm:framework:apps:values -->
       # === project components — replace with your own ===
       # - webapp     # web-app/ component
       # - api        # api/ component
-      # <!-- /llm:framework:apps:values -->
       # === reserved (do not remove) ===
       - platform
       - meta
 
-  # Marker tags that live OUTSIDE the node tree (the root index.md tags —
-  # components, root — now live on `root` above). These carry an explicit
-  # host_file because it can't be derived from a node's path.
+  # Marker tags that live outside the node tree. The root index.md tags
+  # (components, root) live on `root` above.
   tags:
-    framework:
-      apps:
-        values: { host_file: schema.yaml, format: yaml-list }
     # Pattern tag — body is a bullet list of repo-relative paths. Used for aux
     # declarations and the handoff files block; can appear anywhere.
     files: { host_file: "*", format: path-list }
