@@ -574,7 +574,13 @@ _doctor_check_orphans() {
           [[ "$base" =~ ^\. ]] && continue
           reverse_found=0
           for cl in "${claimed[@]+"${claimed[@]}"}"; do
-            if [[ "$base" == "${cl%/}" || "${base%/}" == "${cl%/}" ]]; then
+            # Three forms a claimed path can take for the same entry:
+            #   "JET-1234"            → ${cl%/}  matches base directly
+            #   "JET-1234/"           → ${cl%/} = "JET-1234" matches base
+            #   "JET-1234/index.md"   → ${cl%%/*} = "JET-1234" matches base
+            # Without the third check a link to `path/index.md` would cause
+            # the directory to be falsely reported as an orphan file.
+            if [[ "$base" == "${cl%/}" || "${base%/}" == "${cl%/}" || "$base" == "${cl%%/*}" ]]; then
               reverse_found=1
               break
             fi
