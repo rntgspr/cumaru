@@ -2,7 +2,7 @@
 human_revised: false
 generated: false
 key: <KEY>
-tracker: jira
+tracker: <tracker>
 type: story
 status: <tracker status>
 synced-at: <ISO datetime>
