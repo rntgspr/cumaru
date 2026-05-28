@@ -80,6 +80,31 @@ Examples:
 EOF
 }
 
+# Read the first tracker from the intake pillar's index.md (tracker: [jira, ...]).
+# Echoes the tracker name (e.g. "jira"); returns 1 if the field is missing.
+_intake_read_tracker() {
+  local idx="$DOT_LLM_DIR/intake/index.md"
+  [[ -f "$idx" ]] || { red "✗ $idx not found — run 'llm install' first"; return 1; }
+  local name
+  name=$(awk '
+    /^---$/ { c++; if (c==2) exit; next }
+    c==1 && /^tracker:[[:space:]]*\[/ {
+      val=$0
+      sub(/^tracker:[[:space:]]*\[/, "", val)
+      sub(/,.*$/, "", val)
+      sub(/\].*$/, "", val)
+      sub(/^[[:space:]]*/, "", val); sub(/[[:space:]]*$/, "", val)
+      gsub(/"/, "", val)
+      print val; exit
+    }
+  ' "$idx")
+  if [[ -z "$name" ]]; then
+    red "✗ tracker: not declared in $idx — add e.g. 'tracker: [jira]' to its frontmatter"
+    return 1
+  fi
+  printf '%s\n' "$name"
+}
+
 cmd_intake() {
   local key="${1:-}"
   case "$key" in
@@ -91,6 +116,20 @@ cmd_intake() {
     set -a; . ./.env; set +a
   fi
 
+  if [[ ! -d "$DOT_LLM_DIR" ]]; then
+    red "✗ $DOT_LLM_DIR not found — run 'llm install' first"
+    return 1
+  fi
+
+  # 2) Resolve tracker from the pillar index; gate on supported adapters.
+  local tracker_name
+  tracker_name=$(_intake_read_tracker) || return 1
+  case "$tracker_name" in
+    jira) ;;
+    *) red "✗ tracker '$tracker_name' is not yet supported (only 'jira' is wired today)"; return 1 ;;
+  esac
+
+  # 3) Jira adapter: validate credentials and tools.
   for var in ATLASSIAN_DOMAIN ATLASSIAN_EMAIL ATLASSIAN_API_TOKEN; do
     if [[ -z "${!var:-}" ]]; then
       red "✗ missing $var (set in env or in .env at project root)"
@@ -101,10 +140,6 @@ cmd_intake() {
   command -v curl >/dev/null || { red "✗ curl not found"; return 1; }
   command -v jq   >/dev/null || { red "✗ jq not found — brew install jq"; return 1; }
 
-  if [[ ! -d "$DOT_LLM_DIR" ]]; then
-    red "✗ $DOT_LLM_DIR not found — run 'llm install' first"
-    return 1
-  fi
 
   # 2) Fetch from Jira (API v2 returns description as plain string)
   local url="https://${ATLASSIAN_DOMAIN}.atlassian.net/rest/api/2/issue/${key}"
@@ -187,11 +222,11 @@ cmd_intake() {
     existed=1
     # Refresh status / synced-at; preserve everything else.  If `tracker:` is
     # missing (e.g. an item created before the v3 field), add it.
-    awk -v new_status="$status" -v new_synced="$synced_at" '
+    awk -v new_status="$status" -v new_synced="$synced_at" -v tracker_name="$tracker_name" '
       BEGIN { fm_count=0; in_fm=0; saw_tracker=0 }
       /^---$/ {
         fm_count++; in_fm=(fm_count==1)
-        if (fm_count==2 && saw_tracker==0) print "tracker: jira"
+        if (fm_count==2 && saw_tracker==0) print "tracker: " tracker_name
         print; next
       }
       in_fm && /^tracker:[[:space:]]/    { saw_tracker=1; print; next }
@@ -207,7 +242,7 @@ cmd_intake() {
         /END.*RAW -->/    { skip=0; next }
         !skip { print }
       ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
-      _intake_append_raw_block "$target_file" "$summary" "$issuetype" "$status" "$description"
+      _intake_append_raw_block "$target_file" "$summary" "$issuetype" "$status" "$description" "$tracker_name"
     fi
   else
     # First-time creation from the type-specific body template.
@@ -223,7 +258,7 @@ cmd_intake() {
       echo "human_revised: false"
       echo "generated: false"
       echo "key: $key"
-      echo "tracker: jira"
+      echo "tracker: $tracker_name"
       [[ -n "$jtype" ]] && echo "type: $jtype"
       echo "status: $status"
       echo "synced-at: $synced_at"
@@ -243,7 +278,7 @@ cmd_intake() {
       ' "$src_template"
     } > "$target_file"
 
-    _intake_append_raw_block "$target_file" "$summary" "$issuetype" "$status" "$description"
+    _intake_append_raw_block "$target_file" "$summary" "$issuetype" "$status" "$description" "$tracker_name"
   fi
 
   # 6) Console output: minimal
@@ -261,7 +296,7 @@ cmd_intake() {
 # for an LLM to refine the file and then delete the block. Instructions are
 # tailored to the issuetype.
 _intake_append_raw_block() {
-  local file="$1" title="$2" itype="$3" istatus="$4" desc="$5"
+  local file="$1" title="$2" itype="$3" istatus="$4" desc="$5" tracker_name="${6:-jira}"
 
   local steps=""
   case "$itype" in
@@ -304,7 +339,7 @@ _intake_append_raw_block() {
   # description containing `${VAR}` or backtick sequences would be expanded
   # unexpectedly in an unquoted <<EOF heredoc.
   {
-    printf '\n<!-- BEGIN RAW (tracker: jira)\n'
+    printf '\n<!-- BEGIN RAW (tracker: %s)\n' "$tracker_name"
     printf 'INSTRUCTION FOR LLM:\n'
     printf 'This is the unedited tracker source. Use it to refine the file above:\n'
     printf '%s\n' "$steps"
