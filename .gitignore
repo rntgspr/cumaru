@@ -4,5 +4,7 @@
 **/*.bkp.*
 .env
 CLAUDE.md
+AGENTS.md
 .claude
+.agents
 .llm
