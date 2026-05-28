@@ -2,9 +2,9 @@
 human_revised: false
 generated: false
 key: <KEY>
-tracker: <tracker>
+tracker: <TRACKER>
 type: story
-status: <tracker status>
+status: <TRACKER STATUS>
 synced-at: <ISO datetime>
 apps: []
 relates: []
