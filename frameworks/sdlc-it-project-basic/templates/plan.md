@@ -1,7 +1,7 @@
 ---
 human_revised: false
 generated: false
-jira: <JIRA-ID>            # optional — omit for slug-based plans
+key: <KEY>                 # optional — omit for slug-based plans
 type: task | story | bug | spike   # optional — omit for slug-based plans
 epic: <EPIC-ID>            # optional
 story: <STORY-ID>          # optional
@@ -16,10 +16,10 @@ aux: []
 
 # <Plan title — short, descriptive>
 
-<!-- ===== Slug-based plans (no Jira) ===== -->
-<!-- Include these two sections only when the plan is slug-based (no `jira:` in
-     frontmatter). Jira-backed plans defer Overview and Acceptance Criteria to
-     intake/tickets/<KEY>/index.md and do not repeat them here. -->
+<!-- ===== Slug-based plans (no tracker key) ===== -->
+<!-- Include these two sections only when the plan is slug-based (no `key:` in
+     frontmatter). Tracker-backed plans defer Overview and Acceptance Criteria to
+     intake/<KEY>/index.md and do not repeat them here. -->
 
 ## Overview
 
