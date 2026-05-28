@@ -229,13 +229,21 @@ cmd_update_help() {
 llm update — update an installed .llm/ tree + skills + slash commands
 
 Usage:
-  llm update [<path>] [--framework <name>] [--from <path|git-url>] [--keep-prose] [--apply]
+  llm update [<path>] [--from <path|git-url>] [--keep-prose] [--apply]
+  llm update skills   [--from <path|git-url>] [--apply]
+  llm update commands [--from <path|git-url>] [--apply]
 
 Arguments:
   <path>         optional path filter, relative to .llm/. May be a directory
                  (e.g. `templates`, `specs`) to scope the .llm/ update to that
                  subtree, or a single file (e.g. `intake/index.md`). Adopter-
                  owned paths (no framework source counterpart) are rejected.
+  skills         update ONLY the skills (.llm/skills/) from the source.
+                 Without --apply, prints a dry-run summary. With --apply, replaces
+                 skills wholesale. Skips the .llm/ file merge and commands.
+  commands       update ONLY the slash commands (.claude/commands/) from source.
+                 Without --apply, prints a dry-run summary. With --apply, replaces
+                 commands wholesale. Skips the .llm/ file merge and skills.
 
 Options:
   --from <src>   path to a dot-llm checkout, or a git URL to clone shallowly
@@ -275,6 +283,10 @@ Examples:
   llm update templates --apply        only update templates/
   llm update intake/index.md          review just one file
   llm update --keep-prose --apply     apply, but keep local prose (warns)
+  llm update skills                   dry-run: show which skills would change
+  llm update skills --apply           replace only skills
+  llm update commands                 dry-run: show which commands would change
+  llm update commands --apply         replace only slash commands
 EOF
 }
 
@@ -375,7 +387,60 @@ cmd_update() {
   local parent
   parent=$(dirname "$DOT_LLM_DIR")
 
-  # 5) Discover both-sides candidates by walking the source framework dir.
+  # 5a) Special targets: `skills` and `commands` bypass the .llm/ file merge.
+  if [[ "$path_filter" == "skills" || "$path_filter" == "commands" ]]; then
+    if [[ $apply -eq 0 ]]; then
+      if [[ "$path_filter" == "skills" ]]; then
+        say "Dry-run — skills that would be replaced:"
+        find "$skills_src_effective" -mindepth 1 -maxdepth 1 -type d | sort | while read -r d; do
+          say "  · $(basename "$d")"
+        done
+      else
+        say "Dry-run — slash commands that would be replaced:"
+        find "$commands_src_effective" -name '*.md' | sort | while read -r f; do
+          local rel="${f#"$commands_src_effective"/}"
+          local slash="/${rel%.md}"; slash="${slash//\//:}"
+          say "  · $slash"
+        done
+      fi
+      say "Re-run with --apply to apply."
+      return 0
+    fi
+    if [[ "$path_filter" == "skills" ]]; then
+      say "Skills:"
+      local _orig_skills_src="$SKILLS_SRC"
+      SKILLS_SRC="$skills_src_effective"
+      _framework_copy_skills "$DOT_LLM_DIR" "1"
+      local depr_skills=()
+      while IFS= read -r name; do [[ -n "$name" ]] && depr_skills+=("$name"); done \
+        < <(SKILLS_SRC="$skills_src_effective" _framework_deprecated_skills "$DOT_LLM_DIR" "$source_framework")
+      SKILLS_SRC="$_orig_skills_src"
+      if [[ ${#depr_skills[@]} -gt 0 ]]; then
+        yellow "  Deprecated skills (locally present, absent from source — review and remove manually):"
+        for name in "${depr_skills[@]}"; do yellow "    · $name"; done
+      fi
+    else
+      say "Slash commands:"
+      local _orig_commands_src="$COMMANDS_SRC"
+      COMMANDS_SRC="$commands_src_effective"
+      _framework_copy_commands "$parent" "1"
+      local depr_cmds=()
+      while IFS= read -r rel_cmd; do [[ -n "$rel_cmd" ]] && depr_cmds+=("$rel_cmd"); done \
+        < <(COMMANDS_SRC="$commands_src_effective" _framework_deprecated_commands "$parent")
+      COMMANDS_SRC="$_orig_commands_src"
+      if [[ ${#depr_cmds[@]} -gt 0 ]]; then
+        yellow "  Deprecated commands (locally present, absent from source — review and remove manually):"
+        for rel_cmd in "${depr_cmds[@]}"; do
+          local slash="${rel_cmd%.md}"; slash="/${slash//\//:}"
+          yellow "    · ${slash} ($parent/.claude/commands/$rel_cmd)"
+        done
+      fi
+    fi
+    green "✓ Update complete."
+    return 0
+  fi
+
+  # 5b) Discover both-sides candidates by walking the source framework dir.
   local rels=() rel
   while IFS= read -r rel; do
     rel="${rel#"$source_framework"/}"
