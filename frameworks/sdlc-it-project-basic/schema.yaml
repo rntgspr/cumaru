@@ -139,14 +139,23 @@ root:
     archive:
       tags:
         # Lean index — dropped Story/Epic (drill in) and Completed (timestamp).
-        archive: {columns: [Key, Type, Apps, Summary]}
+        # Absorbed-in: <commit-sha> records the absorption commit; populated in
+        # archive flow Phase 4. Rows pre-migration may have it empty (in-flight)
+        # or absent (legacy); both states are tolerated by doctor.
+        archive: {columns: [Key, Type, Apps, Summary, Absorbed-in]}
       entities:
         plan:
           # An archived plan IS the plan's index.md: the archive flow copies it,
           # forces status: done, and adds completed-at + delta. Inherits the
           # plan's frontmatter (scope, type, epic, story, key, aux).
+          #
+          # The archive plan directory is EPHEMERAL: created in archive flow
+          # Phase 1, pruned in Phase 4 after spec absorption. Only the row in
+          # archive/index.md (with Absorbed-in: <sha>) survives. The `delta`
+          # frontmatter is optional because it's only meaningful while the
+          # directory exists.
           path: <PLAN-ID>
-          frontmatter: [generated!, scope!, status!, summary!, apps!, completed-at!, delta!, key, type, epic, story, aux]
+          frontmatter: [generated!, scope!, status!, summary!, apps!, completed-at!, delta, key, type, epic, story, aux]
           entities:
             delta:
               path: delta.md
