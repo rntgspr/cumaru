@@ -2,15 +2,15 @@
 version: 1
 description: Run `llm intake <KEY>` to mirror a tracker issue under `.llm/intake/<KEY>/`, then refine the generated file per the embedded RAW instructions (Overview, EARS criteria, apps, bug sections) before deleting the block.
 allowed-tools: Bash, Read, Edit, Write
-argument-hint: <JIRA-KEY>
+argument-hint: <TRACKER-KEY>
 ---
 
-Argument: `$ARGUMENTS` is the Jira key (e.g. `JET-1234`). If empty, ask the user for it before doing anything.
+Argument: `$ARGUMENTS` is the tracker key (e.g. `JET-1234`). If empty, ask the user for it before doing anything.
 
 1. **Fetch and mirror.** Run `llm intake $ARGUMENTS`. Capture stdout — the last `✓ created <path>` or `✓ refreshed <path>` line gives the file you will refine. If the CLI fails (missing env vars, HTTP error, etc.), surface the message verbatim and stop.
 
 2. **Decide whether refinement is needed.**
-   - Read the resulting file. Locate the `<!-- BEGIN RAW (tracker: jira) ... END RAW -->` block.
+   - Read the resulting file. Locate the `<!-- BEGIN RAW (tracker: <name>) ... END RAW -->` block.
    - If the block is **absent**, the file has already been refined in a previous pass. Report this to the user and exit — do not re-edit body content (the CLI does not re-inject the block on re-sync once it has been removed).
    - If the block is **present**, continue.
 
@@ -31,7 +31,7 @@ Argument: `$ARGUMENTS` is the Jira key (e.g. `JET-1234`). If empty, ask the user
 
    **If no value in `meta.apps.values` matches the ticket** (e.g. the project still has only the reserved `platform`/`meta` and never declared its own components, or the work touches a component not yet listed), **leave `apps: []`** and tell the user: "the schema does not yet have a value that fits this ticket — populate `.llm/schema.yaml` under `meta.apps.values` with the component(s) for this project, then re-run `/llm:intake $ARGUMENTS` (or edit `apps:` by hand)." Do not invent a value, do not fall back to `platform` unless the ticket genuinely is cross-component infrastructure, and do not stop the rest of the refinement over this — the block deletion and other sections proceed regardless.
 
-7. **Drop the RAW block.** Once every section in step 5 and the `apps:` field in step 6 are applied and confirmed, remove the entire `<!-- BEGIN RAW (tracker: jira) ... END RAW -->` block (including the blank line above it that the CLI inserted). This signals to future `llm intake $ARGUMENTS` re-syncs that the file is refined — only `status:` and `synced-at:` will be touched after this.
+7. **Drop the RAW block.** Once every section in step 5 and the `apps:` field in step 6 are applied and confirmed, remove the entire `<!-- BEGIN RAW (tracker: <name>) ... END RAW -->` block (including the blank line above it that the CLI inserted). This signals to future `llm intake $ARGUMENTS` re-syncs that the file is refined — only `status:` and `synced-at:` will be touched after this.
 
 8. **Update the intake table.** A new `intake/<KEY>/` entity needs its row in `intake/index.md`. Read the current table (`llm tag get intake/index.md intake`), append a row `| <KEY> | <type> | <title> | <status> | <relates joined with comma or `—`> |`, and write back via `llm tag set intake/index.md intake <new body>`. (Skip this step on a re-sync of an item that already had a row.)
 
