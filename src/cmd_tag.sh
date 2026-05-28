@@ -125,18 +125,23 @@ _tag_schema_pillar_keys() {
 }
 
 # Emit each top-level meta.tags entry as "<name>\t<host_file>".
+# Handles both inline and block forms:
+#   inline: components: {host_file: "index.md", ...}
+#   block:  components:
+#             host_file: "index.md"
 _tag_schema_meta_table() {
   [[ -f "$SCHEMA" ]] || return 0
   awk '
-    /^meta:/                          { st="meta"; depth_stack=""; next }
-    st=="meta" && /^[^ ]/             { st=""; next }
-    st=="meta" && /^  tags:[[:space:]]*$/ { st="mtags"; path=""; next }
-    st=="mtags" && /^  [^ ]/          { st="meta" }
+    /^meta:/                              { st="meta"; pending_name=""; next }
+    st=="meta" && /^[^ ]/                 { st=""; next }
+    st=="meta" && /^  tags:[[:space:]]*$/ { st="mtags"; next }
+    st=="mtags" && /^  [^ ]/              { st="meta" }
 
-    # 4-space indent: top-level meta.tags entry
+    # 4-space: top-level meta.tags entry. Reset any in-progress block form.
     st=="mtags" && /^    [a-z"]/ {
+      pending_name=""
       line=$0; sub(/^    /, "", line); gsub(/"/, "", line)
-      # Inline object: `name: {host_file: X, ...}`.
+      # Inline object: name: {host_file: X, ...}
       if (match(line, /^[a-z][a-z0-9_-]*:[[:space:]]*\{/)) {
         name=line; sub(/:.*$/, "", name)
         host=""
@@ -147,6 +152,19 @@ _tag_schema_meta_table() {
         print name "\t" host
         next
       }
+      # Block form: name: with no inline value — children follow at deeper indent.
+      if (match(line, /^[a-z][a-z0-9_-]*:[[:space:]]*$/)) {
+        pending_name=line; sub(/:.*$/, "", pending_name)
+        next
+      }
+    }
+    # 6-space: child key of a block-form entry — capture host_file when present.
+    st=="mtags" && pending_name != "" && /^      / && /host_file:[[:space:]]/ {
+      host=$0; sub(/^[[:space:]]*host_file:[[:space:]]*/, "", host)
+      sub(/[[:space:]]+$/, "", host)
+      print pending_name "\t" host
+      pending_name=""
+      next
     }
   ' "$SCHEMA"
 }

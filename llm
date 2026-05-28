@@ -148,6 +148,8 @@ case "$sub" in
       case "$arg" in
         -h|--help|help) cmd_doctor_help; exit 0 ;;
         --quiet)        QUIET=1 ;;
+        -*) red "Unknown flag: $arg"; cmd_doctor_help; exit 2 ;;
+        *)  red "Unexpected argument: $arg"; cmd_doctor_help; exit 2 ;;
       esac
     done
     cmd_doctor
