@@ -46,6 +46,21 @@ Followed by a summary line: `Summary: X error(s), Y warning(s), Z ok`.
 
 The schema-pass output is captured into a single `[✓]` / `[✗]` line at the orchestrator level — drilling into sub-pass detail only happens when there are errors.
 
+## Archive integrity tolerance
+
+The `archive/` pillar (SDLC flavor) uses an ephemeral-directory model — see the `llm-archive` skill. Doctor's orphan check (check #2) recognizes four combinations of row + directory state:
+
+| Row in `archive/index.md` | `archive/<KEY>/` on disk | Doctor verdict |
+|---|---|---|
+| Row carries `Absorbed-in: <sha>` | Directory absent | **OK** — expected post-prune state. Not an orphan. |
+| Row has no `Absorbed-in:` | Directory present | **OK** — in-flight archive, between Phase 1 and Phase 4. |
+| Row has no `Absorbed-in:` | Directory absent | **Error** — pruned without recording absorption. Investigate the missing SHA. |
+| Row carries `Absorbed-in: <sha>` | Directory present | **Warning** — recorded as absorbed but directory still on disk; expected pruned. |
+
+A separate frontmatter consequence: the archive entity's `delta:` frontmatter is optional (since v3) because it's only meaningful while the directory exists. A row with `Absorbed-in:` populated and no surviving directory will naturally have no `delta:` frontmatter to validate.
+
+Reverse check (dir on disk not claimed by any row) still warns — unattributed `archive/<KEY>/` directories are unusual whether or not the ephemeral model is in use.
+
 ## What doctor does NOT check (LLM's job)
 
 - **Workflow integrity** (tasks done without handoff, orphan delta-drafts after archive). These moved out of doctor in v3 — they're audited as part of recipe execution in the flavor's recipe skills (e.g. `llm-archive` for sdlc).

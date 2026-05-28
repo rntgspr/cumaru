@@ -39,7 +39,7 @@ When working in any session, frame the request against the pillars (the first fo
 
 - **`intake/`** — local mirror of Jira (epics, stories, tickets). Source of truth stays in Jira; this is a navigable index synced on demand.
 - **`plans/<PLAN-ID>/`** — execution plan for an active ticket or internal initiative. The Lead authors `index.md` and `t<N>.md`. The Dev writes `handoff-t<N>.md` and `delta-draft.md` inside the same directory; the Lead consumes them.
-- **`archive/<PLAN-ID>/`** — the Lead moves a plan here at close. Consult shallow `archive/index.md` only when historical context is needed; never load by default.
+- **`archive/` — what we did.** Completed plans, registered as rows in `archive/index.md` with `Absorbed-in: <sha>` pointing at the commit that applied the absorption. The `archive/<PLAN-ID>/` directory itself is **ephemeral** — created during archive flow, pruned after absorption. Never loaded by default; drill in by `git show <sha>`.
 - **`specs/<area>/`** — living spec of system areas. The Lead authors and refactors. Concerns split into per-concern files only when single-app and large; subareas (`specs/<area>/<subarea>/`) when a concern itself grows beyond a flat file and needs its own concerns; per-app split via `<component>.md` files only when content meaningfully diverges.
 - **`exploring/<slug>/`** — pre-plan ideas. Never loaded by default. Promote to `plans/` or drop when matured.
 
@@ -85,9 +85,15 @@ When a plan transitions to done:
    - Aux that explains the ticket → inline into `archive/<PLAN-ID>/index.md` under `## Appendix`.
    - Track destinations via `consolidated:` in the archived `index.md` frontmatter.
 8. Regenerate the shallow indexes by hand (until the CLI exists):
-   - `archive/index.md` — append the new row to the table.
+   - `archive/index.md` — append the new row to the table (leave `Absorbed-in` empty for now).
    - `plans/index.md` — remove the row.
    - `specs/index.md` — only if the area set changed.
+9. **Commit absorption and prune the archive directory.**
+   - `git add specs/ archive/ plans/` and commit with message `chore(.llm): absorb <KEY> delta into <areas>`.
+   - Capture the resulting commit SHA.
+   - Update `archive/index.md` row with `Absorbed-in: <sha>` (via `llm tag set`).
+   - `llm flow archive/<KEY> remove` and commit `chore(.llm): prune archive/<KEY>/ post-absorption`.
+   - The row in `archive/index.md` + the absorption commit are the durable record. Drill-in for verbose wording is `git show <sha>`.
 
 ## Conventions
 

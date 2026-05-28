@@ -456,7 +456,7 @@ _doctor_check_orphans() {
     indexes+=("$DOT_LLM_DIR/$p/index.md")
   done
 
-  local total_rows=0 total_files=0 total_missing=0
+  local total_rows=0 total_files=0 total_missing=0 total_arch_warns=0
   local report=()
   local idx anchor rel name body header
 
@@ -485,6 +485,21 @@ _doctor_check_orphans() {
       report+=("  Table: $name")
       report+=("    $header")
 
+      # Archive tag: locate the Absorbed-in column index (-1 if absent).
+      # Ephemeral-directory model — see docs/doctor.md "Archive integrity
+      # tolerance" and the llm-archive skill.
+      local absorbed_col=-1
+      if [[ "$name" == "archive" ]]; then
+        local header_cells h_trim i
+        IFS='|' read -ra header_cells <<< "$header"
+        for ((i = 0; i < ${#header_cells[@]}; i++)); do
+          h_trim="${header_cells[i]}"
+          h_trim="${h_trim#"${h_trim%%[![:space:]]*}"}"
+          h_trim="${h_trim%"${h_trim##*[![:space:]]}"}"
+          if [[ "$h_trim" == "Absorbed-in" ]]; then absorbed_col=$i; break; fi
+        done
+      fi
+
       local claimed=() row found cand label
       while IFS= read -r row; do
         [[ -z "$row" ]] && continue
@@ -505,16 +520,42 @@ _doctor_check_orphans() {
           fi
         done < <(_doctor_row_paths "$row")
 
+        # Extract Absorbed-in cell for archive rows (empty otherwise).
+        local absorbed_in=""
+        if [[ $absorbed_col -ge 0 ]]; then
+          local row_cells
+          IFS='|' read -ra row_cells <<< "$row"
+          if [[ ${#row_cells[@]} -gt $absorbed_col ]]; then
+            absorbed_in="${row_cells[absorbed_col]}"
+            absorbed_in="${absorbed_in#"${absorbed_in%%[![:space:]]*}"}"
+            absorbed_in="${absorbed_in%"${absorbed_in##*[![:space:]]}"}"
+          fi
+        fi
+
         if [[ -n "$found" ]]; then
-          report+=("    ✓ $found")
+          if [[ -n "$absorbed_in" ]]; then
+            # Row recorded as absorbed but directory still on disk — Phase 4
+            # prune is pending. Soft warning; not an error.
+            report+=("    ⚠ $found — recorded absorbed but directory still on disk; expected pruned")
+            total_arch_warns=$((total_arch_warns + 1))
+          else
+            report+=("    ✓ $found")
+          fi
           claimed+=("$found")
         else
-          label=$(_doctor_row_paths "$row" | head -1)
-          if [[ -z "$label" ]]; then
+          if [[ -n "$absorbed_in" ]]; then
+            # Post-prune state: row carries Absorbed-in: <sha>, directory is
+            # gone. Expected; not an orphan.
             label=$(printf '%s\n' "$row" | awk -F'|' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            report+=("    ✓ ${label:-?} (absorbed in ${absorbed_in:0:12})")
+          else
+            label=$(_doctor_row_paths "$row" | head -1)
+            if [[ -z "$label" ]]; then
+              label=$(printf '%s\n' "$row" | awk -F'|' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            fi
+            report+=("    ✗ ${label:-?} — orphan row (no file/dir on disk)")
+            total_rows=$((total_rows + 1))
           fi
-          report+=("    ✗ ${label:-?} — orphan row (no file/dir on disk)")
-          total_rows=$((total_rows + 1))
         fi
       done <<< "$body"
 
@@ -542,15 +583,16 @@ _doctor_check_orphans() {
     done < <(fm_block_list "$idx")
   done
 
-  if [[ $total_missing -eq 0 && $total_rows -eq 0 && $total_files -eq 0 ]]; then
+  if [[ $total_missing -eq 0 && $total_rows -eq 0 && $total_files -eq 0 && $total_arch_warns -eq 0 ]]; then
     _doctor_pass "Pillar tables aligned with disk (no orphans)"
     return
   fi
 
   local summary=""
-  [[ $total_missing -gt 0 ]] && summary+="${total_missing} missing index.md, "
-  [[ $total_rows    -gt 0 ]] && summary+="${total_rows} orphan row(s), "
-  [[ $total_files   -gt 0 ]] && summary+="${total_files} orphan file(s), "
+  [[ $total_missing    -gt 0 ]] && summary+="${total_missing} missing index.md, "
+  [[ $total_rows       -gt 0 ]] && summary+="${total_rows} orphan row(s), "
+  [[ $total_files      -gt 0 ]] && summary+="${total_files} orphan file(s), "
+  [[ $total_arch_warns -gt 0 ]] && summary+="${total_arch_warns} archive prune pending, "
   summary="${summary%, }"
 
   _doctor_warn_emit "Orphan check found drift: $summary" "$(printf '%s\n' "${report[@]}")"

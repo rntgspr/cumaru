@@ -14,6 +14,7 @@ Receita end-to-end para encerrar um `plans/<KEY>/`. Combina `llm flow` (file ops
 - `plans/<KEY>/delta-draft.md` exists.
 - Every `plans/<KEY>/t*.md` (excluindo `handoff-*`) tem `status: done` no frontmatter.
 - `archive/<KEY>/` does **not** exist yet.
+- `git` skill is installed (Phase 4 needs mutating `git add` / `git commit`). If absent, refuse with: "Phase 4 needs `--with git`. Re-install with `llm install --with git` or finish Phase 1–3 manually and skip Phase 4."
 
 If any check fails, surface to the user — don't auto-fix.
 
@@ -44,14 +45,40 @@ llm flow plans/<KEY> remove
 
 ## Phase 3 — re-emit archive/index.md row + verify
 
-1. Add the row to `archive/<KEY>` in `archive/index.md` via `llm tag set archive/index.md archive <new body>` (Key | Title | Completed | Delta | Scope).
+1. Add the row to `archive/<KEY>` in `archive/index.md` via `llm tag set archive/index.md archive <new body>` (Key | Type | Apps | Summary | Absorbed-in). `Absorbed-in` stays empty in this phase — it's populated in Phase 4 with the absorption commit SHA.
 2. Run `llm doctor`:
-   - Orphan check: row pointing at `plans/<KEY>/` should be gone; new row in `archive/` should resolve.
+   - Orphan check: row pointing at `plans/<KEY>/` should be gone; new row in `archive/` should resolve to the in-flight `archive/<KEY>/` directory.
    - File refs: `delta: delta.md` should resolve.
+
+## Phase 4 — Commit absorption and prune archive directory
+
+After Phase 3, the spec(s) carry the absorbed delta and `archive/index.md`
+has the new row. Commit and prune the directory; the row + commit SHA
+become the durable record.
+
+1. Stage and commit the absorption:
+   ```bash
+   git add specs/ archive/ plans/
+   git commit -m "chore(.llm): absorb <KEY> delta into <areas>"
+   ```
+2. Capture the commit SHA: `git rev-parse HEAD`.
+3. Re-emit the `<KEY>` row in `archive/index.md` with `Absorbed-in: <sha>`
+   via `llm tag set archive/index.md archive <new body>`.
+4. Prune the directory and commit:
+   ```bash
+   llm flow archive/<KEY> remove
+   git add archive/
+   git commit -m "chore(.llm): prune archive/<KEY>/ post-absorption"
+   ```
+5. Run `llm doctor` — should report no orphans.
+
+**Ghost deltas** (delta declared "no spec change required"): the row
+carries `Absorbed-in: <sha> (no spec change)` and the directory is still
+pruned.
 
 ## Why phased
 
-Phase 1 is *non-destructive* (copies + frontmatter updates) so a mistake is recoverable just by deleting `archive/<KEY>/`. Phase 2 is the irreversible step — only run after the LLM (you) has confirmed Phase 1's content is right and the user is OK with it.
+Phase 1 is *non-destructive* (copies + frontmatter updates) so a mistake is recoverable just by deleting `archive/<KEY>/`. Phase 2 removes the source plan tree — recoverable from git, but disruptive. Phase 4 is the **final irreversible step**: the absorption commit + directory prune means `archive/<KEY>/` no longer exists on disk; from that point on, the row in `archive/index.md` + the commit SHA are the durable record.
 
 ## Companion ops (no skill needed — these are 1-2 line operations)
 
@@ -76,11 +103,48 @@ llm flow plans/<old>  move  plans/<new>
 # Then llm doctor — orphan check should be clean.
 ```
 
+### Prune already-absorbed archives (retroactive migration)
+
+One-shot recipe to bring a project with pre-existing archives into the
+ephemeral lifecycle. Run after `llm update --apply` brings the updated
+skill into the consumer repo.
+
+For each row in `archive/index.md` table without `Absorbed-in:`:
+
+1. **Verify spec absorption.** Scan `specs/` for `<KEY>` in any area's
+   `deltas:` frontmatter:
+   ```bash
+   grep -rn "<KEY>" specs/ | grep "deltas:" -A0
+   ```
+   - Found → record the spec path; proceed.
+   - Not found AND plan's `scope:` was non-empty → surface to user and
+     stop (ghost delta? unabsorbed? manual review).
+   - Not found AND plan's `scope:` was empty (or `delta.md` says "no spec
+     change required") → ghost delta path; skip the spec scan.
+2. **Locate the absorbing commit.**
+   - For absorbed plans:
+     ```bash
+     git log --diff-filter=AM -p -S "<KEY>" -- specs/ | head -40
+     ```
+     Take the first commit that added `<KEY>` to a `deltas:` list. That's
+     `<absorbed-in>`.
+   - For ghost deltas:
+     ```bash
+     git log -p -- archive/index.md | grep -B3 "<KEY>"
+     ```
+     Take the commit that added the row.
+3. **Update the row** with `Absorbed-in: <sha>` (or
+   `<sha> (no spec change)` for ghosts) via `llm tag set`.
+4. **Prune the directory**: `llm flow archive/<KEY> remove`.
+5. Commit per batch or per `<KEY>` (user preference, default: batch of
+   10 per commit, message
+   `chore(.llm): prune <N> already-absorbed archives`).
+
 ## Patterns
 
 | User says | You do |
 |---|---|
-| "Archive JET-1234" / "close plan X" / "finalize plan X" | Run all 3 phases above on `<KEY>=JET-1234`, with confirmation between Phase 1 and Phase 2 |
+| "Archive JET-1234" / "close plan X" / "finalize plan X" | Run all 4 phases above on `<KEY>=JET-1234`, with confirmation between Phase 1 and Phase 2, and again before Phase 4 (irreversible prune) |
 | "Promote `exploring/auth-redesign` to a plan" | Companion op: copy → write plan frontmatter → re-emit plans table |
 | "Rename plan JET-1234 to JET-9999" | Companion op: move + update `key:` + fix `deltas:` refs |
 
