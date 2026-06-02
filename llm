@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+# llm — minimal CLI for the .llm/ framework
+#
+# Entry point. Subcommands live as individual scripts under src/, sourced
+# at startup. The dispatch at the bottom routes argv to the matching
+# cmd_<name> function.
+#
+# Subcommands:
+#   doctor [--quiet]              run health checks on the .llm/ tree (default)
+#   install [DIR] [--with <s>...] install the framework starter into a project
+#   intake <KEY>                  fetch a Jira issue and mirror it under .llm/intake/
+#   update [...]                  update .llm/ files, skills, and slash commands from source
+#   flow <src> <verb> [<dst>]     safe file ops inside .llm/ (move/copy/create/remove)
+#                                (replaces the archive workflow — recipes live in the llm-cli skill)
+#   tag [<file> [<tag>]]          read/write/audit <!-- llm:NAME --> blocks
+#   help                          print top-level help
+#
+# Note: there is no `reconcile` subcommand — orphan detection is a check
+# inside `llm doctor` (raiz + pilares declared by root.entities in schema).
+#
+# Exit codes:
+#   0 — success
+#   1 — runtime error (validate found errors; subcommand specific)
+#   2 — usage error
+
+set -uo pipefail
+
+# Resolve the real location of this script, following symlinks. Any global
+# symlink (e.g. ~/.local/bin/llm → /path/to/dot-llm/llm) resolves back to
+# the real checkout so SCRIPT_DIR points at the dot-llm repo, where src/,
+# frameworks/ (including __base/) live.
+_resolve_self() {
+  local p="$1" n=0
+  while [[ -L "$p" ]]; do
+    # Cap the chain so a circular symlink on PATH (a→b→a) fails loudly instead
+    # of hanging the CLI forever at startup.
+    if (( ++n > 40 )); then
+      printf 'llm: too many symlink levels resolving %s (cycle?)\n' "$1" >&2
+      return 1
+    fi
+    local link
+    link="$(readlink "$p")"
+    case "$link" in
+      /*) p="$link" ;;
+      *)  p="$(dirname "$p")/$link" ;;
+    esac
+  done
+  printf '%s\n' "$(cd "$(dirname "$p")" && pwd)"
+}
+SCRIPT_DIR="$(_resolve_self "${BASH_SOURCE[0]}")"
+SRC="$SCRIPT_DIR/src"
+SKILLS_SRC="$SCRIPT_DIR/skills"
+COMMANDS_SRC="$SCRIPT_DIR/commands"
+
+# Multi-flavor layout: all flavors (including the minimal kernel) live under
+# `frameworks/`. The kernel is `frameworks/__base/`; pre-built domains are
+# `frameworks/<name>/`. Each flavor is fully self-contained (its own schema +
+# starter files); the adopter installs one.
+FRAMEWORKS_DIR="$SCRIPT_DIR/frameworks"
+BASE_FRAMEWORK_SRC="$FRAMEWORKS_DIR/__base"
+DEFAULT_FRAMEWORK="sdlc-it-project-basic"
+# FRAMEWORK_SRC resolves at command time via _resolve_framework_src; defaults
+# below preserve the prior single-source behaviour for modules that only need
+# templates/roles (e.g. cmd_install reads it; cmd_update resolves its own).
+FRAMEWORK_SRC="$FRAMEWORKS_DIR/$DEFAULT_FRAMEWORK"
+
+# Resolve a framework name (or `base`) to its source directory. Echoes the
+# path on success; returns 1 with an error on stderr if unknown. Empty arg
+# defaults to $DEFAULT_FRAMEWORK.
+_resolve_framework_src() {
+  local name="${1:-$DEFAULT_FRAMEWORK}"
+  case "$name" in
+    base) printf '%s\n' "$BASE_FRAMEWORK_SRC" ;;
+    *)
+      local p="$FRAMEWORKS_DIR/$name"
+      if [[ -d "$p" ]]; then
+        printf '%s\n' "$p"
+      else
+        printf '✗ unknown framework: %s (looked in %s)\n' "$name" "$FRAMEWORKS_DIR" >&2
+        return 1
+      fi
+      ;;
+  esac
+}
+
+# --- runtime globals consumed by the sourced subcommands ---
+DOT_LLM_DIR="${DOT_LLM_DIR:-.llm}"
+SCHEMA="$DOT_LLM_DIR/schema.yaml"
+QUIET=0
+errors=0
+warnings=0
+
+# --- load modules ---
+# common.sh first (provides red/green/say used by every other module).
+# shellcheck source=src/common.sh
+. "$SRC/common.sh"
+# shellcheck source=src/cmd_help.sh
+. "$SRC/cmd_help.sh"
+# shellcheck source=src/cmd_install.sh
+. "$SRC/cmd_install.sh"
+# shellcheck source=src/cmd_uninstall.sh
+. "$SRC/cmd_uninstall.sh"
+# shellcheck source=src/cmd_doctor.sh
+. "$SRC/cmd_doctor.sh"
+# shellcheck source=src/cmd_update.sh
+. "$SRC/cmd_update.sh"
+# shellcheck source=src/cmd_intake.sh
+. "$SRC/cmd_intake.sh"
+# shellcheck source=src/cmd_flow.sh
+. "$SRC/cmd_flow.sh"
+# shellcheck source=src/cmd_tag.sh
+. "$SRC/cmd_tag.sh"
+
+# --- argument dispatch ---
+sub="${1:-doctor}"
+case "$sub" in
+  help|-h|--help)
+    cmd_help
+    exit 0
+    ;;
+  install)
+    shift
+    cmd_install "$@"
+    exit $?
+    ;;
+  uninstall)
+    shift
+    cmd_uninstall "$@"
+    exit $?
+    ;;
+  update)
+    shift
+    cmd_update "$@"
+    exit $?
+    ;;
+  intake)
+    shift
+    cmd_intake "$@"
+    exit $?
+    ;;
+  flow)
+    shift
+    cmd_flow "$@"
+    exit $?
+    ;;
+  tag)
+    shift
+    cmd_tag "$@"
+    exit $?
+    ;;
+  doctor)
+    shift
+    for arg in "$@"; do
+      case "$arg" in
+        -h|--help|help) cmd_doctor_help; exit 0 ;;
+        --quiet)        QUIET=1 ;;
+        -*) red "Unknown flag: $arg"; cmd_doctor_help; exit 2 ;;
+        *)  red "Unexpected argument: $arg"; cmd_doctor_help; exit 2 ;;
+      esac
+    done
+    cmd_doctor
+    exit $?
+    ;;
+  --quiet)
+    QUIET=1
+    cmd_doctor
+    exit $?
+    ;;
+  *)
+    red "Unknown subcommand: $sub"
+    cmd_help
+    exit 2
+    ;;
+esac
