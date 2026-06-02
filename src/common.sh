@@ -105,8 +105,8 @@ fm_block_extract() {
 }
 
 # Replace the body of a `<!-- llm:NAME -->` block in $1 with content read
-# from stdin. Markers are preserved. Returns non-zero if the open marker is
-# absent (file left unchanged).
+# from stdin. Markers are preserved. Returns non-zero (file left unchanged) if
+# the open OR the close marker is absent.
 # Args: file, name.
 fm_block_replace() {
   local file="$1" name="$2"
@@ -119,11 +119,16 @@ fm_block_replace() {
   cat > "$content_file"
   local open="<!-- llm:${name} -->"
   local endmark="<!-- /llm:${name} -->"
-  # Open marker must exist as its own line (not just a substring in prose).
-  if ! awk -v marker="$open" '
+  # BOTH markers must exist as their own lines (not just substrings in prose).
+  # Fail closed: if the close marker is missing, the rewrite below would set
+  # skip=1 at the open marker and never reset it, dropping the entire tail of
+  # the file from the open marker to EOF — silent data loss. Refusing leaves
+  # the (malformed) file untouched.
+  if ! awk -v open="$open" -v endmark="$endmark" '
     { t = $0; sub(/^[[:space:]]*(#|\/\/)?[[:space:]]*/, "", t); sub(/[[:space:]]+$/, "", t) }
-    t == marker { found = 1; exit }
-    END { exit !found }
+    t == open    { o = 1 }
+    t == endmark { c = 1 }
+    END { exit !(o && c) }
   ' "$file"; then
     rm -f "$content_file"
     return 1
