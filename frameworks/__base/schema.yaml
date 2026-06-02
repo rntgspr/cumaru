@@ -1,0 +1,150 @@
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║  HOW TO READ THIS SCHEMA — do not delete (LLM + humans rely on it)        ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+#
+# This is the BASE framework — a minimal, domain-agnostic kernel. It ships
+# universal rules + meta scaffolding but no pillars. Use it as the starting
+# point to build a custom domain (research, design, ops, …) by adding pillars
+# under `root.entities:` below.
+#
+# For pre-built domain frameworks (SDLC, …), pick a variant from
+# `dot-llm/frameworks/`. Each domain is self-contained (its own schema + its
+# own starter files) — they don't compose; you install one.
+#
+# Root sections:
+#   rules:    cross-cutting contracts every file / index satisfies.
+#   root:     the .cumaru/ node tree. `root` is the top node; its children
+#             (your pillars) follow the shape { path?, frontmatter?, tags?,
+#             entities? }. Base ships an empty `entities:` map — you fill it.
+#   meta:     framework metadata + this project's component registry.
+#
+# frontmatter:  list of frontmatter keys; suffix `!` = required.
+#
+# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`. v4 makes
+#        every tag body a markdown table with EXACTLY TWO COLUMNS:
+#
+#          | Link                | Description                                 |
+#          |---------------------|---------------------------------------------|
+#          | [name](path/index.md) | one-line prose explaining the linked file |
+#
+#        The shape is universal — no per-tag column declaration. Tag entries
+#        in the schema only carry routing hints:
+#          host_file: <*.md|*>   → explicit markdown host (only needed for
+#                                  tags outside the node tree, e.g. meta.tags).
+#                                  Node index tags derive host_file from path.
+#        Anything else is dropped; the parser hardcodes [Link, Description].
+#
+# path:  RELATIVE to the parent node; implicit = the node's key; ending in a
+#        directory resolves to that dir's index.md.
+
+version: 4
+domain: base
+
+# ─────────────────────────────────────────────────────────────────────────
+# rules — cross-cutting, universal.
+# ─────────────────────────────────────────────────────────────────────────
+rules:
+  markdown:
+    required_heading: h1
+    frontmatter: [human_revised!]
+
+  index_md:
+    frontmatter: [generated!, apps!]
+
+  pillar_index:
+    frontmatter: [generated!, generated-at!, apps!]   # generated: true; apps: [meta]
+
+  ears:
+    severity: warning
+    pattern: "WHEN .+ THE SYSTEM SHALL .+"
+    applies_to:
+      - "any acceptance-criteria or requirements section in your pillars"
+
+# ─────────────────────────────────────────────────────────────────────────
+# root — the .cumaru/ tree. Base ships an EMPTY entities map; add your pillars.
+#
+# Example (uncomment + customise):
+#   root:
+#     frontmatter: [framework-version!]
+#     entities:
+#       my_pillar:                                   # → my_pillar/index.md
+#         tags:
+#           my_pillar: {}                            # body shape is universal
+#         entities:
+#           item:
+#             path: <KEY>                            # → my_pillar/<KEY>/index.md
+#             frontmatter: [generated!, key!, status!, apps!]
+#
+# `cumaru flow` enacts structural changes on the tree above. Skills compose
+# flow calls into recipes; paths are relative to .cumaru/. Guardrails: .md
+# files only (dirs are free); no `..`; index.md and pillar roots are
+# protected from `remove`.
+#
+#   # bootstrap a new pillar (one-time):
+#   cumaru flow my_pillar             create
+#   cumaru flow my_pillar/index.md    create
+#
+#   # create an item:
+#   cumaru flow my_pillar/<KEY>           create
+#   cumaru flow my_pillar/<KEY>/index.md  create
+#
+#   # move item to another pillar (e.g. active → archive):
+#   cumaru flow my_pillar/<KEY>  move  other_pillar/<KEY>
+#
+#   # copy a file (e.g. promote a draft):
+#   cumaru flow my_pillar/<KEY>/draft.md  copy  other_pillar/<KEY>/draft.md
+#
+#   # remove a work file after close (never removes index.md):
+#   cumaru flow my_pillar/<KEY>/work.md  remove
+# ─────────────────────────────────────────────────────────────────────────
+root:
+  frontmatter: [framework-version!, depends-on]   # depends-on: the root index pulls in domain.md (the domain hook)
+  tags: {}   # index.md is pure kernel — the components/root blocks live in domain.md (meta.tags)
+  entities: {}
+
+# ─────────────────────────────────────────────────────────────────────────
+# meta — framework metadata and the project's component registry.
+# ─────────────────────────────────────────────────────────────────────────
+meta:
+  apps:
+    values:
+      # === project components — replace with your own ===
+      # - webapp     # web-app/ component
+      # - api        # api/ component
+      # === reserved (do not remove) ===
+      - platform
+      - meta
+
+  # Marker tags that live outside the node tree. Pillar index tags are
+  # implicit (host_file derived from path) — when you add pillars under
+  # root.entities, you don't need to declare their tags here.
+  #
+  # v4: every tag body is a [Link, Description] table; the entries below
+  # only route the tag to its host file.
+  tags:
+    components: { host_file: domain.md }
+    root: { host_file: domain.md }
+    files: { host_file: "*" }
+    # Spec→code reference tag — every row targets a repository SOURCE FILE,
+    # resolved from the project root (never a .cumaru/ path, a directory, or a
+    # URL). Read by `cumaru coverage`; hosted on the durable pillar's spec files.
+    reference: { host_file: "*" }
+
+  # Specification coverage (`cumaru coverage`) — which pillar holds the durable
+  # specification whose `reference` tables map spec files to repository source
+  # files (default: specs). Uncomment once you add a durable pillar under
+  # root.entities; narrow the coverable source with fnmatch globs (`*`
+  # crosses `/`). .cumaru/ and .agents/ are always excluded.
+  # specification_dir: specs
+  # coverage:
+  #   source:
+  #     - "src/**"
+
+  # Compatibility & versioning.
+  compatibility:
+    framework_version_field: framework-version
+    framework_version_location: .cumaru/index.md
+    rule:
+      - The `framework-version:` field in .cumaru/index.md must equal the `version:` field in this schema.
+      - The validator enforces equality.
+      - Bumping `version:` here without bumping `framework-version:` surfaces an explicit mismatch error — that is the migration signal.

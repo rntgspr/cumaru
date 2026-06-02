@@ -1,0 +1,310 @@
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║  HOW TO READ THIS SCHEMA — do not delete (LLM + humans rely on it)        ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+#
+# Root sections:
+#   rules:    cross-cutting contracts every file / index satisfies.
+#   root:     the .cumaru/ node tree. `root` is the top node; its children
+#             (intake, plans, …) are the pillars. Every node shares one shape
+#             { path?, frontmatter?, tags?, entities? } and nests recursively.
+#   meta:     framework metadata + this project's component registry.
+#
+# frontmatter:  a list of frontmatter keys. Suffix `!` = required, no suffix =
+#               optional.  e.g. [key!, type, status!] → key & status required.
+#               `human_revised` is universal (rules.markdown) — never repeated.
+#
+# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`. The marker
+#        NAME is the path through the node tree, colon-joined: a node's index
+#        tag is just its key (-> cumaru:intake); a tag deeper in the tree joins the
+#        ancestor keys (-> cumaru:plans:plan:handoff:files).
+#
+#        v4 — every tag body is a markdown table with TWO universal columns:
+#
+#          | Link                  | Description                              |
+#          |-----------------------|------------------------------------------|
+#          | [name](path/index.md) | one-line prose explaining the linked file |
+#
+#        Tag entries in the schema only declare routing hints:
+#          host_file: <*.md|*>   → explicit markdown host (only needed for tags
+#                                  outside the node tree, e.g. meta.tags. Node
+#                                  index tags derive host_file from the path
+#                                  automatically).
+#        Anything else (columns, format, description, number) is gone — the
+#        shape is universal and hardcoded in the parser.
+#
+# path:  see the `root` section below — RELATIVE to the parent node; implicit =
+#        the node's key; a directory path resolves to that dir's index.md.
+
+version: 4
+domain: sdlc-it-project-basic   # self-identifying so update can detect the installed domain
+
+# ─────────────────────────────────────────────────────────────────────────
+# rules — cross-cutting, not specific to any single pillar.
+# ─────────────────────────────────────────────────────────────────────────
+rules:
+  # Every markdown file: at least one H1, and `human_revised` in frontmatter
+  # (defaults to false; flip to true after a human reads it end-to-end).
+  markdown:
+    required_heading: h1
+    frontmatter: [human_revised!]
+
+  # Every index.md carries these (in addition to the markdown rule above).
+  index_md:
+    frontmatter: [generated!, apps!]
+
+  # Every pillar's shallow index.md (the generated one) carries these.
+  # Pillar-specific extras go in that node's frontmatter (e.g. intake adds tracker).
+  pillar_index:
+    frontmatter: [generated!, generated-at!, apps!] # generated: true; apps: [meta]
+    # No `count`: the table's row count IS the count; a separate field is redundant.
+
+  # Soft rule — warning only, never fails validation. Bullet items under the
+  # named acceptance/requirement sections should match the EARS pattern;
+  # free prose elsewhere is fine.
+  ears:
+    severity: warning
+    pattern: "((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+" # all five EARS forms: ubiquitous/event/state/optional/unwanted
+    applies_to:
+      - intake tickets — "## Acceptance Criteria (EARS)"
+      - slug-based plans — "## Acceptance Criteria (EARS)"
+      - specs — "## Requirements (EARS)"
+
+# ─────────────────────────────────────────────────────────────────────────
+# root — the .cumaru/ tree. `root` is the top node; its children (intake, plans, …)
+# are the pillars. EVERY node — root and every descendant — shares one shape:
+#   path        the node's dir/file, RELATIVE to its parent. Implicit = the key;
+#               explicit only when the segment differs (e.g. <KEY>, t<N>.md).
+#               Ends in a directory → the node's file is that dir's index.md.
+#   frontmatter the index.md frontmatter of THIS node (beyond the rules.* baseline).
+#   tags        marker blocks in THIS node's index.md (body shape universal — see rules.tag_table).
+#   entities    child nodes (recursive, same shape) — the files/dirs inside.
+# The parser is a single recursion. `root` lists all four (even when empty) as
+# the reference; children list only what they use.
+# ─────────────────────────────────────────────────────────────────────────
+root:
+  # The .cumaru/ root. index.md = .cumaru/index.md (static, generated: false) — pure
+  # kernel, byte-identical across domains. The project-owned components/root
+  # marker blocks live in domain.md, declared under meta.tags via host_file.
+  path: # implicit — the .cumaru/ root itself
+  frontmatter: [framework-version!, depends-on] # +depends-on: root index pulls in domain.md; generated/apps from rules.index_md
+  tags: {}
+  entities:
+    intake:
+      # Tracker-agnostic mirror. `tracker:` on intake/index.md is a LIST of
+      # trackers this project pulls from (typically one — e.g. [jira] — but a
+      # project crossing trackers can list multiple, e.g. [jira, linear]). Each
+      # item then records its OWN tracker (scalar) in its frontmatter, so the
+      # source of every <KEY> is unambiguous. plans/ and archive/ don't carry
+      # tracker — they link to intake via `key` and the tracker is known there.
+      frontmatter: [tracker!]
+      tags:
+        intake: {}
+      entities:
+        item:
+          # Flat: every intake item is a sibling — no enforced hierarchy. `type`
+          # is the tracker issuetype (epic | story | task | bug | …); teams that
+          # skip a level simply never create items of that type. `tracker`
+          # records which tracker this item came from (must be one of the values
+          # listed in intake/index.md's tracker list). `relates` links items
+          # many-to-many and non-blocking (other <KEY>s) — distinct from the
+          # blocking `depends-on` in plans/specs.
+          path: <KEY>
+          frontmatter:
+            [
+              generated!,
+              key!,
+              type!,
+              tracker!,
+              status!,
+              synced-at!,
+              apps!,
+              relates,
+            ]
+
+    plans:
+      tags:
+        plans: {}
+      entities:
+        plan:
+          # key optional: slug-based plans (maintenance-<slug>) have no tracker id.
+          path: <PLAN-ID>
+          frontmatter:
+            [
+              generated!,
+              scope!,
+              status!,
+              summary!,
+              apps!,
+              key,
+              type,
+              epic,
+              story,
+              aux,
+            ]
+          entities:
+            # task, handoff, delta_draft live at the same level inside the plan dir.
+            task:
+              path: t<N>.md
+              frontmatter:
+                [
+                  plan!,
+                  task!,
+                  depends-on!,
+                  concerns!,
+                  files!,
+                  status!,
+                  apps!,
+                  aux!,
+                ]
+            handoff:
+              path: handoff-t<N>.md
+              frontmatter: [plan!, task!, status!, date!]
+              tags:
+                files: {} # body shape universal — each row links a touched file with a one-line description
+            delta_draft:
+              path: delta-draft.md
+              frontmatter: [plan!, status!, date!] # status: always draft
+
+    archive:
+      tags:
+        archive: {}
+      entities:
+        plan:
+          # An archived plan IS the plan's index.md: the archive flow copies it,
+          # forces status: done, and adds completed-at + delta. Inherits the
+          # plan's frontmatter (scope, type, epic, story, key, aux).
+          #
+          # The archive plan directory is EPHEMERAL: created in archive flow
+          # Phase 1, pruned in Phase 4 after spec absorption. Only the row in
+          # archive/index.md survives (with the absorbed commit referenced in
+          # its Description). The `delta` frontmatter is optional because it's
+          # only meaningful while the directory exists.
+          path: <PLAN-ID>
+          frontmatter: [generated!, scope!, status!, summary!, apps!, completed-at!, delta, key, type, epic, story, aux]
+          entities:
+            delta:
+              path: delta.md
+              frontmatter: [plan!, date!, apps]
+
+    specs:
+      # An `area` may nest child `area`s to arbitrary depth (recursive).
+      # depends-on = hard, blocking prerequisites (load them WITH this area);
+      # relates = soft, non-blocking cross-links (mirrors intake's relates). The
+      # index surfaces both so the LLM can tree-shake: pull the required closure
+      # (depends-on), then weigh the related set (relates) before loading more.
+      # deltas / consolidated-at are alternative states: an area lists the plan
+      # IDs whose deltas built it, until `specs consolidate` compacts them into a
+      # single consolidated-at date.
+      tags:
+        specs: {}
+      entities:
+        area:
+          path: <area>
+          frontmatter:
+            [
+              generated!,
+              name!,
+              summary!,
+              depends-on!,
+              relates,
+              apps!,
+              deltas,
+              consolidated-at,
+            ]
+          entities:
+            concern:
+              path: <concern>.md
+              frontmatter:
+                [
+                  generated!,
+                  name!,
+                  summary!,
+                  depends-on!,
+                  relates,
+                  apps!,
+                  deltas,
+                  consolidated-at,
+                ]
+            # an area may also nest child areas here (same shape as `area`).
+
+    exploring:
+      tags:
+        exploring: {}
+      entities:
+        idea:
+          # status: idea | considering | promoted | dropped — terminal exits
+          # (promote / drop) move or delete the directory.
+          path: <slug>
+          frontmatter: [generated!, status!, summary!, apps!]
+
+# ─────────────────────────────────────────────────────────────────────────
+# meta — framework metadata and the project's component registry.
+# ─────────────────────────────────────────────────────────────────────────
+meta:
+  # Valid values for the apps: frontmatter field. Add one entry per component
+  # your monorepo ships. `platform` (cross-component) and `meta` (framework
+  # plumbing) are reserved and must remain.
+  apps:
+    values:
+      # === project components — replace with your own ===
+      # - webapp     # web-app/ component
+      # - api        # api/ component
+      # === reserved (do not remove) ===
+      - platform
+      - meta
+
+  # Marker tags that live outside the node tree. v4 — every body is a
+  # [Link, Description] table; entries below only route the tag to its host.
+  tags:
+    # Project-owned blocks hosted on domain.md (the domain hook): the component
+    # registry table and the project-context orientation block.
+    components: { host_file: domain.md }
+    root: { host_file: domain.md }
+    # Universal "files" pattern tag — links to repo files with one-line
+    # descriptions; can appear on any markdown host.
+    files: { host_file: "*" }
+    # Handoff "Files touched" block (templates/handoff.md) — colon-named pattern tag.
+    "files:touched": { host_file: "*" }
+    # Inventory of adopter-added templates, hosted on templates/index.md.
+    templates: { host_file: "templates/index.md" }
+    roles: { host_file: "roles/index.md" }
+    # Spec→code reference tag — every row targets a repository SOURCE FILE,
+    # resolved from the project root (never a .cumaru/ path, a directory, or a
+    # URL). Read by `cumaru coverage`; hosted on spec files under specs/.
+    reference: { host_file: "*" }
+
+  # Specification coverage (`cumaru coverage`) — the durable pillar whose
+  # `reference` tables map spec files to repository source files.
+  specification_dir: specs
+  coverage:
+    # fnmatch-style globs (`*` crosses `/`) narrowing which tracked files
+    # count as coverable source. Empty = every tracked file. .cumaru/ and
+    # .agents/ are always excluded.
+    source: []
+      # - "src/**"
+
+  # Cross-file checks across the .cumaru/ tree.
+  #   implemented — run today by CLI commands (e.g. `cumaru regen <KEY>`).
+  #   deferred    — not yet enforced by the validator.
+  cross_file_checks:
+    implemented:
+      - "Intake refinement: no leftover raw-import block"
+      - "Plan status and task progress (done/total)"
+      - "Tasks marked done that lack a handoff-t<N>.md"
+      - "Archive presence and finalization (no temp-archive-flow.delete-me.md residue)"
+      - "Spec deltas integrity — each path in the plan's scope: lists the plan's key in its deltas:"
+      - "EARS coverage — every intake AC line appears in archive/<KEY>/delta.md"
+    deferred:
+      - "Plan scope: paths resolve to existing specs/<area>[/<subarea>...]/<concern>.md"
+      - "Task depends-on: references resolve to existing tasks in the same plan"
+      - "Files listed in '## Files' of specs/<area>[/<subarea>...]/index.md exist on disk"
+      - "deltas: in spec frontmatter reference existing archive/<PLAN-ID>/ entries"
+
+  # Compatibility & versioning.
+  compatibility:
+    framework_version_field: framework-version
+    framework_version_location: .cumaru/index.md
+    rule:
+      - The `framework-version:` field in .cumaru/index.md must equal the `version:` field in this schema.
+      - The validator enforces equality.
+      - Bumping `version:` here without bumping `framework-version:` surfaces an explicit mismatch error — that is the migration signal.
