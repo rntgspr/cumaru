@@ -361,7 +361,20 @@ cmd_update() {
   local source_version target_version
   source_version=$(awk '/^version:[[:space:]]/ {print $2; exit}' "$source_schema")
   target_version=$(awk '/^---$/{c++; if(c==2) exit; next} c==1 && /^framework-version:[[:space:]]/ {print $2; exit}' "$DOT_LLM_DIR/index.md")
-  if [[ -n "$source_version" && -n "$target_version" && "$source_version" != "$target_version" ]]; then
+  # Fail closed: an unknown version on either side means we cannot prove this
+  # is a same-version steady-state update, so refuse rather than merge blindly
+  # (a pre-v3 tree with no framework-version: would otherwise slip through).
+  if [[ -z "$source_version" || -z "$target_version" ]]; then
+    red "✗ cannot determine the framework version on both sides — refusing to update."
+    yellow "  source framework version: ${source_version:-<unset> ($source_schema)}"
+    yellow "  local framework-version:  ${target_version:-<unset> ($DOT_LLM_DIR/index.md)}"
+    say ""
+    say "A steady-state update needs a known version on each side. If this tree"
+    say "predates the framework-version field, follow the migration procedure in"
+    say "the llm-cli skill rather than 'llm update'."
+    return 1
+  fi
+  if [[ "$source_version" != "$target_version" ]]; then
     red "✗ version mismatch — this is a MIGRATION, not an update."
     yellow "  source framework version: $source_version"
     yellow "  local framework-version:  $target_version"
