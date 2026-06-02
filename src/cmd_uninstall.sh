@@ -131,11 +131,20 @@ _uninstall_strip_hook() {
     }
   ' "$file" > "$tmp"
 
+  # Provenance: only delete the whole file when install CREATED it (the BEGIN
+  # marker carries the `created` flag). If install merely APPENDED our block to
+  # a pre-existing file, never delete it — strip the block and keep the rest,
+  # even if what remains is empty or just a "# Project instructions" header,
+  # because that content is the user's, not ours. (Hooks written before the
+  # `created` flag existed are treated as appended → the safe, never-delete
+  # side.)
+  local created=0
+  grep -q "BEGIN DOT-LLM-HOOK created" "$file" 2>/dev/null && created=1
   local stripped
   stripped=$(grep -v '^[[:space:]]*$' "$tmp" 2>/dev/null || true)
-  if [[ -z "$stripped" || "$stripped" == "# Project instructions" ]]; then
+  if [[ $created -eq 1 && ( -z "$stripped" || "$stripped" == "# Project instructions" ) ]]; then
     rm -f "$file" "$tmp"
-    green "  - removed CLAUDE.md (only install-created content remained): $file"
+    green "  - removed CLAUDE.md (install-created, only our content remained): $file"
   else
     mv "$tmp" "$file"
     green "  - removed DOT-LLM-HOOK block from: $file"

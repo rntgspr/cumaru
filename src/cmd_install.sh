@@ -215,11 +215,17 @@ _framework_deprecated_commands() {
 
 # --- install-private helpers ------------------------------------------------
 
-# Print the dot-llm hook block to stdout. Argument: rel_index (e.g. ".llm/index.md").
+# Print the dot-llm hook block to stdout.
+# Args: rel_index (e.g. ".llm/index.md"); created (1 if install is creating the
+# CLAUDE.md fresh, 0/absent if appending to a pre-existing file). The `created`
+# flag in the BEGIN marker is the provenance signal uninstall uses to decide
+# whether it may delete the whole file or must only strip the block.
 _install_print_hook_block() {
-  local rel_index="$1"
+  local rel_index="$1" created="${2:-0}"
+  local begin="<!-- BEGIN DOT-LLM-HOOK -->"
+  [[ "$created" == "1" ]] && begin="<!-- BEGIN DOT-LLM-HOOK created -->"
   cat <<EOF
-<!-- BEGIN DOT-LLM-HOOK -->
+$begin
 ## \`.llm/\` framework
 
 This project uses the \`.llm/\` framework — a spec-driven, agent-friendly knowledge structure. Whenever you (the LLM) start a session in this repository, **read \`$rel_index\` first**. It carries the schema, the pillars declared for this project, the loading rule for what enters context, and any role definitions present under \`$rel_index\`'s siblings.
@@ -249,7 +255,7 @@ _install_wire_claude_md() {
     {
       echo "# Project instructions"
       echo ""
-      _install_print_hook_block "$rel_index"
+      _install_print_hook_block "$rel_index" 1
     } > "$claude_md"
     green "  + CLAUDE.md created at $claude_md (with .llm/ hook)"
   fi
