@@ -136,7 +136,10 @@ _doctor_disk_files_for_path() {
   glob=$(printf '%s' "$glob" | sed -E 's/<[a-zA-Z][a-zA-Z0-9_-]*>/*/g')
   shopt -s nullglob
   local f
-  for f in $DOT_LLM_DIR/$glob; do
+  # Quote the dir (it may contain spaces) but leave $glob unquoted so it still
+  # expands; an unquoted $DOT_LLM_DIR would word-split a path with spaces and
+  # silently match nothing, making this sub-pass check zero files.
+  for f in "$DOT_LLM_DIR"/$glob; do
     [[ -f "$f" ]] && printf '%s\n' "$f"
   done
   shopt -u nullglob
