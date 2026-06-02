@@ -49,14 +49,19 @@ Examples:
 EOF
 }
 
-# Reject absolute paths and `..` segments. The `..` ban makes "stays inside .llm/"
-# a syntactic property — no realpath / canonicalization needed.
+# Reject absolute paths and `.` / `..` segments. A clean path from the .llm/
+# root has neither. Banning both is the first line of defense; the `remove`
+# guard below additionally canonicalizes before comparing, so a stray segment
+# (or symlink) can never slip past the pillar-root / containment checks — the
+# old "ban `..` and it's syntactically safe" assumption was false (`./plans`
+# made dirname yield "<root>/." which string-compared != "<root>", bypassing
+# the pillar-root guard and letting `rm -rf` delete the whole pillar).
 _flow_check_path() {
   local p="$1" label="$2"
   [[ -n "$p" ]]      || { red "✗ missing $label"; return 2; }
   [[ "$p" != /* ]]   || { red "✗ $label must be relative to .llm/ (no leading /): $p"; return 1; }
-  if printf '%s\n' "$p" | tr '/' '\n' | grep -qFx ..; then
-    red "✗ '..' not allowed in $label (use a clean path from .llm/ root): $p"
+  if printf '%s\n' "$p" | tr '/' '\n' | grep -qE '^\.{1,2}$'; then
+    red "✗ '.' / '..' segments not allowed in $label (use a clean path from .llm/ root): $p"
     return 1
   fi
   return 0
@@ -132,18 +137,27 @@ cmd_flow() {
 
   case "$verb" in
     remove)
-      local base parent
-      base=$(basename "$src_abs")
-      parent=$(dirname "$src_abs")
+      # Canonicalize via the (existing) parent dir, then re-append the leaf, so
+      # the guards below compare REAL paths — '.', '//' or a symlinked segment
+      # can't slip past them. `src_abs` exists (asserted above), so its parent
+      # exists; a failed `cd` yields a path outside .llm/ and is refused.
+      local src_canon base parent
+      src_canon="$(cd "$(dirname "$src_abs")" 2>/dev/null && pwd)/$(basename "$src_abs")"
+      base=$(basename "$src_canon")
+      parent=$(dirname "$src_canon")
+      if [[ "$src_canon" != "$llm_abs"/* ]]; then
+        red "✗ refusing to remove a path that resolves outside .llm/: $src"
+        return 1
+      fi
       [[ "$base" == "index.md" ]] && {
         red "✗ cannot remove an index.md (system-critical for the entity)"
         return 1
       }
-      if [[ "$parent" == "$llm_abs" && -d "$src_abs" ]]; then
+      if [[ "$parent" == "$llm_abs" && -d "$src_canon" ]]; then
         red "✗ cannot remove a pillar root: $src/"
         return 1
       fi
-      rm -rf "$src_abs"
+      rm -rf "$src_canon"
       green "✓ remove: $src"
       ;;
     move)
