@@ -69,9 +69,11 @@ rules:
     severity: warning
     pattern: "WHEN .+ THE SYSTEM SHALL .+"
     applies_to:
+      # Acceptance criteria on change requests use EARS. The topology pillar does
+      # NOT — a stack is described by structure (interface, dependencies, decisions),
+      # not by "WHEN … THE SYSTEM SHALL …" behavioral requirements.
       - intake tickets — "## Acceptance Criteria (EARS)"
       - slug-based plans — "## Acceptance Criteria (EARS)"
-      - topology — "## Requirements (EARS)"
 
 # ─────────────────────────────────────────────────────────────────────────
 # root — the .llm/ tree. `root` is the top node; its children (intake, plans, …)
