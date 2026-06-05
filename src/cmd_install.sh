@@ -270,12 +270,12 @@ _install_list_frameworks() {
       [[ -d "$d" ]] || continue
       name=$(basename "$d")
       [[ "$name" == __* ]] && continue
+      # Summary comes from the flavor's domain.md H1 — NOT index.md, which is the
+      # universal kernel (byte-identical across flavors) and would yield the same
+      # generic line for every flavor. domain.md carries the flavor's identity.
       local summary=""
-      if [[ -f "$d/index.md" ]]; then
-        summary=$(awk '
-          /^# / { h1=1; next }
-          h1 && /^[^[:space:]]/ { print; exit }
-        ' "$d/index.md")
+      if [[ -f "$d/domain.md" ]]; then
+        summary=$(awk '/^# / { sub(/^# /, ""); print; exit }' "$d/domain.md")
       fi
       [[ -z "$summary" ]] && summary="framework flavor"
       [[ ${#summary} -gt 70 ]] && summary="${summary:0:67}..."
