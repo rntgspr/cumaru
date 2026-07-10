@@ -18,7 +18,7 @@ cumaru intake <KEY> [--tracker <name>]
 2. `--tracker <name>` — for first-creates from a non-default tracker.
 3. The first entry of the pillar's `tracker:` list.
 
-The resolved tracker must be declared in the pillar's `tracker:` list; `--tracker` conflicting with an existing item's recorded tracker is refused.
+The resolved tracker must be declared in the pillar's `tracker:` list; `--tracker` conflicting with an existing item's recorded tracker is refused. The `.env` file at the project root is auto-loaded if present.
 
 ## Required environment (per adapter)
 
@@ -46,7 +46,7 @@ External tools: `curl`, `jq`.
 **Re-sync (file already exists):**
 1. Routes by the item's own `tracker:` — no flag needed.
 2. Refreshes only `status:` and `synced-at:` in the frontmatter.
-3. Missing `tracker:` is added on re-sync (v2 → v3 helper).
+3. Missing `tracker:` is added on re-sync (v2 → v3 migration helper).
 4. If a `RAW` block is still present (issue not yet refined), updates its body with the latest tracker description.
 5. If the `RAW` block has already been removed (the file has been refined), nothing else changes — the body is preserved.
 
@@ -63,7 +63,7 @@ External tools: `curl`, `jq`.
 After `cumaru intake <KEY>`, open the file and follow the embedded RAW-block instructions:
 
 1. Replace placeholder text under `## Overview` with an English restatement (1-3 paragraphs).
-2. Replace placeholder bullets under `## Acceptance Criteria (EARS)` with `WHEN ... THE SYSTEM SHALL ...` criteria.
+2. Replace placeholder bullets under `## Acceptance Criteria (EARS / RFC 2119)` with EARS or RFC 2119 criteria. Prefer one dominant style per section.
 3. (Bug type only) Fill `## Reproduction`, `## Expected`, `## Actual`. Remove the bug-only HTML comment scaffolding when `type` is anything other than `bug`.
 4. Set `apps: [...]` from the project's `meta.apps.values` in `.cumaru/schema.yaml`.
 5. Verify `relates: [...]` lists parent epic / story / cross-item references correctly.
@@ -75,6 +75,8 @@ The `/cumaru:intake <KEY>` slash command walks all of this with user confirmatio
 ## Per-item provenance (multi-tracker projects)
 
 Each item's `tracker:` (scalar) records its source. A project mixing trackers writes `tracker: [jira, linear]` (list) on the pillar's `intake/index.md` and each item carries its own scalar `tracker:`. `cumaru doctor` validates the per-item field via the schema's required `tracker!` on `intake.entities.item`.
+
+The `relates:` frontmatter is auto-populated from the source tracker — for Jira, the parent epic link (`customfield_10014`), parent story key, and parent story issue type are all checked to build the relates list.
 
 ## Examples
 

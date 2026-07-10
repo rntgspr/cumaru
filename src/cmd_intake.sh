@@ -447,18 +447,21 @@ _intake_append_raw_block() {
     epic)
       steps="  1. Replace the placeholder text under \`## Overview\` with an English
      restatement (1-3 paragraphs) of the epic-level vision.
-  2. Set \`apps: [...]\` in the frontmatter to the affected component(s),
+  2. Replace the placeholder bullets under \`## Acceptance Criteria (EARS / RFC 2119)\`
+     with epic-level criteria. Prefer one dominant style per section:
+     EARS for event/state behavior, RFC 2119 for constraints.
+  3. Set \`apps: [...]\` in the frontmatter to the affected component(s),
      using keys from the project's schema.yaml meta.apps.values.
-  3. If you know related items (parent epics, child stories), populate
+  4. If you know related items (parent epics, child stories), populate
      \`relates: [...]\` in the frontmatter.
-  4. Delete this entire BEGIN/END RAW block when done."
+  5. Delete this entire BEGIN/END RAW block when done."
       ;;
     story)
       steps="  1. Replace the placeholder text under \`## Overview\` with an English
      restatement (1-3 paragraphs) of the story-level objective.
-  2. Replace the placeholder bullets under \`## Acceptance Criteria (EARS)\`
-     with story-level criteria in the form
-     \`WHEN <trigger> THE SYSTEM SHALL <response>\`.
+  2. Replace the placeholder bullets under \`## Acceptance Criteria (EARS / RFC 2119)\`
+     with story-level criteria. Prefer one dominant style per section:
+     EARS for event/state behavior, RFC 2119 for constraints.
   3. Set \`apps: [...]\` in the frontmatter to the affected component(s),
      using keys from the project's schema.yaml meta.apps.values.
   4. Verify \`relates: [...]\` contains the parent epic and any related items.
@@ -467,8 +470,9 @@ _intake_append_raw_block() {
     *)
       steps="  1. Replace the placeholder text under \`## Overview\` with an English
      restatement (1-3 paragraphs, what is asked and why it matters).
-  2. Replace the placeholder bullets under \`## Acceptance Criteria (EARS)\`
-     with criteria in the form \`WHEN <trigger> THE SYSTEM SHALL <response>\`.
+  2. Replace the placeholder bullets under \`## Acceptance Criteria (EARS / RFC 2119)\`
+     with criteria. Prefer one dominant style per section: EARS for
+     event/state behavior, RFC 2119 for constraints.
   3. If \`type: bug\` in the frontmatter, also fill \`## Reproduction\`,
      \`## Expected\`, and \`## Actual\` from the description below.
   4. Set \`apps: [...]\` in the frontmatter to the affected component(s),

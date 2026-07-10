@@ -25,11 +25,14 @@ aux: []
 
 Short description of what the plan addresses and why. 1-3 paragraphs.
 
-## Acceptance Criteria (EARS)
+## Acceptance Criteria (EARS / RFC 2119)
+
+Pick one dominant style for this section: EARS for event/state behavior; RFC 2119 for constraints.
 
 - WHEN <trigger> THE SYSTEM SHALL <observable response>.
 - WHEN <trigger> AND <condition> THE SYSTEM SHALL <observable response>.
 - WHILE <state> THE SYSTEM SHALL <observable response>.
+- The <resource> MUST <behavior>.
 
 <!-- ===== End slug-only sections ===== -->
 

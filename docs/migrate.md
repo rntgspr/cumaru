@@ -16,9 +16,9 @@ cumaru migrate [--apply]
 ## What it does
 
 1. **Renames `.llm/` → `.cumaru/`** — only if `.llm/` exists and `.cumaru/` does not.
-2. **Rewrites `<!-- llm: -->` → `<!-- cumaru: -->`** in every `.md` file under the tree.
-3. **Updates `.agents/AGENTS.md`** — replaces `.llm/` references with `.cumaru/`.
-4. **Renames `.agents/commands/llm/` → `.agents/commands/cumaru/`**.
+2. **Rewrites `<!-- llm: -->` → `<!-- cumaru: -->` and `<!-- /llm: -->` → `<!-- /cumaru: -->`** in every `.md` file under the tree.
+3. **Updates `.agents/AGENTS.md`** — replaces `@.llm/` references with `@.cumaru/`.
+4. **Renames `.agents/commands/llm/` → `.agents/commands/cumaru/`** (or removes redundant `llm/` if `cumaru/` already exists).
 5. **Renames `.agents/skills/llm-*/` → `.agents/skills/cumaru-*/`**.
 6. **Removes itself** — the `cumaru-migrate` skill is a one-shot tool; after
    running, run `cumaru update` which prunes it from `.agents/skills/`.

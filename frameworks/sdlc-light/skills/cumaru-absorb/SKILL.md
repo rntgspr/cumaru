@@ -20,7 +20,7 @@ If any check fails, surface to the user — don't auto-fix.
 ## Phase 1 — validate and absorb into specs
 
 1. **Read and validate the delta-draft.** Open `plans/<PLAN-ID>/delta-draft.md`. Verify:
-   - Every EARS criterion from the plan's `## Acceptance Criteria` is covered by an Added or Modified Requirement (or explicitly noted as not requiring a spec change).
+   - Every EARS / RFC 2119 criterion from the plan's `## Acceptance Criteria` is covered by an Added or Modified Requirement (or explicitly noted as not requiring a spec change).
    - The proposed changes are consistent with the plan's `scope:`.
    - No `Removed Requirements` orphan a `depends-on:` from another spec.
 2. **For each spec area in the plan's `scope:` frontmatter:**

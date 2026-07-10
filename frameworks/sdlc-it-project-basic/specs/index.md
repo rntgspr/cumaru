@@ -12,14 +12,21 @@ apps: [meta]
 _No areas yet. Bootstrap a `specs/<area>/` directory the first time a plan touches it. Each row links to `specs/<area>/index.md` with a one-line description (what the area covers, key dependencies)._
 <!-- /cumaru:specs -->
 
+<!-- cumaru:absorptions -->
+| SHA | KEY | Description |
+|-----|-----|-------------|
+
+_No absorbed plans yet. Each row records the commit SHA that absorbed a plan delta into specs, the plan key, and a one-line summary of what became durable._
+<!-- /cumaru:absorptions -->
+
 # Specs
 
 A pillar for the **living spec** of the system — what is true right now about product features, platform conventions, integrations, and durable decisions. Authored and refactored by the Lead; deltas are absorbed here on plan close.
 
 ## Rules
 
-- **Living state.** The body of each `specs/<area>/index.md` (and its concern files) always reflects the current state of the system. There is no `## History` body section — historical wording lives in `archive/<PLAN-ID>/delta.md`.
-- **`deltas:` frontmatter is the canonical reference.** Each spec area lists the plan IDs whose deltas built its current state. Drill into `archive/<PLAN-ID>/` only when you need the verbose change wording.
+- **Living state.** The body of each `specs/<area>/index.md` (and its concern files) always reflects the current state of the system. There is no `## History` body section; absorbed work is summarized in the `absorptions` table above.
+- **`deltas:` frontmatter is the local trace.** Each spec area lists the plan IDs whose deltas built its current state. The durable cross-spec ledger is `cumaru:absorptions` on this index.
 - **Bootstrap on demand.** A spec area is created the first time a plan declares it in `scope:`. Don't seed empty areas in advance.
 - **Concerns split inside an area.** A large area splits into per-concern files (`<area>/<concern>.md`) referenced from the area's `## Files` section. Tasks declare which concerns they touch in their frontmatter `concerns:`.
 - **Subareas when needed.** When an area grows beyond a flat concern split, promote a concern into a nested subarea: `specs/<area>/<subarea>/index.md` with its own concerns. Subareas follow the same shape as areas recursively. The parent area's `## Files` lists the subarea directories alongside any flat concern files.
@@ -31,12 +38,12 @@ A pillar for the **living spec** of the system — what is true right now about 
 
 - A plan declares a path under `specs/` in its `scope:` → load the area's `index.md` and the concerns referenced by the active task.
 - A task declares `concerns: [<name>, ...]` → load `specs/<area>/<concern>.md` for each.
-- Tracing why a behavior is the way it is → follow the area's `deltas:` list back to the archive entries that built it.
+- Tracing why a behavior is the way it is → follow the area's `deltas:` list, then find the corresponding KEY in `cumaru:absorptions` and inspect the SHA.
 - Bootstrapping a new area when planning work that touches an undocumented part of the system (Lead).
 
 ## When NOT to use
 
 - Active work in progress → `plans/<PLAN-ID>/`.
 - Pre-plan ideation or open questions → `exploring/<slug>/`.
-- Verbose change history → `archive/<PLAN-ID>/delta.md`.
+- Closed-plan staging details → `archive/<PLAN-ID>/` only while absorption is in flight.
 - Mirror of tracker items → `intake/`.

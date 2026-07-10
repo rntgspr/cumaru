@@ -33,7 +33,7 @@ Tracker resolution (first match wins): the item's own `tracker:` frontmatter (re
 ## Your job after `cumaru intake` runs
 
 1. Refine `## Overview` — restate the requested change/incident, in English, 1-3 paragraphs.
-2. Refine `## Acceptance Criteria (EARS)` — `WHEN <trigger> THE SYSTEM SHALL <response>` (e.g. *WHEN the change is applied to prod THE SYSTEM SHALL serve traffic with zero 5xx during cutover*).
+2. Refine `## Acceptance Criteria (EARS / RFC 2119)` — EARS for event/state behavior, RFC 2119 for constraints. Prefer one dominant style per section.
 3. If `type: incident` / `bug`, fill `## Reproduction`, `## Expected`, `## Actual` (or `## Impact`/`## Timeline` for an incident).
 4. Set `apps: [...]` — the **environments** the request concerns (keys from `schema.yaml > meta.apps.values`: `dev`/`staging`/`prod`/`all`).
 5. Verify `relates: [...]`.

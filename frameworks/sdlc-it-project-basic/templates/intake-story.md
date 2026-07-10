@@ -16,12 +16,15 @@ relates: []
 
 Story-level objective in English — what is being built and why it matters as a unit. 1-3 paragraphs. Refined as understanding sharpens; re-sync from the tracker when the upstream description changes materially.
 
-## Acceptance Criteria (EARS)
+## Acceptance Criteria (EARS / RFC 2119)
+
+Pick one dominant style for this section: EARS for event/state behavior; RFC 2119 for constraints.
 
 High-level acceptance criteria for the story as a whole. Tickets under this story refine these into ticket-level criteria.
 
 - WHEN <trigger> THE SYSTEM SHALL <observable response>.
 - WHEN <trigger> AND <condition> THE SYSTEM SHALL <observable response>.
+- The <resource> MUST <behavior>.
 
 Plans for tickets under this story do not repeat these — they reference the relevant ticket or this file.
 

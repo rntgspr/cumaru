@@ -20,7 +20,7 @@ A pillar for **all work items** — intake, active execution plans, and complete
 
 - **One directory per plan.** `plans/<KEY>/` for tracker-backed work, `plans/maintenance-<slug>/` for internal initiatives. The directory name is the plan ID.
 - **Slug-based plans require the `maintenance-` prefix.** Pure kebab-case slug (`maintenance-cleanup-deprecated-helpers`). No `key:` frontmatter field.
-- **Plan body carries `## Overview`, `## Acceptance Criteria (EARS)`, `## Plan / DAG`, `## Out of scope`, `## Risks`.** Unlike SDLC, there is no separate intake pillar — everything lives in the plan body.
+- **Plan body carries `## Overview`, `## Acceptance Criteria (EARS / RFC 2119)`, `## Plan / DAG`, `## Out of scope`, `## Risks`.** Unlike SDLC, there is no separate intake pillar — everything lives in the plan body.
 - **Tasks within a plan may run in parallel** when `depends-on:` is satisfied and `files:` predictions do not overlap.
 - **Each entry is a directory** with `index.md`, `t<N>.md` per task, optional `handoff-t<N>.md`, and `delta-draft.md` at close.
 

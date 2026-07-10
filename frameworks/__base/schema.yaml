@@ -20,24 +20,18 @@
 #
 # frontmatter:  list of frontmatter keys; suffix `!` = required.
 #
-# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`. v4 makes
-#        every tag body a markdown table with EXACTLY TWO COLUMNS:
-#
-#          | Link                | Description                                 |
-#          |---------------------|---------------------------------------------|
-#          | [name](path/index.md) | one-line prose explaining the linked file |
-#
-#        The shape is universal — no per-tag column declaration. Tag entries
-#        in the schema only carry routing hints:
-#          host_file: <*.md|*>   → explicit markdown host (only needed for
-#                                  tags outside the node tree, e.g. meta.tags).
-#                                  Node index tags derive host_file from path.
-#        Anything else is dropped; the parser hardcodes [Link, Description].
+# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`.
+#        A tag value declares its body type:
+#          default                    -> table [Link, Description]
+#          [SHA, KEY, Description]    -> custom deterministic table columns
+#          prose | mixed | other      -> adopter-owned body, not path-resolved
+#        Meta tags may use a mapping with host_file + type:
+#          root: { host_file: domain.md, type: prose }
 #
 # path:  RELATIVE to the parent node; implicit = the node's key; ending in a
 #        directory resolves to that dir's index.md.
 
-version: 4
+version: 5
 domain: base
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -56,7 +50,7 @@ rules:
 
   ears:
     severity: warning
-    pattern: "WHEN .+ THE SYSTEM SHALL .+"
+    pattern: "(((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+)|(.+ (MUST NOT|MUST|REQUIRED|SHALL NOT|SHALL|SHOULD NOT|SHOULD|RECOMMENDED|MAY|OPTIONAL) .+)"
     applies_to:
       - "any acceptance-criteria or requirements section in your pillars"
 
@@ -69,7 +63,7 @@ rules:
 #     entities:
 #       my_pillar:                                   # → my_pillar/index.md
 #         tags:
-#           my_pillar: {}                            # body shape is universal
+#           my_pillar: default                       # [Link, Description]
 #         entities:
 #           item:
 #             path: <KEY>                            # → my_pillar/<KEY>/index.md
@@ -119,16 +113,16 @@ meta:
   # implicit (host_file derived from path) — when you add pillars under
   # root.entities, you don't need to declare their tags here.
   #
-  # v4: every tag body is a [Link, Description] table; the entries below
-  # only route the tag to its host file.
+  # v5: default tags are [Link, Description]; prose/mixed/other bodies are
+  # adopter-owned and preserved, but not path-resolved.
   tags:
-    components: { host_file: domain.md }
-    root: { host_file: domain.md }
-    files: { host_file: "*" }
+    components: { host_file: domain.md, type: default }
+    root: { host_file: domain.md, type: prose }
+    files: { host_file: "*", type: default }
     # Spec→code reference tag — every row targets a repository SOURCE FILE,
     # resolved from the project root (never a .cumaru/ path, a directory, or a
     # URL). Read by `cumaru coverage`; hosted on the durable pillar's spec files.
-    reference: { host_file: "*" }
+    reference: { host_file: "*", type: default }
 
   # Specification coverage (`cumaru coverage`) — which pillar holds the durable
   # specification whose `reference` tables map spec files to repository source

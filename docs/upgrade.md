@@ -10,7 +10,7 @@ Equivalent to the install one-liner: `curl -fsSL https://pixelpunk.works/dot-cum
 
 ## Kernel integrity check
 
-The install script verifies the downloaded snapshot before linking: every `frameworks/<domain>/index.md` must be **byte-identical** to `frameworks/__base/index.md` (the universal kernel — see [architecture](architecture.md)). On any divergence the install aborts with `✗ kernel drift` — the snapshot is a broken distribution, not something the adopter can fix locally.
+The install script verifies the downloaded snapshot before linking: every universal artifact — `index.md`, every file under `__base/skills/` (except `cumaru-install`, which is domain-owned), `__base/hooks/`, and `__base/commands/` — must be **byte-identical** across all domains. On any divergence the install aborts with `✗ kernel drift` — the snapshot is a broken distribution, not something the adopter can fix locally.
 
 This check belongs here, not in `cumaru doctor`: doctor audits the **adopter's** `.cumaru/` tree, which never contains `__base` to compare against. Kernel drift is a distribution problem, caught at the point where the snapshot lands on disk.
 

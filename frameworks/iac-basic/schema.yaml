@@ -18,24 +18,16 @@
 #        tag is just its key (-> cumaru:intake); a tag deeper in the tree joins the
 #        ancestor keys (-> cumaru:plans:plan:handoff:files).
 #
-#        v4 — every tag body is a markdown table with TWO universal columns:
-#
-#          | Link                  | Description                              |
-#          |-----------------------|------------------------------------------|
-#          | [name](path/index.md) | one-line prose explaining the linked file |
-#
-#        Tag entries in the schema only declare routing hints:
-#          host_file: <*.md|*>   → explicit markdown host (only needed for tags
-#                                  outside the node tree, e.g. meta.tags. Node
-#                                  index tags derive host_file from the path
-#                                  automatically).
-#        Anything else (columns, format, description, number) is gone — the
-#        shape is universal and hardcoded in the parser.
+#        v5 — tag bodies are declared by the schema:
+#          default                    -> table [Link, Description]
+#          [SHA, KEY, Description]    -> custom deterministic table columns
+#          prose | mixed | other      -> adopter-owned body, not path-resolved
+#        Meta tags may use a mapping with host_file + type.
 #
 # path:  see the `root` section below — RELATIVE to the parent node; implicit =
 #        the node's key; a directory path resolves to that dir's index.md.
 
-version: 4
+version: 5
 domain: iac-basic   # self-identifying so update can detect the installed domain
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -67,17 +59,17 @@ rules:
     # No `count`: the table's row count IS the count; a separate field is redundant.
 
   # Soft rule — warning only, never fails validation. Bullet items under the
-  # named acceptance/requirement sections should match the EARS pattern;
+  # named acceptance/requirement sections should match EARS or RFC 2119;
   # free prose elsewhere is fine.
   ears:
     severity: warning
-    pattern: "((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+" # all five EARS forms: ubiquitous/event/state/optional/unwanted
+    pattern: "(((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+)|(.+ (MUST NOT|MUST|REQUIRED|SHALL NOT|SHALL|SHOULD NOT|SHOULD|RECOMMENDED|MAY|OPTIONAL) .+)"
     applies_to:
-      # Acceptance criteria on change requests use EARS. The topology pillar does
-      # NOT — a stack is described by structure (interface, dependencies, decisions),
-      # not by "WHEN … THE SYSTEM SHALL …" behavioral requirements.
-      - intake tickets — "## Acceptance Criteria (EARS)"
-      - slug-based plans — "## Acceptance Criteria (EARS)"
+      # Acceptance criteria on change requests use EARS or RFC 2119. The topology
+      # pillar does NOT use requirement bullets — a stack is described by structure
+      # (interface, dependencies, decisions), not behavioral requirements.
+      - intake tickets — "## Acceptance Criteria (EARS / RFC 2119)"
+      - slug-based plans — "## Acceptance Criteria (EARS / RFC 2119)"
 
 # ─────────────────────────────────────────────────────────────────────────
 # root — the .cumaru/ tree. `root` is the top node; its children (intake, plans, …)
@@ -86,7 +78,7 @@ rules:
 #               explicit only when the segment differs (e.g. <KEY>, t<N>.md).
 #               Ends in a directory → the node's file is that dir's index.md.
 #   frontmatter the index.md frontmatter of THIS node (beyond the rules.* baseline).
-#   tags        marker blocks in THIS node's index.md (body shape universal — see rules.tag_table).
+#   tags        marker blocks in THIS node's index.md (body type declared per tag).
 #   entities    child nodes (recursive, same shape) — the files/dirs inside.
 # The parser is a single recursion. `root` lists all four (even when empty) as
 # the reference; children list only what they use.
@@ -108,7 +100,7 @@ root:
       # tracker — they link to intake via `key` and the tracker is known there.
       frontmatter: [tracker!]
       tags:
-        intake: {}
+        intake: default
       entities:
         item:
           # Flat: every intake item is a sibling — no enforced hierarchy. `type`
@@ -133,7 +125,7 @@ root:
 
     plans:
       tags:
-        plans: {}
+        plans: default
       entities:
         plan:
           # key optional: slug-based plans (maintenance-<slug>) have no tracker id.
@@ -170,14 +162,14 @@ root:
               path: handoff-t<N>.md
               frontmatter: [plan!, task!, status!, date!]
               tags:
-                files: {} # body shape universal — each row links a touched file with a one-line description
+                files: default # each row links a touched file with a one-line description
             delta_draft:
               path: delta-draft.md
               frontmatter: [plan!, status!, date!] # status: always draft
 
     archive:
       tags:
-        archive: {}
+        archive: default
       entities:
         plan:
           # An archived plan IS the plan's index.md: the archive flow copies it,
@@ -206,7 +198,7 @@ root:
       # IDs whose deltas built it, until `topology consolidate` compacts them into a
       # single consolidated-at date.
       tags:
-        topology: {}
+        topology: default
       entities:
         area:
           path: <area>
@@ -239,7 +231,7 @@ root:
 
     exploring:
       tags:
-        exploring: {}
+        exploring: default
       entities:
         idea:
           # status: idea | considering | promoted | dropped — terminal exits
@@ -255,7 +247,7 @@ root:
       # default; an operator drills in via `relates` from a change or from this
       # shallow index.
       tags:
-        runbooks: {}
+        runbooks: default
       entities:
         runbook:
           # Each runbook is a directory `runbooks/<slug>/index.md` (like every
@@ -283,25 +275,26 @@ meta:
       - all      # cross-environment / shared (e.g. global IAM, DNS, billing)
       - meta     # framework plumbing — used by index.md / pillar indexes
 
-  # Marker tags that live outside the node tree. v4 — every body is a
-  # [Link, Description] table; entries below only route the tag to its host.
+  # Marker tags that live outside the node tree. v5 — default bodies are
+  # [Link, Description]; prose/mixed/other bodies are preserved but not
+  # path-resolved.
   tags:
     # Project-owned blocks hosted on domain.md (the domain hook).
-    components: { host_file: domain.md }
-    root: { host_file: domain.md }
+    components: { host_file: domain.md, type: default }
+    root: { host_file: domain.md, type: prose }
     # Universal "files" pattern tag — links to repo files with one-line
     # descriptions; can appear on any markdown host.
-    files: { host_file: "*" }
+    files: { host_file: "*", type: default }
     # Handoff "Files touched" block (templates/handoff.md) — colon-named pattern tag.
-    "files:touched": { host_file: "*" }
+    "files:touched": { host_file: "*", type: default }
     # Inventory of adopter-added templates, hosted on templates/index.md.
-    templates: { host_file: "templates/index.md" }
-    roles: { host_file: "roles/index.md" }
+    templates: { host_file: "templates/index.md", type: default }
+    roles: { host_file: "roles/index.md", type: default }
     # Spec→code reference tag — every row targets a repository SOURCE FILE
     # (e.g. .tf/manifest sources), resolved from the project root (never a
     # .cumaru/ path, a directory, or a URL). Read by `cumaru coverage`; hosted on
     # stack specs under topology/.
-    reference: { host_file: "*" }
+    reference: { host_file: "*", type: default }
 
   # Specification coverage (`cumaru coverage`) — the durable pillar whose
   # `reference` tables map stack specs to repository source files.
@@ -312,23 +305,6 @@ meta:
     # .agents/ are always excluded.
     source: []
       # - "infra/**"
-
-  # Cross-file checks across the .cumaru/ tree.
-  #   implemented — run today by CLI commands (e.g. `cumaru regen <KEY>`).
-  #   deferred    — not yet enforced by the validator.
-  cross_file_checks:
-    implemented:
-      - "Intake refinement: no leftover raw-import block"
-      - "Plan status and task progress (done/total)"
-      - "Tasks marked done that lack a handoff-t<N>.md"
-      - "Archive presence and finalization (no temp-archive-flow.delete-me.md residue)"
-      - "Topology deltas integrity — each path in the plan's scope: lists the plan's key in its deltas:"
-      - "EARS coverage — every intake AC line appears in archive/<KEY>/delta.md"
-    deferred:
-      - "Plan scope: paths resolve to existing topology/<area>[/<subarea>...]/<concern>.md"
-      - "Task depends-on: references resolve to existing tasks in the same plan"
-      - "Files listed in '## Files' of topology/<area>[/<subarea>...]/index.md exist on disk"
-      - "deltas: in topology frontmatter reference existing archive/<PLAN-ID>/ entries"
 
   # Compatibility & versioning.
   compatibility:

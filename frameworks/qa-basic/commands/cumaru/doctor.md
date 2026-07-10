@@ -25,7 +25,7 @@ Remediation map (per finding):
 - **Schema: missing frontmatter keys** → Read the file, add the missing keys with values inferred from siblings of the same kind (read `.cumaru/schema.yaml` to confirm the expected shape). Confirm values before writing.
 - **Schema: `apps` value not in `schema.yaml`** → Read `.cumaru/schema.yaml` `meta.apps.values`, propose the closest valid value, ask before editing.
 - **Schema: `framework-version` mismatch** → Read `.cumaru/schema.yaml` `version:`, bump `framework-version:` in `.cumaru/index.md` to match.
-- **Schema: EARS warning** → Reword the offending bullet to `WHEN <trigger> THE SYSTEM SHALL <behavior>` form, preserving intent. Show the proposed rewrite before applying.
+- **Schema: requirements-language warning** → Reword the offending bullet to EARS (`WHEN <trigger> THE SYSTEM SHALL <behavior>`) or RFC 2119 (`The system MUST <behavior>`) form, preserving intent and the section's dominant style. Show the proposed rewrite before applying.
 - **Schema: missing H1** → Add a `# <title>` line at the top derived from the filename or surrounding context.
 - **Orphan row (`✗ X — orphan row`)** → A pillar-index row points at a missing path. Either (a) the row's path is stale and needs editing via `cumaru tag set <pillar>/index.md <pillar> <new body>`, (b) the entity was removed and the row leaked (drop the row), or (c) the entity should still exist (recreate it). Ask the user when intent is unclear.
 - **Orphan file (`⚠ Y — orphan file`)** → Disk has an entity no row claims. Either (a) the entity is new and the table needs a row added (use `cumaru tag set`), or (b) it's stray/debris (confirm before deleting — never delete adopter data without consent).

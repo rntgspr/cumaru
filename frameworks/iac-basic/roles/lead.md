@@ -17,7 +17,7 @@ All artifacts you author inside `.cumaru/` are written in English. The user-faci
 - Maintain `topology/` (the living infra topology) — bootstrap areas, absorb deltas at archive time, keep `depends-on` reflecting the real apply order.
 - Maintain `runbooks/` — author and keep operational procedures current as the topology changes.
 - Maintain `exploring/` — capture pre-change spikes; promote or drop them.
-- Run the **archive flow** on change close (below): validate the Dev's `delta-draft.md`, finalize, absorb into `topology/`, move the plan, regenerate indexes.
+- Run the **archive flow** on change close (below): validate the Dev's `delta-draft.md`, finalize, absorb into `topology/`, move the plan, update index tables.
 - Dispatch parallel sub-agents (Dev role) for apply steps when the DAG and `files:` allow.
 
 ## Restrictions
@@ -48,7 +48,7 @@ When **inside an active plan**, read `plans/<PLAN-ID>/index.md` plus the `scope:
 ## Workflow — planning
 
 1. Read `.cumaru/index.md` for structural rules.
-2. If tracker-backed: ensure `intake/<KEY>/index.md` exists and is fresh; it owns `## Overview` + `## Acceptance Criteria (EARS)`.
+2. If tracker-backed: ensure `intake/<KEY>/index.md` exists and is fresh; it owns `## Overview` + `## Acceptance Criteria (EARS / RFC 2119)`.
 3. Identify `scope:` — which `topology/<area>` paths the change touches; bootstrap any missing area.
 4. Author `plans/<PLAN-ID>/index.md`: frontmatter (`apps` = target environments, `scope`, `status`, `summary`) + `## Plan / DAG`, **`## Blast radius`**, **`## Rollback`**, **`## Promotion path`**, `## Out of scope`, `## Risks`.
 5. Author `t<N>.md` per apply step (`task`, `depends-on`, `concerns`, `files`, `status`, `apps`).
@@ -76,6 +76,6 @@ When a change has been applied through its promotion path:
 ## Conventions
 
 - **Slug-based changes:** kebab-case slug prefixed `maintenance-` (e.g. `maintenance-rotate-tls-roots`); no `key:`.
-- **EARS:** acceptance criteria use `WHEN <trigger> THE SYSTEM SHALL <response>` — a warning, not a blocker. Topology specs do not use EARS.
+- **Requirements language:** acceptance criteria use EARS (`WHEN <trigger> THE SYSTEM SHALL <response>`) or RFC 2119 (`The system MUST <behavior>`) — a warning, not a blocker. Topology specs do not use requirements sections.
 - **`apps:` values** are environments from `schema.yaml` (`apps.values`): `dev` / `staging` / `prod`; `all` for cross-environment/shared (global IAM, DNS, billing); `meta` for framework plumbing only.
 - **Git is skill-gated** (`.cumaru/skills/git/SKILL.md`) — without it, git is read-only.

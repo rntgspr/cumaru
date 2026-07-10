@@ -182,7 +182,7 @@ _schema_framework_contract_match() {
 # --- per-file structured review (dry-run) ----------------------------------
 
 _update_render() {
-  local idx="$1" total="$2" f="$3" src="$4" tgt="$5" has_fm="$6" keep_prose="$7"
+  local idx="$1" total="$2" f="$3" src="$4" tgt="$5" has_fm="$6" keep_prose="$7" tag_schema_root="${8:-$CUMARU_DIR}"
   echo
   echo "─── [$idx/$total] $f"
 
@@ -205,20 +205,23 @@ _update_render() {
     fi
   fi
 
-  local src_tags tgt_tags name
+  local src_tags tgt_tags name tag_type
   src_tags=$(fm_block_list "$src")
   tgt_tags=$(fm_block_list "$tgt")
   if [[ -n "$src_tags$tgt_tags" ]]; then
-    echo "Tags (v4 — every body is a [Link, Description] table; rows preserved):"
+    echo "Tags (v5 — body type comes from schema; bodies preserved):"
     while IFS= read -r name; do
       [[ -z "$name" ]] && continue
       if grep -qxF "$name" <<< "$tgt_tags"; then
+        tag_type=$(fm_schema_tag_type "$tag_schema_root" "$name")
         if _update_tag_is_empty "$tgt" "$name"; then
-          echo "    [?] $name — local block is empty; add [Link, Description] rows."
+          echo "    [?] $name — local block is empty; populate according to its schema tag type."
+        elif [[ "$tag_type" == "prose" || "$tag_type" == "mixed" || "$tag_type" == "other" ]]; then
+          echo "    [=] $name — ${tag_type} body preserved."
         elif _update_tag_is_table "$tgt" "$name"; then
           echo "    [=] $name — body preserved."
         else
-          echo "    [Δ] $name — local body is NOT a markdown table; v4 expects [Link, Description]. Reshape to the canonical table form."
+          echo "    [Δ] $name — local body is NOT a markdown table; if schema declares a table, reshape it, otherwise keep prose/mixed/other as adopter-owned."
         fi
       else
         echo "    [+] $name — present in source, absent locally → empty block will be added."
@@ -290,13 +293,13 @@ Skills, hooks, and commands (always applied with --apply, never in general dry-r
 
 Domain detection:
   The installed domain is read from the `domain:` field in .cumaru/schema.yaml
-  (written there at install time). Falls back to `base` if absent.
+  (legacy `flavor:` is accepted as a fallback). Falls back to `base` if absent.
 
-Per-file model (v4):
+Per-file model (v5):
   • Frontmatter — adopter values are kept verbatim; only key drift is reported.
   • Tag bodies  — local body preserved; a marker missing locally is added empty.
-                  v4: every body is a [Link, Description] table — local bodies
-                  that don't match the table shape are flagged for reshape.
+                  v5: body type comes from schema (`default`, custom table,
+                  `prose`, `mixed`, `other`).
                   Bodies are never rewritten mechanically.
   • Prose       — taken FROM SOURCE by default (--keep-prose to retain local).
 
@@ -406,9 +409,12 @@ cmd_update() {
     esac
   done
 
-  # Resolve domain from the installed schema.yaml.
+  # Resolve domain from the installed schema.yaml. `flavor:` is a legacy field
+  # from pre-domain installs; keep it as a read-only fallback so update can
+  # migrate those trees instead of incorrectly selecting base.
   local domain
   domain=$(awk '/^domain:[[:space:]]/ {print $2; exit}' "$SCHEMA" 2>/dev/null || true)
+  [[ -n "$domain" ]] || domain=$(awk '/^flavor:[[:space:]]/ {print $2; exit}' "$SCHEMA" 2>/dev/null || true)
   : "${domain:=base}"
 
   # 1) Resolve source root (the dot-llm checkout).
@@ -745,7 +751,7 @@ cmd_update() {
     idx=$((idx + 1))
     local src="$source_framework/$rel" tgt="$CUMARU_DIR/$rel"
     local has_fm=0; _update_has_fm "$src" && has_fm=1
-    _update_render "$idx" "$total" "$rel" "$src" "$tgt" "$has_fm" "$keep_prose"
+    _update_render "$idx" "$total" "$rel" "$src" "$tgt" "$has_fm" "$keep_prose" "$source_framework"
   done
 
   say "═══════════════════════════════════════════════════════════════════════"

@@ -15,16 +15,13 @@
 #               `human_revised` is universal (rules.markdown) and is never
 #               repeated below.
 #
-# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`. v4
-#        makes every body a two-column markdown table:
-#
-#          | Link                  | Description                              |
-#          |-----------------------|------------------------------------------|
-#          | [name](path/index.md) | one-line prose explaining the linked file |
+# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`.
+#        Values declare body type: default ([Link, Description]), custom
+#        columns array, prose, mixed, or other.
 #
 # path:  relative to the parent node. A directory path resolves to its index.md.
 
-version: 4
+version: 5
 domain: vault-memory
 
 rules:
@@ -40,7 +37,7 @@ rules:
 
   ears:
     severity: warning
-    pattern: "((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+"
+    pattern: "(((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+)|(.+ (MUST NOT|MUST|REQUIRED|SHALL NOT|SHALL|SHOULD NOT|SHOULD|RECOMMENDED|MAY|OPTIONAL) .+)"
     applies_to: []
 
 root:
@@ -50,7 +47,7 @@ root:
   entities:
     inbox:
       tags:
-        inbox: {}
+        inbox: default
       entities:
         capture:
           path: <capture-id>
@@ -70,7 +67,7 @@ root:
 
     drafts:
       tags:
-        drafts: {}
+        drafts: default
       entities:
         draft:
           path: <slug>
@@ -91,7 +88,7 @@ root:
 
     memories:
       tags:
-        memories: {}
+        memories: default
       entities:
         memory:
           path: <slug>
@@ -116,11 +113,11 @@ root:
               similar-to,
             ]
           tags:
-            relations: {}
+            relations: default
 
     attachments:
       tags:
-        attachments: {}
+        attachments: default
       entities:
         attachment:
           path: <slug>
@@ -148,23 +145,17 @@ meta:
       - meta
 
   tags:
-    components: { host_file: domain.md }
-    root: { host_file: domain.md }
-    roles: { host_file: "roles/index.md" }
-    templates: { host_file: "templates/index.md" }
-    files: { host_file: "*" }
-    "files:touched": { host_file: "*" }
-    relations: { host_file: "*" }
+    components: { host_file: domain.md, type: default }
+    root: { host_file: domain.md, type: prose }
+    roles: { host_file: "roles/index.md", type: default }
+    templates: { host_file: "templates/index.md", type: default }
+    files: { host_file: "*", type: default }
+    "files:touched": { host_file: "*", type: default }
+    relations: { host_file: "*", type: default }
 
   specification_dir: memories
   coverage:
     source: []
-
-  cross_file_checks:
-    implemented: []
-    deferred:
-      - "Typed memory graph references resolve to existing memories, drafts, captures, or attachments."
-      - "Attachment files named by retained-for/source fields exist on disk."
 
   compatibility:
     framework_version_field: framework-version

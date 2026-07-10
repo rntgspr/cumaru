@@ -2,12 +2,12 @@
 human_revised: false
 version: 1
 name: cumaru-archive
-description: Use this skill whenever the user wants to close, finalize, or archive a plan in the project — move `plans/<KEY>/` into `archive/<KEY>/`, absorb the delta into the relevant spec areas, and clean up the working tree. Trigger on phrases like "archive this plan", "close AAA-1234", "finalize the plan", "arquivar o plano", "promote draft to delta", or any task that frames the work as ending a plan's lifecycle. Skill is sdlc-domain-only — it knows the pillar layout (`plans/`, `archive/`, `specs/`). For raw file ops, use the `cumaru flow` command directly.
+description: Use this skill whenever the user wants to close, finalize, or archive a plan in the project — move `plans/<KEY>/` into transient `archive/<KEY>/`, absorb the delta into specs, record the absorption in `specs/index.md`, and clean up archive/plans. Trigger on phrases like "archive this plan", "close AAA-1234", "finalize the plan", "arquivar o plano", "promote draft to delta", or any task that frames the work as ending a plan's lifecycle. Skill is sdlc-domain-only — it knows the pillar layout (`plans/`, `archive/`, `specs/`). For raw file ops, use the `cumaru flow` command directly.
 ---
 
 # `cumaru-archive` — close a plan and absorb its delta
 
-End-to-end recipe to close a `plans/<KEY>/`. Combines `cumaru flow` (file ops) + `cumaru tag` (re-emit the `archive/index.md` and `specs/<area>/index.md` tables) + Edit (frontmatter, prose).
+End-to-end recipe to close a `plans/<KEY>/`. `archive/` is transient staging: the durable result is the updated `specs/` tree plus the `specs/index.md` `cumaru:absorptions` row (`SHA | KEY | Description`). Combines `cumaru flow` (file ops) + `cumaru tag` (re-emit index tables) + Edit (frontmatter, prose).
 
 ## Pre-checks (refuse to start if any fails)
 
@@ -15,7 +15,7 @@ End-to-end recipe to close a `plans/<KEY>/`. Combines `cumaru flow` (file ops) +
 - `plans/<KEY>/delta-draft.md` exists.
 - Every `plans/<KEY>/t*.md` (excluding `handoff-*`) has `status: done` in the frontmatter.
 - `archive/<KEY>/` does **not** exist yet.
-- `git` skill is installed (Phase 4 needs mutating `git add` / `git commit`). If absent, refuse with: "Phase 4 needs `--with git`. Re-install with `cumaru install --with git` or finish Phase 1–3 manually and skip Phase 4."
+- `git` skill is installed (final absorption needs `git add` / `git commit` to produce the SHA recorded in `specs/index.md`). If absent, refuse with: "Archive absorption needs `--with git` to record the absorption SHA. Re-install with `cumaru install --with git` or finish the absorption manually and leave a placeholder SHA only with user approval."
 
 If any check fails, surface to the user — don't auto-fix.
 
@@ -28,11 +28,12 @@ If any check fails, surface to the user — don't auto-fix.
    - `status: done`
    - add `completed-at: <ISO datetime>`
    - add `delta: delta.md`
-5. Refine `archive/<KEY>/delta.md`: drop `status: draft`, tighten wording, verify EARS coverage.
-6. For each spec area in the plan's `scope:` frontmatter:
-   - Edit `specs/<area>/index.md` body to reflect the new state.
-   - Append `<KEY>` to the area's `deltas:` frontmatter list.
-   - Re-emit the area's row in `specs/index.md` via `cumaru tag get specs/index.md specs` → update Description (v4 shape: `| [<area>](<area>/index.md) | <one-line> |`) → `cumaru tag set specs/index.md specs <new body>`.
+5. Refine `archive/<KEY>/delta.md`: drop `status: draft`, tighten wording, verify requirements coverage.
+6. Add an in-flight row in `archive/index.md` via `cumaru tag set archive/index.md archive <new body>` — v5 default shape: `| [<KEY>](<KEY>/index.md) | <one-line summary of what is being absorbed> |`.
+7. For each spec area in the plan's `scope:` frontmatter:
+    - Edit `specs/<area>/index.md` body to reflect the new state.
+    - Append `<KEY>` to the area's `deltas:` frontmatter list.
+    - Re-emit the area's row in `specs/index.md` via `cumaru tag get specs/index.md specs` → update Description (default shape: `| [<area>](<area>/index.md) | <one-line> |`) → `cumaru tag set specs/index.md specs <new body>`.
 
 ## Phase 2 — remove the original plan tree
 
@@ -44,42 +45,34 @@ cumaru flow plans/<KEY> remove
 
 (The `cumaru flow` guardrail allows this — `plans/<KEY>/` is an entity dir, not the pillar root itself.)
 
-## Phase 3 — re-emit archive/index.md row + verify
+## Phase 3 — commit absorption, record it in specs/, and clean archive/
 
-1. Add the row to `archive/<KEY>` in `archive/index.md` via `cumaru tag set archive/index.md archive <new body>` — v4 shape: `| [<KEY>](<KEY>/index.md) | <one-line summary of what shipped, plus apps if relevant> |`. The absorbed commit SHA is appended to the Description in Phase 4 (e.g. "— absorbed in 3f1c2ab").
-2. Run `cumaru doctor`:
-   - Orphan check: row pointing at `plans/<KEY>/` should be gone; new row in `archive/` should resolve to the in-flight `archive/<KEY>/` directory.
-   - File refs: `delta: delta.md` should resolve.
+After Phase 2, the source plan is gone and `archive/<KEY>/` is the in-flight close-out workspace. The durable end state is specs + the absorptions ledger; archive must be empty for this plan.
 
-## Phase 4 — Commit absorption and prune archive directory
-
-After Phase 3, the spec(s) carry the absorbed delta and `archive/index.md`
-has the new row. Commit and prune the directory; the row + commit SHA
-become the durable record.
-
-1. Stage and commit the absorption:
+1. Run `cumaru doctor` before commit:
+   - Orphan check: row pointing at `plans/<KEY>/` should be gone; the in-flight row in `archive/` should resolve to `archive/<KEY>/`.
+   - File refs: `delta: delta.md` should resolve while the archive directory exists.
+2. Stage and commit the spec absorption:
    ```bash
    git add specs/ archive/ plans/
    git commit -m "chore(.cumaru): absorb <KEY> delta into <areas>"
    ```
-2. Capture the commit SHA: `git rev-parse HEAD`.
-3. Re-emit the `<KEY>` row in `archive/index.md` with the absorbed commit SHA appended to the Description
-   (e.g. `… — absorbed in 3f1c2ab`) via `cumaru tag set archive/index.md archive <new body>`.
-4. Prune the directory and commit:
+3. Capture the commit SHA: `git rev-parse HEAD`.
+4. Re-emit the `cumaru:absorptions` table in `specs/index.md` via `cumaru tag get specs/index.md absorptions` → append `| <sha> | <KEY> | <one-line summary of what became durable> |` → `cumaru tag set specs/index.md absorptions <new body>`.
+5. Remove the `<KEY>` row from `archive/index.md` via `cumaru tag set archive/index.md archive <new body>`.
+6. Prune the archive directory and commit the ledger/cleanup:
    ```bash
    cumaru flow archive/<KEY> remove
-   git add archive/
-   git commit -m "chore(.cumaru): prune archive/<KEY>/ post-absorption"
+   git add specs/index.md archive/
+   git commit -m "chore(.cumaru): record <KEY> absorption"
    ```
-5. Run `cumaru doctor` — should report no orphans.
+7. Run `cumaru doctor` — should report no orphans. `archive/index.md` must not contain `<KEY>`, and `archive/<KEY>/` must not exist.
 
-**Ghost deltas** (delta declared "no spec change required"): the Description
-ends with `… — absorbed in <sha> (no spec change)` and the directory is
-still pruned.
+**Ghost deltas** (delta declared "no spec change required"): still record a `specs/index.md` `absorptions` row with the SHA and Description ending in `(no spec change)`, then remove the archive row and directory.
 
 ## Why phased
 
-Phase 1 is *non-destructive* (copies + frontmatter updates) so a mistake is recoverable just by deleting `archive/<KEY>/`. Phase 2 removes the source plan tree — recoverable from git, but disruptive. Phase 4 is the **final irreversible step**: the absorption commit + directory prune means `archive/<KEY>/` no longer exists on disk; from that point on, the row in `archive/index.md` + the commit SHA are the durable record.
+Phase 1 is *non-destructive* (copies + frontmatter updates) so a mistake is recoverable by deleting `archive/<KEY>/` and restoring the plan row. Phase 2 removes the source plan tree — recoverable from git, but disruptive. Phase 3 is final: specs become the durable truth and `specs/index.md` records the SHA/KEY/Description absorption ledger; archive leaves no residue for `<KEY>`.
 
 ## Companion ops (no skill needed — these are 1-2 line operations)
 
@@ -104,13 +97,13 @@ cumaru flow plans/<old>  move  plans/<new>
 # Then cumaru doctor — orphan check should be clean.
 ```
 
-### Prune already-absorbed archives (retroactive migration)
+### Migrate already-absorbed archives to specs absorptions
 
-One-shot recipe to bring a project with pre-existing archives into the
-ephemeral lifecycle. Run after `cumaru update --apply` brings the updated
-skill into the consumer repo.
+One-shot recipe to bring a project with pre-existing archive rows into the
+transient archive lifecycle. Run after `cumaru update --apply` brings the
+updated skill into the consumer repo.
 
-For each row in `archive/index.md` table without `Absorbed-in:`:
+For each row in `archive/index.md`:
 
 1. **Verify spec absorption.** Scan `specs/` for `<KEY>` in any area's
    `deltas:` frontmatter:
@@ -134,9 +127,8 @@ For each row in `archive/index.md` table without `Absorbed-in:`:
      git log -p -- archive/index.md | grep -B3 "<KEY>"
      ```
      Take the commit that added the row.
-3. **Update the row** with `Absorbed-in: <sha>` (or
-   `<sha> (no spec change)` for ghosts) via `cumaru tag set`.
-4. **Prune the directory**: `cumaru flow archive/<KEY> remove`.
+3. **Record the absorption** in `specs/index.md` `cumaru:absorptions` as `| <sha> | <KEY> | <one-line summary> |` via `cumaru tag set`.
+4. **Remove archive residue**: remove the `<KEY>` row from `archive/index.md`; if `archive/<KEY>/` exists, `cumaru flow archive/<KEY> remove`.
 5. Commit per batch or per `<KEY>` (user preference, default: batch of
    10 per commit, message
    `chore(.cumaru): prune <N> already-absorbed archives`).
@@ -145,7 +137,7 @@ For each row in `archive/index.md` table without `Absorbed-in:`:
 
 | User says | You do |
 |---|---|
-| "Archive AAA-1234" / "close plan X" / "finalize plan X" | Run all 4 phases above on `<KEY>=AAA-1234`, with confirmation between Phase 1 and Phase 2, and again before Phase 4 (irreversible prune) |
+| "Archive AAA-1234" / "close plan X" / "finalize plan X" | Run all 3 phases above on `<KEY>=AAA-1234`, with confirmation between Phase 1 and Phase 2, and again before Phase 3's commit/cleanup |
 | "Promote `exploring/auth-redesign` to a plan" | Companion op: copy → write plan frontmatter → re-emit plans table |
 | "Rename plan AAA-1234 to AAA-9999" | Companion op: move + update `key:` + fix `deltas:` refs |
 

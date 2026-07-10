@@ -54,7 +54,7 @@ The framework is in place; the codebase is not yet mapped to it. **Your job** is
 With components declared, the next post-install step is seeding `specs/` so future plans have somewhere to absorb deltas. **That work lives in the domain-specific `cumaru-specs` skill** (it carries the bootstrap / deepen / consolidate recipes). When the user is ready, invoke it — `cumaru-specs` walks them through:
 
 - **Bootstrap** — identify functional areas (`auth`, `payments`, …) and create skeleton `specs/<area>/index.md` per area, with user confirmation on every split.
-- **Deepen** — fill an area's EARS requirements grounded in code; split into concerns / subareas as warranted.
+- **Deepen** — fill an area's requirements grounded in code; split into concerns / subareas as warranted.
 - **Consolidate** — compact accumulated deltas into a single coherent spec when `deltas:` grows long.
 
 This skill stops at Step 1 because the spec work is recurring (deepen + consolidate happen across the project's lifetime, not just at install). Keeping it in `cumaru-specs` lets non-sdlc domains install without that overhead.

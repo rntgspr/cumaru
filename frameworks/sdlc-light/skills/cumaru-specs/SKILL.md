@@ -33,7 +33,7 @@ specs/
 3. `cumaru flow specs/<area> create`
 4. `cumaru flow specs/<area>/index.md create`
 5. Open `templates/spec.md`; author the frontmatter.
-6. Body — follow the template: `## Overview`, `## Requirements (EARS)`, `## Decisions`, `## Files`.
+6. Body — follow the template: `## Overview`, `## Requirements (EARS / RFC 2119)`, `## Decisions`, `## Files`.
 7. Optionally copy `templates/bootstrap.md` to `specs/<area>/bootstrap.md` for a discovery log.
 8. Re-emit `specs/index.md` row via `cumaru tag set specs/index.md specs <new body>`.
 9. `cumaru doctor`.
@@ -44,7 +44,7 @@ When a plan is about to touch an area and its spec is too thin:
 
 1. Read `specs/<area>/index.md` end-to-end.
 2. Read the code in the area's surface — sources, tests, configs.
-3. Write EARS-style requirements grounded in code. Group under `## Requirements (EARS)` subheaders.
+3. Write EARS/RFC 2119 requirements grounded in code. Group under `## Requirements (EARS / RFC 2119)` subheaders.
 4. **Split into a concern file** when a topic is large enough.
 5. **Promote a concern to a subarea** when it has grown beyond a flat file.
 6. Re-emit `specs/index.md` if new rows appeared.
@@ -80,7 +80,7 @@ This skill provides the recipes to **grow** the spec tree (bootstrap, deepen, co
 | User says | You do |
 |---|---|
 | "Bootstrap the specs" / "scaffold the spec areas" | Bootstrap recipe → propose area list → confirm → create each area |
-| "Deepen the auth spec" | Deepen recipe on `specs/auth/` → light-or-deep read → write EARS → split/promote as needed |
+| "Deepen the auth spec" | Deepen recipe on `specs/auth/` → light-or-deep read → write requirements → split/promote as needed |
 | "Split this area into concerns" | Deepen recipe step 4 (split) or step 5 (promote) |
 | "Consolidate specs/payments" | Consolidate recipe → read deltas → rewrite body → swap `deltas` for `consolidated-at` |
 

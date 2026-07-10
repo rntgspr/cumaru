@@ -1,6 +1,6 @@
 ---
 version: 1
-description: Run `cumaru intake <KEY>` to mirror a tracker issue under `.cumaru/intake/<KEY>/`, then refine the generated file per the embedded RAW instructions (Overview, EARS criteria, apps=test levels, bug sections) before deleting the block.
+description: Run `cumaru intake <KEY>` to mirror a tracker issue under `.cumaru/intake/<KEY>/`, then refine the generated file per the embedded RAW instructions (Overview, EARS / RFC 2119 criteria, apps=test levels, bug sections) before deleting the block.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <TRACKER-KEY>
 ---
@@ -21,7 +21,7 @@ Argument: `$ARGUMENTS` is the tracker key (e.g. `AAA-1234`). If empty, ask the u
 5. **Walk the refinement, section by section.** Apply edits to the *body above* the RAW block. Don't touch frontmatter `status:` or `synced-at:`.
 
    - **`## Overview`** — 1–3 paragraphs in **English**, restating what is being asked and *why it matters*. Derive strictly from the source; translate if needed. Don't pad.
-   - **`## Acceptance Criteria (EARS)`** — bullets in the form `WHEN <trigger> THE SYSTEM SHALL <observable response>`. For qa, the response is an observable test outcome (the case asserts X, the suite covers level Y, the flake rate falls below Z). **Every bullet must conform to the EARS pattern — `cumaru doctor` flags non-conforming bullets as a warning.**
+   - **`## Acceptance Criteria (EARS / RFC 2119)`** — bullets in EARS form (`WHEN <trigger> THE SYSTEM SHALL <observable response>`) or RFC 2119 form (`The system MUST <behavior>`). For qa, the response is an observable test outcome (the case asserts X, the suite covers level Y, the flake rate falls below Z). **Every bullet must conform to the requirements-language pattern (EARS or RFC 2119) — `cumaru doctor` flags non-conforming bullets as a warning.**
    - **Bug-only sections** (`## Reproduction`, `## Expected`, `## Actual`) — only if `type: bug`. For test-bench bugs, fill from the failure mode. **If `type` is not `bug`, delete these three sections and the surrounding bug-only HTML comments.**
    - **Epic exception** — Epics get `## Overview` only.
 
@@ -33,12 +33,12 @@ Argument: `$ARGUMENTS` is the tracker key (e.g. `AAA-1234`). If empty, ask the u
 
 8. **Update the intake table.** Append a row to `intake/index.md` via `cumaru tag get/set intake/index.md intake`. (Skip on re-sync of an item that already had a row.)
 
-9. **Close out.** Print the final path and run `cumaru doctor`. Report refinement status, EARS warnings, the `apps:` value applied (or the blocker noted in step 6), and doctor totals.
+9. **Close out.** Print the final path and run `cumaru doctor`. Report refinement status, requirements-language warnings, the `apps:` value applied (or the blocker noted in step 6), and doctor totals.
 
 Hard rules:
 
 - Never modify `status:` or `synced-at:` — the CLI owns those.
 - Never write an `apps:` value not in `meta.apps.values`.
-- Every EARS bullet must match `WHEN .+ THE SYSTEM SHALL .+` (or `WHILE .+ SHALL .+`); reword incomplete bullets with the user, don't leave them.
+- Every requirements bullet must match EARS or RFC 2119; reword incomplete bullets with the user, don't leave them.
 - If the RAW block is gone, exit without editing — re-syncing a refined file is a no-op by design.
 - For qa work, `apps:` = test levels (where coverage lands), NOT components.

@@ -39,7 +39,7 @@ plans/<PLAN-ID>/
 
 ## Recipe: bootstrap a campaign (slug-based / maintenance)
 
-Kebab-case slug prefixed `maintenance-` (e.g. `maintenance-deflake-checkout`). Frontmatter has no `key:`/`type:`. Body carries **everything** (no intake to defer to): `## Overview` + `## Acceptance Criteria (EARS)` + `## Test Strategy` + `## Cases / DAG` + `## Scope` + `## Risks / Gaps` + `## Out of scope`. Re-emit `plans/index.md`; `cumaru doctor`.
+Kebab-case slug prefixed `maintenance-` (e.g. `maintenance-deflake-checkout`). Frontmatter has no `key:`/`type:`. Body carries **everything** (no intake to defer to): `## Overview` + `## Acceptance Criteria (EARS / RFC 2119)` + `## Test Strategy` + `## Cases / DAG` + `## Scope` + `## Risks / Gaps` + `## Out of scope`. Re-emit `plans/index.md`; `cumaru doctor`.
 
 ## Recipe: add a case
 

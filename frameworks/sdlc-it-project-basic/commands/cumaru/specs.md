@@ -11,11 +11,11 @@ Argument: `$ARGUMENTS` may be an area name (`auth`, `payments`), a nested path (
 
 2. **Dispatch by intent.** If `$ARGUMENTS` is:
    - A new area name (no `specs/<area>/` yet) → **bootstrap** recipe. Read CLAUDE.md, README, and the area's code surface; propose name, summary, `depends-on`, `apps`; confirm before creating.
-   - An existing area whose body is thin → **deepen** recipe. Read the code by topic; write EARS-style requirements; split into concerns/subareas when warranted.
-   - An existing area whose `deltas:` list has ≥5 entries (or the user explicitly asks "consolidate") → **consolidate** recipe. Read all referenced `archive/<PLAN-ID>/delta.md` entries; rewrite the area body as a single coherent spec; swap `deltas:` for `consolidated-at:`.
+   - An existing area whose body is thin → **deepen** recipe. Read the code by topic; write EARS/RFC 2119 requirements; split into concerns/subareas when warranted.
+   - An existing area whose `deltas:` list has ≥5 entries (or the user explicitly asks "consolidate") → **consolidate** recipe. Use `specs/index.md` `cumaru:absorptions` to locate the relevant commits when detail is needed; rewrite the area body as a single coherent spec; swap `deltas:` for `consolidated-at:`.
    - Empty → ask which area + which recipe.
 
-3. **Run the recipe.** Walk the skill's steps, confirming every judgment call (area split, concern promotion, EARS coverage, consolidation cuts). Use `cumaru flow` for file ops and `cumaru tag set specs/index.md specs <new body>` to re-emit the index row.
+3. **Run the recipe.** Walk the skill's steps, confirming every judgment call (area split, concern promotion, requirements coverage, consolidation cuts). Use `cumaru flow` for file ops and `cumaru tag set specs/index.md specs <new body>` to re-emit the index row.
 
 4. **Close out.** Run `cumaru doctor` and report. Surface any new orphan rows/files introduced by structural changes (a deepen that promotes a concern to a subarea changes the row shape).
 
@@ -23,5 +23,5 @@ Hard rules:
 
 - **Lead-only authoring.** This command operates as the Lead. The Dev never writes inside `specs/` directly — delta absorption happens during `/cumaru:archive`, driven by the Dev's `delta-draft.md`.
 - **Bootstrap on demand.** Don't seed empty areas in advance. Wait for a plan to declare one in `scope:`, or for the user to explicitly ask.
-- **Don't invent EARS.** An empty `## Requirements (EARS)` section is better than fabricated ones. Ground every bullet in code you can point to.
+- **Don't invent requirements.** An empty `## Requirements (EARS / RFC 2119)` section is better than fabricated ones. Ground every bullet in code you can point to.
 - **Re-emit `specs/index.md` row** via `cumaru tag set` after any structural change (new area, new concern, promoted subarea, consolidation).

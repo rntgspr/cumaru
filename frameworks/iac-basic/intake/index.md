@@ -19,7 +19,7 @@ Local mirror of the **tracker items that drive infrastructure change** — provi
 
 ## Rules
 
-- **Mirror, not authoritative.** The tracker owns the item. `## Overview` and `## Acceptance Criteria (EARS)` are authored in English from the source description, not pasted verbatim.
+- **Mirror, not authoritative.** The tracker owns the item. `## Overview` and `## Acceptance Criteria (EARS / RFC 2119)` are authored in English from the source description, not pasted verbatim.
 - **Mechanical sync.** `cumaru intake <KEY>` creates or refreshes an entry. Sync is not a role responsibility; roles only **read** intake.
 - **CLI-managed `status:`/`synced-at:`.** Body sections are yours to author.
 - **Flat layout.** `intake/<KEY>/index.md` regardless of type; `relates:` records cross-item links.

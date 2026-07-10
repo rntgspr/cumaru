@@ -39,7 +39,7 @@ When the user says "start a plan for AAA-1234" / "vamos começar AAA-1234":
    - `status: in-progress`.
    - `summary:` one-line.
    - `apps: [...]`.
-5. Body — carries **everything** (no separate intake pillar): `## Overview`, `## Acceptance Criteria (EARS)`, `## Plan / DAG`, `## Out of scope`, `## Risks`.
+5. Body — carries **everything** (no separate intake pillar): `## Overview`, `## Acceptance Criteria (EARS / RFC 2119)`, `## Plan / DAG`, `## Out of scope`, `## Risks`.
 6. Skip task creation now if you don't yet know the breakdown; add them as the work clarifies.
 7. Re-emit `plans/index.md` row via `cumaru tag set plans/index.md plans <new body>`.
 8. `cumaru doctor` — orphan check should be clean.
@@ -50,7 +50,7 @@ When the user says "start a plan for AAA-1234" / "vamos começar AAA-1234":
 2. `cumaru flow plans/maintenance-<slug> create`
 3. `cumaru flow plans/maintenance-<slug>/index.md create`
 4. Frontmatter — no `key:`, no `type:`, no `epic:`/`story:`. Required: `scope`, `status: in-progress`, `summary`, `apps`.
-5. Body — same sections as tracker-backed: `## Overview`, `## Acceptance Criteria (EARS)`, `## Plan / DAG`, `## Out of scope`, `## Risks`.
+5. Body — same sections as tracker-backed: `## Overview`, `## Acceptance Criteria (EARS / RFC 2119)`, `## Plan / DAG`, `## Out of scope`, `## Risks`.
 6. Re-emit `plans/index.md` row.
 7. `cumaru doctor`.
 

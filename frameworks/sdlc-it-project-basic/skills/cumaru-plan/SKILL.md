@@ -46,13 +46,13 @@ When the user says "start a plan for AAA-1234" / "vamos começar AAA-1234":
 7. Body — tracker-backed plans carry **only** `## Plan / DAG`, `## Out of scope`, `## Risks`. Overview + AC are in intake.
 8. Skip task creation now if you don't yet know the breakdown; add them as the work clarifies (see "Recipe: add a task" below). Or seed `t1.md` with the first task immediately.
 9. **Reconcile the written plan against the intake (coverage gate).** Before publishing the index row, prove the plan faithfully executes what the intake requests — checked, not assumed:
-   - **Intake is sound first.** Re-open `intake/<KEY>/index.md`: no `<!-- BEGIN RAW` block lingers (a still-raw issue invalidates every check below), `## Overview` is written, and `## Acceptance Criteria (EARS)` lists concrete criteria.
+   - **Intake is sound first.** Re-open `intake/<KEY>/index.md`: no `<!-- BEGIN RAW` block lingers (a still-raw issue invalidates every check below), `## Overview` is written, and `## Acceptance Criteria (EARS / RFC 2119)` lists concrete criteria.
    - **Every criterion has a home.** Map each acceptance criterion → the `scope:` path that satisfies it → (once tasks exist) the task that does the work. A criterion with no scope/task is a gap.
    - **No dead scope.** Every `scope:` path resolves to a real `specs/<area>/` (or is explicitly flagged bootstrap-on-first-touch) **and** is actually exercised — referenced by some task's `concerns:`. A scope path no task touches is decoration; drop it or add the task. No task's `concerns:` points outside `scope:`.
    - **Scope is complete, not just covered.** Read the change's reach from the `depends-on` / `relates` graph: does `scope:` name every capability/flow the change can cross, or only the one that motivated the plan? A surface whose reach the graph doesn't describe is bootstrapped (node + edges) before tasks (see the `blast-radius` discipline).
    - **The body agrees.** Re-read `index.md` against the above: `## Plan / DAG` covers every criterion, `## Out of scope` drops nothing silently, `## Risks` are the real ones.
    - **Update and re-check.** If any check fails, fix the plan — `scope:`, tasks, or body — then re-run this step. Proceed only when intake and plan agree.
-10. Re-emit `plans/index.md` row via `cumaru tag set plans/index.md plans <new body>` — v4 shape: `| [<PLAN-ID>](<PLAN-ID>/index.md) | <one-line description: title, tasks done/total, apps> |`.
+10. Re-emit `plans/index.md` row via `cumaru tag set plans/index.md plans <new body>` — default shape: `| [<PLAN-ID>](<PLAN-ID>/index.md) | <one-line description: title, tasks done/total, apps> |`.
 11. `cumaru doctor` — orphan check should be clean.
 
 ## Recipe: bootstrap a new plan (slug-based / maintenance)
@@ -63,7 +63,7 @@ When the user says "novo plano de manutenção <X>" / "internal refactor of Y, n
 2. `cumaru flow plans/maintenance-<slug> create`
 3. `cumaru flow plans/maintenance-<slug>/index.md create`
 4. Frontmatter — no `key:`, no `type:`, no `epic:`/`story:`. Required: `scope`, `status: in-progress`, `summary`, `apps`.
-5. Body — slug-based plans carry **everything** (no intake to defer to): `## Overview` + `## Acceptance Criteria (EARS)` + `## Plan / DAG` + `## Out of scope` + `## Risks`.
+5. Body — slug-based plans carry **everything** (no intake to defer to): `## Overview` + `## Acceptance Criteria (EARS / RFC 2119)` + `## Plan / DAG` + `## Out of scope` + `## Risks`.
 6. Re-emit `plans/index.md` row.
 7. `cumaru doctor`.
 

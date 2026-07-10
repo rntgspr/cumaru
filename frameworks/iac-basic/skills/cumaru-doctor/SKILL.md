@@ -2,10 +2,10 @@
 human_revised: false
 version: 1
 name: cumaru-doctor
-description: Use this skill whenever the user wants to validate the `.cumaru/` tree of a dot-llm project — confirm the schema matches the disk, find orphan files/rows, surface any v4 contract violations. Trigger on phrases like "validate .cumaru/", "check the framework health", "rodar o doctor", "is .cumaru/ healthy?", "audit the project", "check for orphans", "find stray files in .cumaru/", "align the indexes", or any task that needs a health snapshot before another operation. `cumaru doctor` is the **default** subcommand — bare `cumaru` runs it.
+description: Use this skill whenever the user wants to validate the `.cumaru/` tree of a cumaru project — confirm the schema matches the disk, find orphan files/rows, surface tag/path contract violations. Trigger on phrases like "validate .cumaru/", "check the framework health", "rodar o doctor", "is .cumaru/ healthy?", "audit the project", "check for orphans", "find stray files in .cumaru/", "align the indexes", or any task that needs a health snapshot before another operation. `cumaru doctor` is the **default** subcommand — bare `cumaru` runs it.
 ---
 
-# `cumaru doctor` — health checks (v4 schema-driven)
+# `cumaru doctor` — health checks (v5 schema-driven)
 
 Runs end-to-end validation of the `.cumaru/` tree. **Pillar-agnostic**: structural checks read the schema and walk what it declares; generic marker and tool checks scan the tree without hardcoded pillar names.
 
@@ -33,7 +33,7 @@ Sub-passes (only details surface on error; clean runs collapse to one `[✓]`):
 | `[1]` index.md frontmatter | `generated` + `apps`; `apps:` values must come from `meta.apps.values` |
 | `[2]` Pillar index | `generated-at` + any pillar-specific extras (e.g. `tracker!` on intake) |
 | `[3]` Entity frontmatter | Schema-driven walk of `root.entities`; validates each entity's `frontmatter:` |
-| `[4]` EARS pattern | Warning-only on bullets under `## Acceptance Criteria` / `## Requirements` |
+| `[4]` pattern rules | Warning-only on bullets under declared requirements or scenario sections |
 
 Cross-pass: `framework-version:` in `.cumaru/index.md` must equal `version:` in `schema.yaml`.
 
@@ -63,7 +63,7 @@ Detects any Markdown file containing `<!-- BEGIN RAW`. The marker means source c
 
 ### [5] File references resolve on disk
 
-v4: every `<!-- cumaru:* -->` body is a `[Link, Description]` table. Walks every block hosted on a non-pillar `.md` (pillar/raiz indexes are already covered by the orphan check) and validates each `[name](path)` link resolves on disk relative to the host file. Template placeholders (`<KEY>`, `<area>`), external URLs (`http(s)://`, `mailto:`), and in-page anchors (`#…`) are skipped. Exception: `reference` rows resolve from the **project root** and must target repository source files — a row pointing inside `.cumaru/`, at a directory, an absolute path, or a URL reports as **invalid** (fix per the `cumaru-refs` skill).
+v5: only `default` tag bodies are path-resolved `[Link, Description]` tables. Custom table tags are checked for their declared columns; `prose`, `mixed`, and `other` bodies are preserved but not path-resolved. Root `index.md` and `domain.md` links resolve from the project root. Template placeholders (`<KEY>`, `<area>`), external URLs (`http(s)://`, `mailto:`), and in-page anchors (`#…`) are skipped. Exception: `reference` rows resolve from the **project root** and must target repository source files — a row pointing inside `.cumaru/`, at a directory, an absolute path, or a URL reports as **invalid** (fix per the `cumaru-refs` skill).
 
 ### [6] External tools available
 
@@ -72,8 +72,8 @@ v4: every `<!-- cumaru:* -->` body is a `[Link, Description]` table. Walks every
 ## What doctor does NOT check (LLM's job)
 
 - **Workflow integrity** (tasks done without handoff, orphan delta-drafts after archive). Audited as part of recipe execution in the domain-specific recipe skills (e.g. `cumaru-archive` for sdlc).
-- **Cross-file semantic links** (every `scope:` path resolves, every `depends-on:` references a real entity). Listed in `schema.yaml > meta.cross_file_checks.deferred`.
-- **The schema's intent vs file content** — e.g. EARS quality, prose accuracy. These are author judgment, not validation.
+- **Cross-file semantic links** (every `scope:` path resolves, every `depends-on:` references a real entity). Not enforced by `cumaru doctor`.
+- **The schema's intent vs file content** — e.g. requirements quality, prose accuracy. These are author judgment, not validation.
 
 ## Workflow
 

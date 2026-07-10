@@ -6,7 +6,7 @@ Read, write, and audit `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->` marker b
 
 ```
 cumaru tag                                  list tags declared for the root index.md
-cumaru tag all [--body|--rows]              list every tag in every .cumaru/*.md
+cumaru tag all [--body|--rows|--tables|--prose|--mixed] list every tag in every .cumaru/*.md
 cumaru tag <file>                           list the file's actual tags + schema's expected; flag diffs
 cumaru tag [<file>] get <tag>               print the body of <tag>
 cumaru tag [<file>] set <tag> [<content>]   replace the body; content positional or stdin
@@ -18,15 +18,26 @@ cumaru tag set [<file>] <tag> [<content>]   equivalent verb-first form
 
 Tag name format: `[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*` — colon segments repeat, so deep node-tree names like `plans:plan:handoff:files` are valid. The `cumaru:` prefix in the file is implicit — pass `specs` or `cumaru:specs`, both resolve to the same.
 
+`<file>` audit mode (`cumaru tag <file>`) shows a diff between what the schema declares for that file and what marker blocks actually exist — tags declared in schema but absent from the file marked `[+]`, and tags present in the file but not declared marked `[✗]`.
+
 ## Schema validation
 
 Every `get` / `set` is validated against the schema:
 - The tag must be **declared** for the file (root tags, pillar tags, or `meta.tags` with matching `host_file`).
 - The set of declared tags comes from the schema walk (`root.tags`, `root.entities.<pillar>.tags`, `meta.tags`).
 
-## Body shape — universal (v4)
+## Body Shape (v5)
 
-Every `<!-- cumaru:* -->` block has the **same shape**: a markdown table with two columns — `Link` and `Description`. The shape is hardcoded in the parser, doctor, update, and this CLI; schemas don't declare per-tag columns. Add rows, never columns.
+Every `<!-- cumaru:* -->` block is adopter-owned, but its body type is declared by the schema:
+
+| Schema value | Meaning |
+|---|---|
+| `default` | Standard table with `Link`, `Description`. |
+| `[SHA, KEY, Description]` | Custom deterministic table with those columns. |
+| `prose` | Free prose, preserved and not path-resolved. |
+| `mixed` / `other` | Opaque adopter-owned body; tooling preserves it but does not infer structure. |
+
+`cumaru tag all --rows` emits only `default` table rows. `--tables` emits deterministic table rows (`default` plus custom arrays). `--prose` and `--mixed` print raw bodies for those non-table types.
 
 ```markdown
 | Link                          | Description                          |
@@ -50,9 +61,23 @@ cumaru tag all --body
 # Machine-readable rows for hooks and doctor:
 # file<TAB>tag<TAB>link<TAB>description<TAB>target<TAB>status
 cumaru tag all --rows
+
+# Deterministic table rows (default + custom column arrays):
+# file<TAB>tag<TAB>columns_csv<TAB>cell1<TAB>cell2...
+cumaru tag all --tables
+
+# Schema-declared prose block bodies.
+cumaru tag all --prose
+
+# Mixed/other opaque block bodies.
+cumaru tag all --mixed
 ```
 
-`--rows` parses only v4 `[Link, Description]` rows and resolves links relative to the file that hosts the tag. Status values are `ok`, `missing`, `external`, `anchor`, `template`, `empty`, and `invalid`.
+`--rows` parses only `default` `[Link, Description]` rows and resolves links relative to the file that hosts the tag. Root `index.md` and `domain.md` links resolve from the project root. Status values are `ok`, `missing`, `external`, `anchor`, `template`, `empty`, and `invalid`.
+
+`--tables` includes both `default` and custom-column array tags, outputting the declared column names as the first fields.
+
+`--prose` and `--mixed` print raw bodies for schema-declared `prose` and `mixed`/`other` tag types respectively.
 
 Exception: rows of the `reference` tag resolve from the **project root** (the parent of `.cumaru/`) and must target repository source files — the coverage rule, hardcoded like the table shape. A `reference` row pointing inside `.cumaru/`, at a directory, an absolute path, or a URL resolves to `invalid`. See [`cumaru coverage`](coverage.md).
 

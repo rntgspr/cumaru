@@ -33,7 +33,7 @@ Tracker resolution (first match wins): the item's own `tracker:` frontmatter (re
 ## Your job after `cumaru intake` runs
 
 1. Refine `## Overview` — restate what must be verified and why, in English, 1-3 paragraphs.
-2. Refine `## Acceptance Criteria (EARS)` — the **requirement to verify**, as `WHEN <trigger> THE SYSTEM SHALL <response>` (or `WHILE`/`WHERE`/`IF … THEN`/ubiquitous). E.g. *WHEN the cart is empty THE SYSTEM SHALL disable the checkout button*. These become the scenarios a coverage area `relates:` back to.
+2. Refine `## Acceptance Criteria (EARS / RFC 2119)` — the **requirement to verify**. Use EARS for event/state behavior and RFC 2119 for constraints; prefer one dominant style per section. These become the scenarios a coverage area `relates:` back to.
 3. If `type: bug` / `regression`, fill `## Reproduction`, `## Expected`, `## Actual` — the behaviour a regression test must lock in.
 4. Set `apps: [...]` — the **test levels** the work concerns (keys from `schema.yaml > meta.apps.values`: `unit`/`integration`/`e2e`/`contract`/`performance`/`all`).
 5. Verify `relates: [...]`.

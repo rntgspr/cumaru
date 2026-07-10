@@ -75,9 +75,9 @@ When `deltas:` has grown long (≥5) and the per-change history makes the topolo
 
 **What NOT to do:** don't delete archive entries; don't consolidate halfway; don't consolidate on every change close — pay the cost only when the weight is real.
 
-## Not EARS
+## Not Requirements Language
 
-Unlike behavioral specs, a topology area does **not** carry `## Requirements (EARS)` — infrastructure is described by structure (interface, dependencies, decisions), not `WHEN…THE SYSTEM SHALL…`. EARS lives only in change-request acceptance criteria (`intake/`, slug-based plans).
+Unlike behavioral specs, a topology area does **not** carry `## Requirements (EARS / RFC 2119)` — infrastructure is described by structure (interface, dependencies, decisions), not requirement bullets. EARS / RFC 2119 belongs in change-request acceptance criteria (`intake/`, slug-based plans).
 
 ## What this skill does NOT do
 

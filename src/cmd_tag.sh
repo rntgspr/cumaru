@@ -2,7 +2,7 @@
 #
 # Forms:
 #   cumaru tag                                 list tags declared for the root index.md (.cumaru/index.md)
-#   cumaru tag all [--body|--rows]             list every tag in every .cumaru/*.md
+#   cumaru tag all [--body|--rows|--tables|--prose|--mixed] list every tag in every .cumaru/*.md
 #   cumaru tag <file>                          list the file's actual tags + the schema's expected; flag diffs
 #   cumaru tag [<file>] get <tag>              print the body of <tag>; <file> defaults to root index.md
 #   cumaru tag [<file>] set <tag> [<content>]  replace the body; content is positional or stdin
@@ -17,10 +17,10 @@
 #   Wildcard meta tags (`host_file: "*"`) are allowed anywhere but are not
 #   expected in every file during audits.
 #
-# Body shape (v4):
-#   Every tag body is a markdown table with TWO columns: Link | Description.
-#   The shape is hardcoded — schemas no longer declare per-tag columns.
-#   `set` accepts any body content; row-shape audits live in `cumaru doctor`.
+# Body shape (v5):
+#   The schema declares each tag body as `default` (Link | Description), a
+#   custom table column array, `prose`, `mixed`, or `other`. `set` accepts any
+#   body content; shape/path audits live in `cumaru doctor`.
 #
 # Strictness:
 #   `get` and `set` REFUSE if <tag> is not declared in the schema for <file>.
@@ -38,7 +38,7 @@ cumaru tag — read/write/audit <!-- cumaru:NAME --> (or legacy <!-- llm:NAME --
 
 Usage:
   cumaru tag                                  list tags declared for the root index.md
-  cumaru tag all [--body|--rows]              list every tag in every .cumaru/*.md
+  cumaru tag all [--body|--rows|--tables|--prose|--mixed] list every tag in every .cumaru/*.md
   cumaru tag <file>                           list the file's actual tags + schema's expected; flag diffs
   cumaru tag [<file>] get <tag>               print the body of <tag>
   cumaru tag [<file>] set <tag> [<content>]   replace the body; content positional or stdin
@@ -71,6 +71,9 @@ _tag_all() {
     case "$1" in
       --body) mode="body"; shift ;;
       --rows) mode="rows"; shift ;;
+      --tables) mode="tables"; shift ;;
+      --prose) mode="prose"; shift ;;
+      --mixed) mode="mixed"; shift ;;
       -h|--help|help)
         cat <<'EOF'
 cumaru tag all — list every <!-- cumaru:NAME --> (or legacy <!-- llm:NAME -->) block under .cumaru/
@@ -78,8 +81,12 @@ cumaru tag all — list every <!-- cumaru:NAME --> (or legacy <!-- llm:NAME -->)
 Usage:
   cumaru tag all             group all tags by file
   cumaru tag all --body      print every block with its body
-  cumaru tag all --rows      print [Link, Description] rows as TSV:
-                           file<TAB>tag<TAB>link<TAB>description<TAB>target<TAB>status
+  cumaru tag all --rows      print default [Link, Description] rows as TSV:
+                            file<TAB>tag<TAB>link<TAB>description<TAB>target<TAB>status
+  cumaru tag all --tables    print deterministic table rows as TSV:
+                            file<TAB>tag<TAB>columns_csv<TAB>cell1<TAB>cell2...
+  cumaru tag all --prose     print schema-declared prose tag bodies
+  cumaru tag all --mixed     print mixed/other tag bodies
 
 Status values for --rows: ok, missing, external, anchor, template, empty,
 invalid (a `reference` row breaking the source-file rule — see cumaru coverage --help).
@@ -96,6 +103,26 @@ EOF
   case "$mode" in
     rows)
       fm_tag_table_rows "$CUMARU_DIR"
+      ;;
+    tables)
+      fm_tag_typed_table_rows "$CUMARU_DIR"
+      ;;
+    prose|mixed)
+      local file tag body type wanted
+      while IFS=$'\t' read -r file tag; do
+        [[ -n "$file" && -n "$tag" ]] || continue
+        type=$(fm_schema_tag_type "$CUMARU_DIR" "$tag")
+        if [[ "$mode" == "prose" ]]; then
+          [[ "$type" == "prose" ]] || continue
+        else
+          [[ "$type" == "mixed" || "$type" == "other" ]] || continue
+        fi
+        printf 'File: %s\nTag: %s\nType: %s\n\n' "$file" "$tag" "$type"
+        printf '<!-- cumaru:%s -->\n' "$tag"
+        body=$(fm_block_extract "$CUMARU_DIR/$file" "$tag")
+        [[ -n "$body" ]] && printf '%s\n' "$body"
+        printf '<!-- /cumaru:%s -->\n\n' "$tag"
+      done < <(fm_block_walk "$CUMARU_DIR")
       ;;
     body)
       local file tag body

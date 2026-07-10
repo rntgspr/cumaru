@@ -19,24 +19,16 @@
 #        tag is just its key (-> cumaru:plans); a tag deeper in the tree joins the
 #        ancestor keys (-> cumaru:plans:plan:handoff:files).
 #
-#        v4 — every tag body is a markdown table with TWO universal columns:
-#
-#          | Link                  | Description                              |
-#          |-----------------------|------------------------------------------|
-#          | [name](path/index.md) | one-line prose explaining the linked file |
-#
-#        Tag entries in the schema only declare routing hints:
-#          host_file: <*.md|*>   -> explicit markdown host (only needed for tags
-#                                  outside the node tree, e.g. meta.tags. Node
-#                                  index tags derive host_file from the path
-#                                  automatically).
-#        Anything else (columns, format, description, number) is gone — the
-#        shape is universal and hardcoded in the parser.
+#        v5 — tag bodies are declared by the schema:
+#          default                    -> table [Link, Description]
+#          [SHA, KEY, Description]    -> custom deterministic table columns
+#          prose | mixed | other      -> adopter-owned body, not path-resolved
+#        Meta tags may use a mapping with host_file + type.
 #
 # path:  see the `root` section below — RELATIVE to the parent node; implicit =
 #        the node's key; a directory path resolves to that dir's index.md.
 
-version: 4
+version: 5
 domain: sdlc-light
 
 # ------------------------------------------------------------------
@@ -55,10 +47,10 @@ rules:
 
   ears:
     severity: warning
-    pattern: "((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+"
+    pattern: "(((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+)|(.+ (MUST NOT|MUST|REQUIRED|SHALL NOT|SHALL|SHOULD NOT|SHOULD|RECOMMENDED|MAY|OPTIONAL) .+)"
     applies_to:
-      - plans — "## Acceptance Criteria (EARS)"
-      - specs — "## Requirements (EARS)"
+      - plans — "## Acceptance Criteria (EARS / RFC 2119)"
+      - specs — "## Requirements (EARS / RFC 2119)"
 
 # ------------------------------------------------------------------
 # root — the .cumaru/ tree.
@@ -70,7 +62,7 @@ root:
   entities:
     plans:
       tags:
-        plans: {}
+        plans: default
       entities:
         plan:
           path: <PLAN-ID>
@@ -105,14 +97,14 @@ root:
               path: handoff-t<N>.md
               frontmatter: [plan!, task!, status!, date!]
               tags:
-                files: {}
+                files: default
             delta_draft:
               path: delta-draft.md
               frontmatter: [plan!, status!, date!]
 
     specs:
       tags:
-        specs: {}
+        specs: default
       entities:
         area:
           path: <area>
@@ -144,7 +136,7 @@ root:
 
     exploring:
       tags:
-        exploring: {}
+        exploring: default
       entities:
         idea:
           path: <slug>
@@ -164,15 +156,15 @@ meta:
       - meta
 
   tags:
-    components: { host_file: domain.md }
-    root: { host_file: domain.md }
-    files: { host_file: "*" }
-    "files:touched": { host_file: "*" }
-    templates: { host_file: "templates/index.md" }
-    roles: { host_file: "roles/index.md" }
+    components: { host_file: domain.md, type: default }
+    root: { host_file: domain.md, type: prose }
+    files: { host_file: "*", type: default }
+    "files:touched": { host_file: "*", type: default }
+    templates: { host_file: "templates/index.md", type: default }
+    roles: { host_file: "roles/index.md", type: default }
     # Spec→code reference tag — every row targets a repository SOURCE FILE,
     # resolved from the project root. Read by `cumaru coverage`.
-    reference: { host_file: "*" }
+    reference: { host_file: "*", type: default }
 
   # Specification coverage (`cumaru coverage`) — the durable pillar whose
   # `reference` tables map spec files to repository source files.
@@ -183,18 +175,6 @@ meta:
     # .agents/ are always excluded.
     source: []
       # - "src/**"
-
-  cross_file_checks:
-    implemented:
-      - "Plan status and task progress (done/total)"
-      - "Tasks marked done that lack a handoff-t<N>.md"
-      - "Spec deltas integrity — each path in the plan's scope lists the plan's key in its deltas"
-      - "EARS coverage — every plan AC line appears in specs/ after absorption"
-    deferred:
-      - "Plan scope: paths resolve to existing specs/<area>[/<subarea>...]/<concern>.md"
-      - "Task depends-on: references resolve to existing tasks in the same plan"
-      - "Files listed in '## Files' of specs/<area>[/<subarea>...]/index.md exist on disk"
-      - "deltas: in spec frontmatter reference existing plans/<PLAN-ID>/ entries"
 
   compatibility:
     framework_version_field: framework-version

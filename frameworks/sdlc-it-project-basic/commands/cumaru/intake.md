@@ -1,6 +1,6 @@
 ---
 version: 1
-description: Run `cumaru intake <KEY>` to mirror a tracker issue under `.cumaru/intake/<KEY>/`, then refine the generated file per the embedded RAW instructions (Overview, EARS criteria, apps, bug sections) before deleting the block.
+description: Run `cumaru intake <KEY>` to mirror a tracker issue under `.cumaru/intake/<KEY>/`, then refine the generated file per the embedded RAW instructions (Overview, EARS / RFC 2119 criteria, apps, bug sections) before deleting the block.
 allowed-tools: Bash, Read, Edit, Write
 argument-hint: <TRACKER-KEY>
 ---
@@ -23,7 +23,7 @@ Argument: `$ARGUMENTS` is the tracker key (e.g. `AAA-1234`). If empty, ask the u
    Per section, propose the new content, show a diff against the placeholder, and apply only after confirmation:
 
    - **`## Overview`** — 1–3 paragraphs in **English**, restating what is being asked and *why it matters*. Derive strictly from the source Description; if the source is in another language, translate. Do not invent context the source does not support; if the description is thin, say so and ask the user to fill the gap rather than padding.
-   - **`## Acceptance Criteria (EARS)`** — bullets in the form `WHEN <trigger> THE SYSTEM SHALL <observable response>` (also `WHEN <trigger> AND <condition>` and `WHILE <state>`). Extract from explicit AC in the description when present; otherwise propose criteria derived from the Overview and ask the user to confirm/edit. **Every bullet must conform to the EARS pattern — `cumaru doctor` flags non-conforming bullets as a warning.**
+   - **`## Acceptance Criteria (EARS / RFC 2119)`** — bullets in EARS form (`WHEN <trigger> THE SYSTEM SHALL <observable response>`) or RFC 2119 form (`The system MUST <behavior>`). Extract from explicit AC in the description when present; otherwise propose criteria derived from the Overview and ask the user to confirm/edit. **Every bullet must conform to the requirements-language pattern (EARS or RFC 2119) — `cumaru doctor` flags non-conforming bullets as a warning.**
    - **Bug-only sections** (`## Reproduction`, `## Expected`, `## Actual`) — only if `type: bug` in the frontmatter. Fill from the description; if the description does not separate these, ask the user. **If `type` is anything other than `bug`, delete these three sections entirely along with the surrounding `<!-- ===== Bug-only sections =====` / `<!-- ===== End bug-only sections =====` HTML comments** — the ticket template carries them as scaffolding that becomes noise when not applicable.
    - **Epic exception** — Epics get `## Overview` only (no AC, no bug sections), per the template.
 
@@ -35,12 +35,12 @@ Argument: `$ARGUMENTS` is the tracker key (e.g. `AAA-1234`). If empty, ask the u
 
 8. **Update the intake table.** A new `intake/<KEY>/` entity needs its row in `intake/index.md`. Read the current table (`cumaru tag get intake/index.md intake`), append a row `| <KEY> | <type> | <title> | <status> | <relates joined with comma or `—`> |`, and write back via `cumaru tag set intake/index.md intake <new body>`. (Skip this step on a re-sync of an item that already had a row.)
 
-9. **Close out.** Print the final path and run `cumaru doctor`. Doctor's orphan check should be clean — the new file is claimed by the row you just wrote. Report: refinement complete, EARS warnings (none expected), `apps:` value applied (or the blocker noted in step 6), and doctor totals.
+9. **Close out.** Print the final path and run `cumaru doctor`. Doctor's orphan check should be clean — the new file is claimed by the row you just wrote. Report: refinement complete, requirements-language warnings (none expected), `apps:` value applied (or the blocker noted in step 6), and doctor totals.
 
 Hard rules:
 
 - Never modify `status:` or `synced-at:` in frontmatter — the CLI owns those.
 - Never write an `apps:` value not present in `.cumaru/schema.yaml` `meta.apps.values`.
-- Every bullet under `## Acceptance Criteria (EARS)` must match `WHEN .+ THE SYSTEM SHALL .+` (or `WHILE .+ SHALL .+`); incomplete bullets get reworded with the user, not left as-is.
+- Every bullet under `## Acceptance Criteria (EARS / RFC 2119)` must match EARS or RFC 2119; incomplete bullets get reworded with the user, not left as-is.
 - If the RAW block is already gone, exit without editing the body — re-syncing a refined file is a no-op by design.
 - Do not invent acceptance criteria the tracker source does not support; surface gaps and ask.

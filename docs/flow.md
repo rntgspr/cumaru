@@ -11,11 +11,11 @@ cumaru flow <path> create             create an empty dir; if <path> ends in .md
 cumaru flow <path> remove             delete a file/dir
 ```
 
-**Paths are relative to `.cumaru/`.** No `..` segments — write the clean path from the root. Files must end in `.md`; every directory path segment must contain no dots. Trailing slash optional.
+**Paths are relative to `.cumaru/`.** No `..` segments — write the clean path from the root. Files must end in `.md`; every directory path segment must contain no dots. Trailing slash optional. Symlinked parents are resolved before every operation, and direct symlink targets are refused.
 
 ## The 4 guardrails
 
-1. **Paths must resolve inside `.cumaru/`** — `..` segments and leading `/` are rejected outright, symlinked parents are resolved before every operation, and direct symlink targets are refused.
+1. **Paths must resolve inside `.cumaru/`** — `..` segments and leading `/` are rejected outright, symlinked parents are resolved before every operation, and direct symlink targets are refused (so move/copy/remove semantics cannot vary by platform).
 2. **File paths must end in `.md`; directory names contain no dots** — this applies consistently to `create`, `move`, `copy`, and `remove`, including parent directories created implicitly. Non-`.md` file extensions and dotted directory segments are refused.
 3. **`remove` refuses files literally named `index.md`** — they're system-critical for the entity's existence. To remove an entity, remove its **dir** (which transitively removes its `index.md`).
 4. **`remove` refuses pillar root dirs** — any direct child of `.cumaru/` (e.g. `.cumaru/plans`) can't be removed.

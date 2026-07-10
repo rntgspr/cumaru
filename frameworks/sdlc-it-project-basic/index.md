@@ -1,7 +1,7 @@
 ---
 human_revised: false
 generated: false
-framework-version: 4
+framework-version: 5
 apps: [meta]
 depends-on: [domain.md]
 ---

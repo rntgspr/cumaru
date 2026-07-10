@@ -18,24 +18,16 @@
 #        tag is just its key (-> cumaru:intake); a tag deeper in the tree joins the
 #        ancestor keys (-> cumaru:plans:plan:handoff:files).
 #
-#        v4 — every tag body is a markdown table with TWO universal columns:
-#
-#          | Link                  | Description                              |
-#          |-----------------------|------------------------------------------|
-#          | [name](path/index.md) | one-line prose explaining the linked file |
-#
-#        Tag entries in the schema only declare routing hints:
-#          host_file: <*.md|*>   → explicit markdown host (only needed for tags
-#                                  outside the node tree, e.g. meta.tags. Node
-#                                  index tags derive host_file from the path
-#                                  automatically).
-#        Anything else (columns, format, description, number) is gone — the
-#        shape is universal and hardcoded in the parser.
+#        v5 — tag bodies are declared by the schema:
+#          default                    -> table [Link, Description]
+#          [SHA, KEY, Description]    -> custom deterministic table columns
+#          prose | mixed | other      -> adopter-owned body, not path-resolved
+#        Meta tags may use a mapping with host_file + type.
 #
 # path:  see the `root` section below — RELATIVE to the parent node; implicit =
 #        the node's key; a directory path resolves to that dir's index.md.
 
-version: 4
+version: 5
 domain: qa-basic   # self-identifying so update can detect the installed domain
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -68,22 +60,22 @@ rules:
     # No `count`: the table's row count IS the count; a separate field is redundant.
 
   # Soft rule — warning only, never fails validation. Bullet items under the
-  # named acceptance/requirement sections should match the EARS pattern;
-  # free prose elsewhere is fine. EARS describes the REQUIREMENT to verify.
+  # named acceptance/requirement sections should match EARS or RFC 2119;
+  # free prose elsewhere is fine. These bullets describe the REQUIREMENT to verify.
   ears:
     severity: warning
-    pattern: "((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+" # all five EARS forms: ubiquitous/event/state/optional/unwanted
+    pattern: "(((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+)|(.+ (MUST NOT|MUST|REQUIRED|SHALL NOT|SHALL|SHOULD NOT|SHOULD|RECOMMENDED|MAY|OPTIONAL) .+)"
     applies_to:
-      # Acceptance criteria on intake items / slug-based plans use EARS — the
-      # behaviour to verify. The coverage pillar does NOT use EARS; a test
+      # Acceptance criteria on intake items / slug-based plans use EARS or RFC 2119 — the
+      # behavior or constraint to verify. The coverage pillar does NOT use requirement bullets; a test
       # scenario is written in Given-When-Then (see the `gherkin` rule).
-      - intake tickets — "## Acceptance Criteria (EARS)"
-      - slug-based plans — "## Acceptance Criteria (EARS)"
+      - intake tickets — "## Acceptance Criteria (EARS / RFC 2119)"
+      - slug-based plans — "## Acceptance Criteria (EARS / RFC 2119)"
 
   # Soft rule — warning only. Bullet items under a coverage area's scenarios
   # section should match Given-When-Then. GWT describes the TEST: a concrete
-  # case that verifies a requirement. The requirement↔test pairing (EARS on the
-  # intake item, GWT on the covering scenario) IS the traceability link.
+  # case that verifies a requirement. The requirement→test pairing (EARS/RFC 2119
+  # on the intake item, GWT on the covering scenario) IS the traceability link.
   # Enforced by the same schema-driven pattern check as `ears` (doctor sub-pass
   # [4]); the section marker is the quoted substring of each applies_to entry.
   gherkin:
@@ -99,7 +91,7 @@ rules:
 #               explicit only when the segment differs (e.g. <KEY>, t<N>.md).
 #               Ends in a directory → the node's file is that dir's index.md.
 #   frontmatter the index.md frontmatter of THIS node (beyond the rules.* baseline).
-#   tags        marker blocks in THIS node's index.md (body shape universal — see rules.tag_table).
+#   tags        marker blocks in THIS node's index.md (body type declared per tag).
 #   entities    child nodes (recursive, same shape) — the files/dirs inside.
 # The parser is a single recursion. `root` lists all four (even when empty) as
 # the reference; children list only what they use.
@@ -121,7 +113,7 @@ root:
       # tracker — they link to intake via `key` and the tracker is known there.
       frontmatter: [tracker!]
       tags:
-        intake: {}
+        intake: default
       entities:
         item:
           # Flat: every intake item is a sibling — no enforced hierarchy. `type`
@@ -146,7 +138,7 @@ root:
 
     plans:
       tags:
-        plans: {}
+        plans: default
       entities:
         plan:
           # A test campaign. key optional: slug-based plans (maintenance-<slug>)
@@ -187,14 +179,14 @@ root:
               path: handoff-t<N>.md
               frontmatter: [plan!, task!, status!, date!]
               tags:
-                files: {} # body shape universal — each row links a touched file with a one-line description
+                files: default # each row links a touched file with a one-line description
             delta_draft:
               path: delta-draft.md
               frontmatter: [plan!, status!, date!] # status: always draft
 
     archive:
       tags:
-        archive: {}
+        archive: default
       entities:
         plan:
           # An archived campaign IS the plan's index.md: the archive flow copies
@@ -230,7 +222,7 @@ root:
       # written in Given-When-Then (rules.gherkin). A scenario that grows
       # detailed enough to need its own file becomes a `case` (<case>.md).
       tags:
-        coverage: {}
+        coverage: default
       entities:
         area:
           path: <area>
@@ -263,7 +255,7 @@ root:
 
     exploring:
       tags:
-        exploring: {}
+        exploring: default
       entities:
         idea:
           # Exploratory-testing charters / spikes. status: idea | considering |
@@ -283,7 +275,7 @@ root:
       # coverage); not loaded by default. An author drills in via `relates` from
       # a coverage area or from this shallow index.
       tags:
-        standards: {}
+        standards: default
       entities:
         standard:
           path: <slug>
@@ -309,25 +301,26 @@ meta:
       - all      # cross-level / shared (test utilities, fixtures, CI harness)
       - meta     # framework plumbing — used by index.md / pillar indexes
 
-  # Marker tags that live outside the node tree. v4 — every body is a
-  # [Link, Description] table; entries below only route the tag to its host.
+  # Marker tags that live outside the node tree. v5 — default bodies are
+  # [Link, Description]; prose/mixed/other bodies are preserved but not
+  # path-resolved.
   tags:
     # Project-owned blocks hosted on domain.md (the domain hook).
-    components: { host_file: domain.md }
-    root: { host_file: domain.md }
+    components: { host_file: domain.md, type: default }
+    root: { host_file: domain.md, type: prose }
     # Universal "files" pattern tag — links to repo files with one-line
     # descriptions; can appear on any markdown host.
-    files: { host_file: "*" }
+    files: { host_file: "*", type: default }
     # Handoff "Files touched" block (templates/handoff.md) — colon-named pattern tag.
-    "files:touched": { host_file: "*" }
+    "files:touched": { host_file: "*", type: default }
     # Inventory of adopter-added templates, hosted on templates/index.md.
-    templates: { host_file: "templates/index.md" }
-    roles: { host_file: "roles/index.md" }
+    templates: { host_file: "templates/index.md", type: default }
+    roles: { host_file: "roles/index.md", type: default }
     # Spec→code reference tag — every row targets a repository SOURCE FILE
     # (e.g. a test file), resolved from the project root (never a .cumaru/ path,
     # a directory, or a URL). Read by `cumaru coverage`; hosted on coverage maps
     # under coverage/.
-    reference: { host_file: "*" }
+    reference: { host_file: "*", type: default }
 
   # Specification coverage (`cumaru coverage`) — the durable pillar whose
   # `reference` tables map coverage areas to repository source files.
@@ -338,22 +331,6 @@ meta:
     # .agents/ are always excluded.
     source: []
       # - "tests/**"
-
-  # Cross-file checks across the .cumaru/ tree.
-  #   implemented — run today by CLI commands / recipe skills.
-  #   deferred    — not yet enforced by the validator.
-  cross_file_checks:
-    implemented:
-      - "Intake refinement: no leftover raw-import block"
-      - "Plan status and task progress (done/total)"
-      - "Tasks marked done that lack a handoff-t<N>.md"
-      - "Archive presence and finalization (no temp-archive-flow.delete-me.md residue)"
-      - "Coverage deltas integrity — each path in the plan's scope: lists the plan's key in its deltas:"
-    deferred:
-      - "Plan scope: paths resolve to existing coverage/<area>[/<subarea>...]/index.md"
-      - "Task depends-on: references resolve to existing tasks in the same plan"
-      - "Requirement→test traceability — every intake AC (EARS) line is covered by a coverage scenario that relates back to the <KEY>"
-      - "deltas: in coverage frontmatter reference existing archive/<PLAN-ID>/ entries"
 
   # Compatibility & versioning.
   compatibility:

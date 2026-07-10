@@ -36,7 +36,7 @@ This file declares the SDLC domain's specifics — pillars, roles, entry, and do
 
 - **`intake/` — what is asked.** A flat, **tracker-agnostic** mirror of work items: each lives at `intake/<KEY>/`, carries `key` + `type` (the tracker issuetype), and links to others via `relates` (many-to-many, non-blocking). No enforced hierarchy. The tracker is named once by `tracker` on `intake/index.md`.
 - **`plans/` — how we will do it.** One `plans/<PLAN-ID>/` per active plan. Its `index.md` declares `scope` (which `specs/` paths it touches) and links to intake via `key` (optional for slug-based `maintenance-<slug>` plans). Tasks, handoffs, and the delta-draft live inside.
-- **`archive/` — what we did.** Completed plans, moved here on close; never loaded by default.
+- **`archive/` — close-out staging.** Completed plans move here after implementation, then leave after their delta is absorbed into `specs/`; never loaded by default.
 - **`specs/` — what is true now.** The living spec. Areas nest subareas to any depth; `depends-on` is the strongest load signal, `relates` is "consider". On plan close the delta is absorbed and the plan `key` appended to the area's `deltas`.
 - **`exploring/` — pre-plan ideas.** Incubators with no commitment; transient. Never loaded by default.
 
@@ -54,8 +54,9 @@ related to the closed plan are removed (transient cleanup).
 Tracker items mirrored in `intake/` and ideas from `exploring/` feed into
 `plans/`. On close the plan moves to `archive/` and its delta-draft is absorbed
 into `specs/`. Once absorbed, all transient content for that cycle is removed —
-the archive row, the plan dir, the related intake items, and the exploring
-entry. Only `specs/` (the living spec) remains as durable record.
+the archive row/directory, the plan dir, the related intake items, and the
+exploring entry. Only `specs/` (the living spec plus its absorptions ledger)
+remains as durable record.
 
 ## Roles
 
@@ -109,5 +110,5 @@ New disciplines are produced with the repo's `skill-to-discipline` skill (distil
 
 - **vs. OpenSpec** — OpenSpec keeps specs monolithic per capability; `.cumaru/` splits by concern, allows per-component divergence and slug-based plans, and separates pre-plan ideas in `exploring/`.
 - **vs. GitHub Spec Kit** — Spec Kit recreates intake locally and grows verbose; `.cumaru/` mirrors the tracker instead and curates the archive so it never loads by default.
-- **vs. Kiro / EARS** — `.cumaru/` adopts EARS for acceptance criteria as a **warning**, not a blocker; narrative sections stay free prose.
+- **vs. Kiro / requirements notation** — `.cumaru/` accepts EARS and RFC 2119 for acceptance criteria as a **warning**, not a blocker; narrative sections stay free prose.
 - **vs. memory bank (Cline / Roo)** — memory bank focuses on session state; `.cumaru/` focuses on durable system state (living spec) + operational plan + curated archive + pre-plan ideation.

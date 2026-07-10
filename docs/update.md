@@ -28,7 +28,8 @@ cumaru update schema [--from <src>] [--apply]
 Update reads `domain:` from the installed `.cumaru/schema.yaml`, then selects the
 matching domain under `<source>/frameworks/<domain>/`. The `base` domain
 resolves to `<source>/frameworks/__base/`. If `domain:` is absent, update falls
-back to `base`.
+back to `base`. A legacy `flavor:` field (from pre-domain installs) is accepted
+as a read-only fallback so update can migrate those trees.
 
 There is no `--domain` flag: update refreshes the domain already installed
 in the project. To change domains, uninstall the current tree and install the
@@ -36,7 +37,7 @@ new domain.
 
 ### Agent hook (AGENTS.md / CLAUDE.md)
 
-The `<!-- BEGIN/END CUMARU-HOOK -->` block that `@`-imports `.cumaru/index.md` into the agent's context is reconciled as the **first step**. If the file uses the legacy `DOT-LLM-HOOK` marker (pre-rename), update replaces it with `CUMARU-HOOK` on `--apply`. If no hook is found in either `.agents/AGENTS.md` or `CLAUDE.md`, it is created.
+The `<!-- BEGIN/END CUMARU-HOOK -->` block that `@`-imports `.cumaru/index.md` into the agent's context is reconciled as the **first step**. If the file uses the legacy `DOT-LLM-HOOK` marker (pre-rename), update replaces it with `CUMARU-HOOK` on `--apply`. If no hook is found in either `.agents/AGENTS.md` or `CLAUDE.md`, it is created. Update also accepts the `created`-variant marker for clean uninstall detection.
 
 ## What gets updated
 
@@ -52,17 +53,17 @@ When update reports key drift, the LLM's job is:
 
 #### 2. Tag bodies (`<!-- cumaru:NAME -->` blocks)
 
-**v4: every tag body is a `[Link, Description]` markdown table.** The shape is hardcoded — schemas don't declare per-tag columns.
+**v5: body type comes from the schema** — `default` (standard `[Link, Description]` table), custom column array, `prose`, `mixed`, or `other`. Bodies are never rewritten mechanically.
 
 **Local body is preserved.** A marker present in source but absent locally is **added empty** (so new framework tags appear). The dry-run labels each tag:
 
 | Label | Meaning |
 |---|---|
-| `[=]` | local body present and matches the table shape — preserved |
-| `[?]` | local block is empty — populate with `[Link, Description]` rows |
-| `[Δ]` | local body is NOT a markdown table — reshape into `\| Link \| Description \|` rows |
+| `[=]` | local body present and matches its schema-declared type — preserved |
+| `[?]` | local block is empty — populate according to its schema tag type |
+| `[Δ]` | local body is NOT a markdown table and schema declares a table type; reshape it, or keep prose/mixed/other as adopter-owned |
 | `[+]` | source has it, local doesn't — empty block will be added on `--apply` |
-| `[orphan]` | local has it, source doesn't — kept verbatim. Decide: keep (intentional extension), remove (stale), or **relocate** — when the same tag shows `[+]` on another file, the framework moved its host (e.g. `components`/`root` from `index.md` to `domain.md`); migrate the body and delete the orphan block. The `cumaru-update` skill carries the recipe. |
+| `[orphan]` | local has it, source doesn't — kept verbatim. Decide: keep, remove, or **relocate** — when the same tag shows `[+]` on another file, the framework moved its host; migrate the body and delete the orphan block. |
 
 #### 3. Prose (everything else)
 
@@ -74,6 +75,7 @@ Skills, hooks, and slash commands are **framework-owned artifacts**, sourced fro
 
 On `--apply`:
 - Every `<source>/frameworks/<domain>/skills/cumaru-*/` is copied to `.agents/skills/`. Opt-ins (non-`cumaru-*` skills the adopter installed via `--with`) are NOT touched — they become adopter-owned after install.
+- The one-shot `cumaru-migrate` skill is always removed if present (transition tool, not a recurring recipe).
 - Every `<source>/frameworks/<domain>/hooks/*` file is copied to `.agents/hooks/`. The existing hook configuration keeps pointing at `context-loader.sh`; update replaces the script, not the wiring.
 - Every `<source>/frameworks/<domain>/commands/cumaru/<name>.md` is copied to `.agents/commands/cumaru/`.
 - Installed `.agents/skills/cumaru-*/` dirs absent from the source are pruned (deprecated cleanup).
@@ -99,15 +101,15 @@ Without `--apply`, lists the slash commands that would be installed. With `--app
 
 ### `cumaru update schema`
 
-The general update deliberately excludes `schema.yaml` because it mixes framework contracts with adopter-owned regions such as `meta.apps.values` and locally added pillars.
+The general update deliberately excludes `schema.yaml` because it mixes framework contracts with adopter-owned regions such as `meta.apps.values` and locally added pillars. The schema target uses a **framework contract comparison** — only the non-adapter-owned portions of the schema are compared (stripping `meta.apps.values`, `meta.specification_dir`, and `meta.coverage` from the diff).
 
-Without `--apply`, this target prints a raw source-versus-local diff and identifies adopter-owned regions to preserve during a hand merge. This is the recommended schema reconciliation path.
+Without `--apply`, this target prints a raw source-versus-local diff of the framework contract, identifies adopter-owned regions to preserve during a hand merge, and reports whether the contract is in sync. This is the recommended schema reconciliation path.
 
 With `--apply`, it replaces the local schema wholesale. This is intentionally destructive and loses adopter customizations; use it only when a brute overwrite is explicitly desired.
 
 ## Version drift
 
-Update compares `version:` in the source `schema.yaml` against `framework-version:` in `.cumaru/index.md`. **Mismatch = MIGRATION** — the command reports the drift and points at the migration procedure, but it does not block the update. Dry-run remains a review; `--apply` applies the requested update so migration work can proceed.
+Update compares `version:` in the source `schema.yaml` against `framework-version:` in `.cumaru/index.md`. **Mismatch = MIGRATION** — the command reports the drift, shows both versions, and points at the migration procedure in `cumaru-update/SKILL.md`, but it does not block the update. Dry-run remains a review; `--apply` applies the requested update so migration work can proceed.
 
 ## File-presence triage
 
@@ -123,18 +125,21 @@ Passing an adopter-owned path as `<path>` is rejected with "no framework source 
 
 For each `.cumaru/` file that needs attention, prints:
 - Frontmatter key drift (source-only, local-only).
-- Tag analysis (`[=]` / `[?]` / `[Δ]` / `[+]` / `[orphan]` — see "Tag bodies" above).
+- Tag analysis (`[=]` / `[?]` / `[Δ]` / `[+]` / `[orphan]` — see "Tag bodies" above). Tag type classified using the **source schema** for accuracy during migrations.
 - Unified diff of local → what `--apply` would produce.
 
-Summary line lists each changed file as `[merge]` or `[new]`, plus a note that skills/hooks/commands will be replaced on `--apply`.
+Summary line lists each changed file as `[merge]` or `[new]`, plus a note that skills/hooks/commands will be replaced on `--apply`. Schema contract drift (if present) is reported separately with hints to use `cumaru update schema`.
 
 ## `--apply` path
 
 Performs the full update:
-1. `.cumaru/` file merge: prose from source, frontmatter + bodies preserved, missing markers added empty.
-2. Skills replace: every `frameworks/<domain>/skills/cumaru-*/` overwritten in detected installed agent skill dirs; deprecated `cumaru-*` mirrors pruned; legacy `<target>/skills/` removed.
-3. Hooks replace: every `frameworks/<domain>/hooks/*` file overwritten in `.cumaru/hooks/`; deprecated hooks listed.
-4. Commands replace: every `frameworks/<domain>/commands/cumaru/*.md` overwritten in detected installed agent command dirs; deprecated commands listed.
+1. **Agent hook reconcile** — replaces legacy `DOT-LLM-HOOK` markers, creates block if absent.
+2. `.cumaru/` file merge: prose from source, frontmatter + bodies preserved, missing markers added empty.
+3. **Schema drift notice** — reports if the framework contract diverged (never auto-merged).
+4. **Legacy cleanup** — removes legacy `<target>/skills/` dir (pre-current layout).
+5. Skills replace: every `frameworks/<domain>/skills/cumaru-*/` overwritten in detected installed agent skill dirs; deprecated `cumaru-*` mirrors pruned; `cumaru-migrate` skill removed.
+6. Hooks replace: every `frameworks/<domain>/hooks/*` file overwritten in `.agents/hooks/`; deprecated hooks listed.
+7. Commands replace: every `frameworks/<domain>/commands/cumaru/*.md` overwritten in detected installed agent command dirs; deprecated commands listed.
 
 ## What it does NOT do
 

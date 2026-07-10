@@ -76,9 +76,9 @@ When `deltas:` has grown long (≥5) and the per-campaign history makes the cove
 
 **What NOT to do:** don't delete archive entries; don't consolidate halfway; don't consolidate on every campaign close — pay the cost only when the weight is real.
 
-## Uses GWT (not EARS)
+## Uses GWT (not Requirements Language)
 
-A coverage area carries `## Scenarios (GWT)` — `GIVEN … WHEN … THEN …` (a warning-level check, doctor sub-pass [4]). EARS is the **requirement** and lives in `intake/` (and slug-based plans) as `## Acceptance Criteria (EARS)`. The pairing — EARS on the intake item, GWT on the covering scenario that `relates:` back to the `<KEY>` — is the requirement→test traceability.
+A coverage area carries `## Scenarios (GWT)` — `GIVEN … WHEN … THEN …` (a warning-level check, doctor sub-pass [4]). EARS / RFC 2119 is the **requirement language** and lives in `intake/` (and slug-based plans) as `## Acceptance Criteria (EARS / RFC 2119)`. The pairing — requirements on the intake item, GWT on the covering scenario that `relates:` back to the `<KEY>` — is the requirement→test traceability.
 
 ## What this skill does NOT do
 

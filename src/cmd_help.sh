@@ -17,7 +17,7 @@ Subcommands
 
   Marker blocks
     tag                                      list the tags declared in schema.yaml
-    tag all [--body|--rows]                  list every tag block in every .cumaru/*.md
+    tag all [--body|--rows|--tables|--prose|--mixed]  list tag blocks in every .cumaru/*.md
     tag <file>                               audit a file's blocks against the schema
     tag get <file> <tag>                     print the <!-- cumaru:NAME --> block body
     tag set <file> <tag>                     replace the block body (stdin)

@@ -51,7 +51,7 @@ If the question outgrows ad-hoc help (multi-step work, touches specs, needs a pl
 
 ## When to escalate
 
-If the user's question reveals structured planning across multiple tickets, large refactors, or a delta whose EARS judgement should be a Dev/Lead contract — name it and suggest switching role. Your hand-off captures intent; the Dev's `delta-draft.md` is the contract.
+If the user's question reveals structured planning across multiple tickets, large refactors, or a delta whose requirements judgement should be a Dev/Lead contract — name it and suggest switching role. Your hand-off captures intent; the Dev's `delta-draft.md` is the contract.
 
 ## Style
 

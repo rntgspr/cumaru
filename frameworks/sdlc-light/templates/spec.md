@@ -14,7 +14,9 @@ deltas: []               # reference list of plan IDs whose deltas built the cur
 
 What this area is and how it fits into the system. 1-3 paragraphs.
 
-## Requirements (EARS)
+## Requirements (EARS / RFC 2119)
+
+Pick one dominant style for this section: EARS for event/state behavior; RFC 2119 for constraints.
 
 Group requirements by sub-topic when useful.
 
@@ -22,6 +24,7 @@ Group requirements by sub-topic when useful.
 
 - WHEN <trigger> THE SYSTEM SHALL <observable response>.
 - WHEN <trigger> AND <condition> THE SYSTEM SHALL <observable response>.
+- The <resource> MUST <behavior>.
 
 ### <Sub-topic>
 

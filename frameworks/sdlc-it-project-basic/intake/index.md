@@ -19,7 +19,7 @@ A pillar for the **local mirror of a tracker** — items the project will work o
 
 ## Rules
 
-- **Mirror, not authoritative.** The tracker is the source of truth. Entries here are local restatements — `## Overview` and `## Acceptance Criteria (EARS)` are authored in English from the source description, not pasted verbatim.
+- **Mirror, not authoritative.** The tracker is the source of truth. Entries here are local restatements — `## Overview` and `## Acceptance Criteria (EARS / RFC 2119)` are authored in English from the source description, not pasted verbatim.
 - **Mechanical sync.** Any role (Lead, Dev) or the user can trigger `cumaru intake <KEY>` to create or refresh an entry. Sync is not a role responsibility; roles only **read** intake.
 - **Frontmatter `status:` and `synced-at:` are managed by the CLI.** Body sections (`## Overview`, `## Acceptance Criteria`, `## Coordination`, `## Local notes`) are yours to author and refine.
 - **Flat layout.** Every item lives at `intake/<KEY>/index.md` regardless of type. `type:` discriminates; `relates:` records cross-item links (parent epic, parent story, …) so a project mixing trackers stays navigable.
@@ -29,7 +29,7 @@ A pillar for the **local mirror of a tracker** — items the project will work o
 
 ## When to use
 
-- Opening a plan: read the linked `intake/<KEY>/index.md` for the item's `## Overview` and `## Acceptance Criteria (EARS)` — plans for tracker-backed work reference these instead of repeating them.
+- Opening a plan: read the linked `intake/<KEY>/index.md` for the item's `## Overview` and `## Acceptance Criteria (EARS / RFC 2119)` — plans for tracker-backed work reference these instead of repeating them.
 - Coordinating multiple plans under the same story — record cross-ticket decisions in the story's `## Coordination` section before dispatching the next plan.
 - After upstream changes — run `cumaru intake <KEY>` to refresh `status:` and `synced-at:`; if the body still has a RAW block, the description is updated too.
 

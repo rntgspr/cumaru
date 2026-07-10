@@ -39,7 +39,7 @@ This file declares the QA domain's specifics — pillars, roles, entry, and doma
 └── templates/    ← entity templates
 ```
 
-- **`intake/` — what must be verified.** A flat, tracker-agnostic mirror of the items that drive test work: a feature whose acceptance criteria need coverage, a bug report to reproduce and guard against regression, a test request. Each lives at `intake/<KEY>/`, with `type` + `relates`; its `## Acceptance Criteria (EARS)` is the **requirement to verify**. The tracker is named once on `intake/index.md`.
+- **`intake/` — what must be verified.** A flat, tracker-agnostic mirror of the items that drive test work: a feature whose acceptance criteria need coverage, a bug report to reproduce and guard against regression, a test request. Each lives at `intake/<KEY>/`, with `type` + `relates`; its `## Acceptance Criteria (EARS / RFC 2119)` is the **requirement to verify**. The tracker is named once on `intake/index.md`.
 - **`plans/` — the campaign.** One `plans/<PLAN-ID>/` per in-flight test campaign. The plan body declares the **test strategy** (which levels, why), the **scope** (the `coverage/` paths it touches), and **risks/gaps**; tasks are the cases to author or automate. `apps:` = the levels the campaign writes at.
 - **`archive/` — what shipped.** Closed campaigns, moved here on close; never loaded by default. The row carries `Absorbed-in: <commit-sha>`.
 - **`coverage/` — what is verified now.** The living **coverage map**: areas of the system-under-test, the levels each is exercised at, and the **scenarios** (Given-When-Then) that verify them. `depends-on` is both the load signal AND the **test prerequisite** order (an area's setup presumes another's — e.g. checkout presumes auth). Carries what the test code does not: strategy, why a level was chosen, known gaps. It does **not** duplicate the `.test`/`.spec` files — those are the executable verification.
@@ -64,7 +64,7 @@ Work flows `intake → plans → archive`, is distilled into the durable layer (
 
 ## Traceability (requirement → test → evidence)
 
-The domain's backbone: an intake item states the requirement in **EARS** (`## Acceptance Criteria (EARS)`); a coverage area states the verifying scenario in **Given-When-Then** (`## Scenarios (GWT)`) and `relates:` back to the intake `<KEY>`; the closed campaign's `archive/<KEY>/delta.md` records the evidence (what was added/changed). Coverage of a requirement = it has a scenario that relates to it. Both patterns are warning-level checks (doctor sub-pass [4], schema-driven from `rules.ears` / `rules.gherkin`).
+The domain's backbone: an intake item states the requirement in **EARS or RFC 2119** (`## Acceptance Criteria (EARS / RFC 2119)`); a coverage area states the verifying scenario in **Given-When-Then** (`## Scenarios (GWT)`) and `relates:` back to the intake `<KEY>`; the closed campaign's `archive/<KEY>/delta.md` records the evidence (what was added/changed). Coverage of a requirement = it has a scenario that relates to it. Both patterns are warning-level checks (doctor sub-pass [4], schema-driven from `rules.ears` / `rules.gherkin`).
 
 ## Roles
 

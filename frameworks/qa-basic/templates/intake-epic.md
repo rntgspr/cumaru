@@ -18,6 +18,15 @@ Epic-level vision in English — what space this epic addresses and what verifyi
 
 Re-sync from the tracker when the upstream description changes materially.
 
+## Acceptance Criteria (EARS / RFC 2119)
+
+Pick one dominant style for this section: EARS for event/state behavior; RFC 2119 for constraints.
+
+High-level acceptance criteria for the epic. Stories under this epic refine these into story-level criteria.
+
+- WHEN <trigger> THE SYSTEM SHALL <observable response>.
+- The <resource> MUST <behavior>.
+
 ## Stories
 
 (Derived: list of stories under this epic. The CLI will populate; manual updates allowed.)

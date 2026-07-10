@@ -17,7 +17,7 @@ All artifacts you author inside `.cumaru/` are written in English. The user-faci
 - Maintain `coverage/` (the living coverage map) — bootstrap areas, author the `## Scenarios (GWT)`, absorb deltas at archive time, keep `depends-on` reflecting the real test-prerequisite order.
 - Maintain `standards/` — author and keep testing conventions current as the system and toolchain change.
 - Maintain `exploring/` — capture exploratory charters; promote or drop them.
-- Run the **archive flow** on campaign close (below): validate the Dev's `delta-draft.md`, finalize, absorb into `coverage/`, move the plan, regenerate indexes.
+- Run the **archive flow** on campaign close (below): validate the Dev's `delta-draft.md`, finalize, absorb into `coverage/`, move the plan, update index tables.
 - Dispatch parallel sub-agents (Dev role) for cases when the dependencies and `files:` allow.
 
 ## Restrictions
@@ -28,7 +28,7 @@ All artifacts you author inside `.cumaru/` are written in English. The user-faci
 
 ## Intake — mechanical, not authored
 
-`intake/` is a tracker mirror. Syncing is mechanical (`cumaru intake <KEY>`); the Lead **reads** it, does not own its contents. The item's `## Acceptance Criteria (EARS)` is the requirement your coverage must verify.
+`intake/` is a tracker mirror. Syncing is mechanical (`cumaru intake <KEY>`); the Lead **reads** it, does not own its contents. The item's `## Acceptance Criteria (EARS / RFC 2119)` is the requirement your coverage must verify.
 
 ## The six pillars
 
@@ -48,7 +48,7 @@ When **inside an active plan**, read `plans/<PLAN-ID>/index.md` plus the `scope:
 ## Workflow — planning
 
 1. Read `.cumaru/index.md` for structural rules.
-2. If tracker-backed: ensure `intake/<KEY>/index.md` exists and is fresh; it owns `## Overview` + `## Acceptance Criteria (EARS)`.
+2. If tracker-backed: ensure `intake/<KEY>/index.md` exists and is fresh; it owns `## Overview` + `## Acceptance Criteria (EARS / RFC 2119)`.
 3. Identify `scope:` — which `coverage/<area>` paths the campaign touches; bootstrap any missing area.
 4. Author `plans/<PLAN-ID>/index.md`: frontmatter (`apps` = target levels, `scope`, `status`, `summary`) + `## Test Strategy`, `## Scope`, `## Risks / Gaps`, `## Out of scope`.
 5. Author `t<N>.md` per case (`task`, `depends-on`, `concerns`, `files`, `status`, `apps`).
@@ -77,6 +77,6 @@ When a campaign's cases are authored, automated, and passing:
 ## Conventions
 
 - **Slug-based campaigns:** kebab-case slug prefixed `maintenance-` (e.g. `maintenance-deflake-checkout`); no `key:`.
-- **EARS** (requirement): acceptance criteria use `WHEN <trigger> THE SYSTEM SHALL <response>`. **GWT** (test): scenarios use `GIVEN <state> WHEN <action> THEN <outcome>`. Both are warnings, not blockers.
+- **Requirements**: acceptance criteria use EARS (`WHEN <trigger> THE SYSTEM SHALL <response>`) or RFC 2119 (`The system MUST <behavior>`). **GWT** (test): scenarios use `GIVEN <state> WHEN <action> THEN <outcome>`. Both are warnings, not blockers.
 - **`apps:` values** are test levels from `schema.yaml` (`apps.values`): `unit` / `integration` / `e2e` / `contract` / `performance`; `all` for cross-level/shared (test utilities, fixtures, CI harness); `meta` for framework plumbing only.
 - **Git is skill-gated** (`.cumaru/skills/git/SKILL.md`) — without it, git is read-only.

@@ -107,7 +107,7 @@ the task subject matches its `applies-when:`**. Each file carries a
 - **vs. OpenSpec** — OpenSpec keeps specs monolithic per capability;
   `.cumaru/` splits by concern, allows per-component divergence and slug-based
   plans, and separates pre-plan ideas in `exploring/`.
-- **vs. Kiro / EARS** — `.cumaru/` adopts EARS as a **warning**, not a
+- **vs. Kiro / requirements notation** — `.cumaru/` accepts EARS and RFC 2119 as a **warning**, not a
   blocker; narrative sections stay free prose.
 - **vs. memory bank (Cline / Roo)** — memory bank focuses on session state;
   `.cumaru/` focuses on durable system state (living spec) + operational plan +

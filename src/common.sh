@@ -124,7 +124,7 @@ fm_block_replace() {
   # Stream stdin to a temp file. Passing multi-line content via `awk -v
   # new_content="$value"` is unsafe — BSD awk (macOS default) rejects real
   # newlines in `-v` assignments with "awk: newline in string", which
-  # silently breaks any regen producing >1 row.
+  # silently breaks any multi-line block replacement.
   local content_file
   content_file=$(mktemp)
   cat > "$content_file"
@@ -186,6 +186,101 @@ fm_block_walk() {
   done
 }
 
+# Emit schema-declared tag specs as:
+#   <tag>\t<type>\t<columns_csv>\t<host_file>
+#
+# v5 tag body model:
+#   default                    => standard Link, Description table
+#   [SHA, KEY, Description]    => custom deterministic table columns
+#   prose | mixed | other      => non-default bodies (preserved, not path-resolved)
+#
+# Compatibility: an empty mapping (`tag: {}`) is read as `default` so older
+# installed trees can still be inspected while they migrate to v5.
+fm_schema_tag_specs() {
+  local root="${1:-$CUMARU_DIR}" schema="$root/schema.yaml"
+  [[ -f "$schema" ]] || return 0
+  command -v ruby >/dev/null 2>&1 || return 0
+  ruby -ryaml -e '
+    def spec_for(value)
+      host = ""
+      spec = value
+      if value.is_a?(Hash)
+        host = (value["host_file"] || "").to_s
+        spec = value["type"] || value["body"] || value["shape"]
+        spec = "default" if spec.nil? && (value.keys - ["host_file"]).empty?
+      end
+
+      case spec
+      when nil
+        ["default", "Link,Description", host]
+      when String
+        type = spec.empty? ? "default" : spec
+        cols = type == "default" ? "Link,Description" : ""
+        [type, cols, host]
+      when Array
+        ["table", spec.map(&:to_s).join(","), host]
+      when Hash
+        ["default", "Link,Description", host]
+      else
+        ["other", "", host]
+      end
+    end
+
+    def emit_tags(tags)
+      (tags || {}).each do |name, value|
+        type, cols, host = spec_for(value)
+        puts [name, type, cols, host].join("\t")
+      end
+    end
+
+    def walk(node)
+      return unless node.is_a?(Hash)
+      emit_tags(node["tags"])
+      (node["entities"] || {}).each_value { |child| walk(child) }
+    end
+
+    data = YAML.load_file(ARGV[0]) || {}
+    walk(data["root"] || {})
+    emit_tags((data["meta"] || {})["tags"])
+  ' "$schema"
+}
+
+fm_schema_tag_type() {
+  local root="$1" tag="$2" name type cols host
+  while IFS=$'\t' read -r name type cols host; do
+    [[ "$name" == "$tag" ]] || continue
+    printf '%s\n' "${type:-default}"
+    return 0
+  done < <(fm_schema_tag_specs "$root")
+  printf '%s\n' "default"
+}
+
+fm_schema_tag_columns() {
+  local root="$1" tag="$2" name type cols host
+  while IFS=$'\t' read -r name type cols host; do
+    [[ "$name" == "$tag" ]] || continue
+    printf '%s\n' "${cols:-Link,Description}"
+    return 0
+  done < <(fm_schema_tag_specs "$root")
+  printf '%s\n' "Link,Description"
+}
+
+fm_schema_tag_is_default() {
+  [[ "$(fm_schema_tag_type "$1" "$2")" == "default" ]]
+}
+
+# Anchor dir for resolving path links in default tag tables.
+# Root index / domain.md point at the adopter project root; other hosts resolve
+# links next to the host file. `reference` rows use their own source-file rule.
+fm_tag_anchor_dir() {
+  local root="$1" host="$2"
+  if [[ "$host" == "$root/index.md" || "$host" == "$root/domain.md" ]]; then
+    (cd "$(dirname "$root")" 2>/dev/null && pwd) || dirname "$host"
+  else
+    dirname "$host"
+  fi
+}
+
 # Resolve a tag row link relative to its host file. Emits:
 #   <target>\t<status>
 # Status values:
@@ -240,7 +335,7 @@ fm_tag_resolve_target() {
   if [[ "$target" == /* ]]; then
     candidate="$target"
   else
-    candidate="$(dirname "$host")/$target"
+    candidate="$(fm_tag_anchor_dir "$root" "$host")/$target"
   fi
 
   if [[ -d "$candidate" && -f "$candidate/index.md" ]]; then
@@ -374,10 +469,80 @@ fm_tag_table_rows() {
       }
     ' "$file" | while IFS=$'\t' read -r host tag link desc target; do
       local resolved status rel_host
+      fm_schema_tag_is_default "$root" "$tag" || continue
       IFS=$'\t' read -r resolved status < <(fm_tag_resolve_target "$root" "$host" "$target" "$tag")
       rel_host="${host#"$root"/}"
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$rel_host" "$tag" "$link" "$desc" "$resolved" "$status"
     done
+  done
+}
+
+# Emit deterministic table rows for every tag declared as `default` or a custom
+# array. Output: file<TAB>tag<TAB>columns_csv<TAB>cell1<TAB>cell2...
+fm_tag_typed_table_rows() {
+  local root="${1:-$CUMARU_DIR}"
+  [[ -d "$root" ]] || return 0
+
+  find "$root" -type f -name '*.md' -print0 | sort -z | while IFS= read -r -d '' file; do
+    awk -v file="$file" '
+      function trim(s) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s }
+      {
+        line = $0
+        marker = line
+        sub(/^[[:space:]]*(#|\/\/)?[[:space:]]*/, "", marker)
+        sub(/[[:space:]]+$/, "", marker)
+      }
+      marker ~ /^<!-- cumaru:[a-z0-9_:-]+ -->$/ {
+        tag = marker; sub(/^<!-- cumaru:/, "", tag); sub(/ -->$/, "", tag)
+        in_block = 1; next
+      }
+      marker ~ /^<!-- \/cumaru:[a-z0-9_:-]+ -->$/ { in_block = 0; next }
+      in_block && line ~ /^[[:space:]]*\|/ {
+        row = line
+        if (row ~ /^[[:space:]]*\|[-:[:space:]\|]+$/) next
+        sub(/^[[:space:]]*\|/, "", row)
+        sub(/\|[[:space:]]*$/, "", row)
+        n = split(row, cells, /\|/)
+        out = file "\t" tag
+        for (i = 1; i <= n; i++) {
+          cell = trim(cells[i]); gsub(/\t/, " ", cell); out = out "\t" cell
+        }
+        print out
+      }
+    ' "$file" | while IFS=$'\t' read -r host tag rest; do
+      local type cols rel_host
+      type=$(fm_schema_tag_type "$root" "$tag")
+      [[ "$type" == "default" || "$type" == "table" ]] || continue
+      cols=$(fm_schema_tag_columns "$root" "$tag")
+      rel_host="${host#"$root"/}"
+      printf '%s\t%s\t%s\t%s\n' "$rel_host" "$tag" "$cols" "$rest"
+    done
+  done
+}
+
+# Emit table-shape issues for deterministic table tags. Output:
+#   <file>\t<tag>\t<expected_columns>\t<actual_columns>
+fm_tag_table_shape_issues() {
+  local root="${1:-$CUMARU_DIR}"
+  fm_tag_typed_table_rows "$root" | while IFS=$'\t' read -r file tag expected c1 c2 c3 c4 c5 c6 rest; do
+    local header actual expected_count actual_count IFS_SAVE
+    header="$c1,$c2"
+    [[ -n "${c3:-}" ]] && header+=",$c3"
+    [[ -n "${c4:-}" ]] && header+=",$c4"
+    [[ -n "${c5:-}" ]] && header+=",$c5"
+    [[ -n "${c6:-}" ]] && header+=",$c6"
+    [[ -n "${rest:-}" ]] && header+=",$rest"
+    actual="$header"
+    expected_count=$(awk -F',' '{print NF}' <<< "$expected")
+    actual_count=$(awk -F',' '{print NF}' <<< "$actual")
+    # Only validate header rows. Data rows vary by content; malformed row counts
+    # remain visible via --tables without becoming a path-resolution warning.
+    if [[ "$actual" == "$expected" ]]; then
+      continue
+    fi
+    if [[ "$c1" =~ ^[A-Za-z][A-Za-z0-9_-]*$ && "$actual_count" -ge 2 && "$actual_count" -ne "$expected_count" ]]; then
+      printf '%s\t%s\t%s\t%s\n' "$file" "$tag" "$expected" "$actual"
+    fi
   done
 }
 

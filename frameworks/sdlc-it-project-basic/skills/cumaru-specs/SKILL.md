@@ -21,8 +21,8 @@ specs/
 ```
 
 **Contract:**
-- **Living state**: every body reflects the system as it is now. History lives in `archive/<PLAN-ID>/delta.md`.
-- **`deltas:` is the canonical reference** — list of plan IDs whose deltas built the current state. Drill there for verbose change wording.
+- **Living state**: every body reflects the system as it is now. Absorbed work is summarized in `specs/index.md` `cumaru:absorptions`.
+- **`deltas:` is the local trace** — list of plan IDs whose deltas built that spec area. Cross-area durable history is the `absorptions` table.
 - **Bootstrap on demand**: an area is created the first time a plan declares it in `scope:` — don't seed empty areas in advance.
 - **Lead-only authoring**: Dev never writes inside `specs/` directly. Spec absorption happens during the Lead's archive flow (see `cumaru-archive`), driven by Dev's `delta-draft.md`.
 
@@ -42,17 +42,17 @@ When the user agrees on a new area `<area>` (typically during initial install, o
    - `deltas: []` — empty at bootstrap; populated as plans close.
 6. Body — follow the template:
    - `## Overview` — 1-3 paragraphs grounded in code.
-   - `## Requirements (EARS)` — observable behaviors as `WHEN <trigger> THE SYSTEM SHALL <response>`. Light pass produces broad, possibly imprecise EARS; deepen later. **An empty section is better than fabricated requirements.**
+   - `## Requirements (EARS / RFC 2119)` — EARS for observable behaviors, RFC 2119 for constraints/invariants. Light pass produces broad, possibly imprecise requirements; deepen later. **An empty section is better than fabricated requirements.**
    - `## Decisions` — non-obvious design choices visible in the code, or `(none surfaced)`.
    - `## Files` — list each `<concern>.md` and `<subarea>/` with a one-line role.
 7. **Optional discovery log.** For larger areas the light/deep pass procedure benefits from a persistent log: copy `templates/bootstrap.md` to `specs/<area>/bootstrap.md` and fill the `## Discovery (light pass <ISO>)` section as you read. Leave it on disk — future deep passes append below.
-8. Re-emit `specs/index.md` row via `cumaru tag set specs/index.md specs <new body>` — v4 shape: `| [<area>](<area>/index.md) | <one-line description fusing summary, apps, depends-on, relates> |`.
+8. Re-emit `specs/index.md` row via `cumaru tag set specs/index.md specs <new body>` — default shape: `| [<area>](<area>/index.md) | <one-line description fusing summary, apps, depends-on, relates> |`.
 9. `cumaru doctor` — orphan check should be clean.
 
 **What NOT to do:**
 - Don't auto-create areas without confirmation — a bad split poisons every later plan.
 - Don't try to write full spec bodies in one pass — bootstrap is the skeleton; deepening fills it.
-- Don't invent EARS you can't ground in code.
+- Don't invent requirements you can't ground in code.
 
 ## Recipe: deepen an area
 
@@ -60,7 +60,7 @@ When a plan is about to touch an area and its spec is too thin to plan against (
 
 1. Read `specs/<area>/index.md` end-to-end (and any prior `bootstrap.md` discovery log if present).
 2. Read the code in the area's surface — sources, tests, configs. Take notes by **topic**: auth has "login flow", "token storage", "session refresh", etc.
-3. For each topic, write EARS-style requirements grounded in code you can point to. Group under `## Requirements (EARS)` subheaders.
+3. For each topic, write EARS/RFC 2119 requirements grounded in code you can point to. Group under `## Requirements (EARS / RFC 2119)` subheaders.
 4. **Split into a concern file** when a topic is large enough to deserve its own file:
    - `cumaru flow specs/<area>/<concern>.md create`
    - Copy the frontmatter shape from `templates/spec.md`. Set `name: <concern>`, repeat `apps:`, give it its own `summary:`.
@@ -87,14 +87,14 @@ When a plan is about to touch an area and its spec is too thin to plan against (
 When an area's `deltas:` list has grown long (≥5 entries) and the per-plan history makes the spec hard to read as "what's true now":
 
 1. Read the area's `index.md` and any `<concern>.md` files / subareas.
-2. For each plan ID in `deltas:`, read `archive/<PLAN-ID>/delta.md` — chronological changes that built the current spec.
-3. **Rewrite the area's body into a single coherent spec.** Integrate every delta as if it had always been part of the system. Where two deltas contradict, reflect the **current** state. Old EARS that were modified should appear in their modified form; removed EARS should be gone.
-4. Replace `deltas: [...]` in the frontmatter with `consolidated-at: <today's ISO date>`. Keep `archive/<PLAN-ID>/` entries on disk — they remain the verbose history; the spec body is the compact view.
-5. Re-emit `specs/index.md` row — v4 shape: `| [<area>](<area>/index.md) | <one-line description, possibly updated wording> |`.
+2. For each plan ID in `deltas:`, find the corresponding KEY in `specs/index.md` `cumaru:absorptions` and inspect the recorded SHA if details are needed.
+3. **Rewrite the area's body into a single coherent spec.** Integrate every delta as if it had always been part of the system. Where two deltas contradict, reflect the **current** state. Old requirements that were modified should appear in their modified form; removed requirements should be gone.
+4. Replace `deltas: [...]` in the frontmatter with `consolidated-at: <today's ISO date>`. Keep the `absorptions` ledger; the spec body is the compact view.
+5. Re-emit `specs/index.md` row — default shape: `| [<area>](<area>/index.md) | <one-line description, possibly updated wording> |`.
 6. `cumaru doctor`.
 
 **What NOT to do:**
-- Don't delete archive entries — they're the verbose history.
+- Don't delete `absorptions` rows — they're the durable ledger.
 - Don't consolidate halfway ("kept some for clarity" violates the model). Either consolidate or don't.
 - Don't trigger consolidation on every plan close — pay the cost only when the cumulative weight is real (the user is asking, or the area's `deltas:` is genuinely long).
 
@@ -104,6 +104,7 @@ When a plan closes via `cumaru-archive`, the Lead's archive flow opens each `spe
 1. Updates the area's body to reflect the new state (per Dev's `delta-draft.md`).
 2. Appends the plan's `<KEY>` to the area's `deltas:` frontmatter list.
 3. Re-emits the area's row in `specs/index.md`.
+4. Records the absorption in `specs/index.md` `cumaru:absorptions` as `SHA | KEY | Description`.
 
 This skill provides the recipes to **grow** the spec tree (bootstrap, deepen, consolidate). The `cumaru-archive` skill provides the recipe to **absorb** a closed plan's delta into already-existing areas. Both write to `specs/` — but only the Lead, never the Dev.
 
@@ -111,14 +112,14 @@ This skill provides the recipes to **grow** the spec tree (bootstrap, deepen, co
 
 - **Delta absorption** — `cumaru-archive`. This skill grows specs from first principles or refactors them; archive merges plan deltas into them.
 - **Plan authoring** — `cumaru-plan`. Plans declare which `specs/<area>[/<subarea>]/<concern>` paths they touch via `scope:`; this skill creates/maintains those paths.
-- **Cross-area dependency enforcement** — `depends-on:` resolution is documented in `meta.cross_file_checks.deferred` (not yet enforced by `cumaru doctor`).
+- **Cross-area dependency enforcement** — `depends-on:` resolution is not yet enforced by `cumaru doctor`.
 
 ## Patterns
 
 | User says | You do |
 |---|---|
 | "Bootstrap the specs" / "scaffold the spec areas" | Bootstrap recipe → propose area list from CLAUDE.md/README/code → confirm → create each area |
-| "Deepen the auth spec" / "specs/auth está muito raso" | Deepen recipe on `specs/auth/` → light-or-deep read → write EARS by topic → split/promote as needed |
+| "Deepen the auth spec" / "specs/auth está muito raso" | Deepen recipe on `specs/auth/` → light-or-deep read → write requirements by topic → split/promote as needed |
 | "Split this area into concerns" / "promote `auth/login` to a subarea" | Deepen recipe, step 4 (split) or step 5 (promote) |
 | "Consolidate specs/payments" / "compactar a área de payments" | Consolidate recipe → read deltas → rewrite body → swap `deltas` for `consolidated-at` |
 | "Add a new spec area for telemetry" | Bootstrap recipe with `<area>=telemetry` |

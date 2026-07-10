@@ -38,4 +38,4 @@ Every domain (except `__base`) includes an ASCII flow diagram under `## Flow` or
 
 ## Reuse mechanism
 
-Propagation is a **verbatim copy** of every file under `__base/{index.md, skills/, hooks/, commands/}` into each domain, plus a **deterministic drift-check** (`cmp` per file in the install script) that aborts the install when any domain's universal artifact diverges from `__base`. The maintainer edits `__base`, re-copies into the domains, and the check guards against shipping a drifted snapshot. (A build-time include was considered and set aside as more machinery for a marginal gain.)
+Propagation is a **verbatim copy** of every universal file under `__base/{index.md, skills/, hooks/, commands/}` into each domain, plus a **deterministic drift-check** (`cmp` per file in the install script) that aborts the install when any domain's universal artifact diverges from `__base`. The `cumaru-install` skill is exempt from the drift-check (domain-owned). The maintainer edits `__base`, re-copies into the domains, and the check guards against shipping a drifted snapshot. (A build-time include was considered and set aside as more machinery for a marginal gain.)

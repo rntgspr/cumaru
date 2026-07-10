@@ -45,7 +45,7 @@ The `relates:` list is auto-populated from the source (parent epic / parent stor
 Open the created/refreshed file. The RAW block has explicit per-issuetype instructions; the gist:
 
 1. Refine `## Overview` — restate what's asked, in English, 1-3 paragraphs.
-2. Refine `## Acceptance Criteria (EARS)` — `WHEN <trigger> THE SYSTEM SHALL <response>`.
+2. Refine `## Acceptance Criteria (EARS / RFC 2119)` — EARS for event/state behavior, RFC 2119 for constraints. Prefer one dominant style per section.
 3. If `type: bug`, fill `## Reproduction`, `## Expected`, `## Actual` from the description.
 4. Set `apps: [...]` in the frontmatter to the affected components (keys from `schema.yaml > meta.apps.values`).
 5. Verify `relates: [...]` lists parent epic / story / cross-item references correctly.

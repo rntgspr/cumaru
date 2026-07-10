@@ -85,7 +85,7 @@ The framework grew out of the web development / software tooling space, so the c
 
 - **vs. OpenSpec** — OpenSpec keeps specs monolithic per capability. `.cumaru/` splits by concern, supports per-component divergence, allows plans alongside ticket IDs, and keeps pre-plan ideation separate from the active work tree.
 - **vs. GitHub Spec Kit** — Spec Kit recreates intake locally and grows verbose; the archive becomes context noise. `.cumaru/` mirrors the work tracker instead of duplicating it (tracker-agnostic: jira / linear / clickup / …), and curates the archive so it never loads by default.
-- **vs. Kiro / EARS notation** — `.cumaru/` adopts EARS for acceptance criteria as a **warning**, not a blocker. Narrative sections (overview, decisions, history, notes) stay free prose. EARS is encouraged where the requirement is testable, not enforced everywhere.
+- **vs. Kiro / requirements notation** — `.cumaru/` accepts EARS and RFC 2119 for acceptance criteria as a **warning**, not a blocker. Narrative sections (overview, decisions, history, notes) stay free prose. Pick one dominant style per section; EARS fits event/state behavior, RFC 2119 fits constraints and invariants.
 - **vs. memory bank (Cline / Roo)** — memory bank focuses on session state. `.cumaru/` focuses on durable project state: a living spec, an operational plan, a curated archive, and a space for pre-plan ideas — independent of any single session.
 
 ## Adopting it in a project

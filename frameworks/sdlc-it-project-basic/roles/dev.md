@@ -31,7 +31,7 @@ You have bounded write access inside the active plan only:
 
 You may **not** write anywhere else inside `.cumaru/`. Specifically, do not touch:
 
-- `plans/<PLAN-ID>/index.md` — the plan-level frontmatter, scope, EARS, DAG, plan-level `status:` are the Lead's.
+- `plans/<PLAN-ID>/index.md` — the plan-level frontmatter, scope, acceptance criteria, DAG, plan-level `status:` are the Lead's.
 - Other tasks' `t<N>.md`, or any field of your own task other than `status`/`aux`/body — `depends-on`, `files`, `parallel-safe`, `concerns`, `apps` are contract set by the Lead.
 - `specs/<area>/...` — directly forbidden. Spec absorption is the Lead's, via the archive flow.
 - `archive/...` — written only by the Lead in the archive flow.
@@ -107,8 +107,8 @@ Written **only at plan close**, when the Dev is the last one to finish the plan'
 
 Propose, per affected `specs/<area>[/<subarea>...]/<concern>.md`:
 
-- `### Added Requirements` — new EARS criteria.
-- `### Modified Requirements` — changed EARS, with the previous version cited as `(was: ...)`.
+- `### Added Requirements` — new EARS / RFC 2119 criteria.
+- `### Modified Requirements` — changed requirements, with the previous version cited as `(was: ...)`.
 - `### Removed Requirements` — what was deleted, with reason.
 
 Do **not** edit `specs/` directly. The Lead validates the draft and is the only one who absorbs the delta into specs.

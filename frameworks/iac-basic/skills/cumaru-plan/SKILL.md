@@ -39,7 +39,7 @@ plans/<PLAN-ID>/
 
 ## Recipe: bootstrap a changeset (slug-based / maintenance)
 
-Kebab-case slug prefixed `maintenance-`. Frontmatter has no `key:`/`type:`. Body carries **everything** (no intake to defer to): `## Overview` + `## Acceptance Criteria (EARS)` + `## Plan / DAG` + `## Blast radius` + `## Rollback` + `## Promotion path` + `## Out of scope` + `## Risks`. Re-emit `plans/index.md`; `cumaru doctor`.
+Kebab-case slug prefixed `maintenance-`. Frontmatter has no `key:`/`type:`. Body carries **everything** (no intake to defer to): `## Overview` + `## Acceptance Criteria (EARS / RFC 2119)` + `## Plan / DAG` + `## Blast radius` + `## Rollback` + `## Promotion path` + `## Out of scope` + `## Risks`. Re-emit `plans/index.md`; `cumaru doctor`.
 
 ## Recipe: add an apply step
 

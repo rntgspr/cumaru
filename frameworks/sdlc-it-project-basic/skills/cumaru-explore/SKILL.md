@@ -32,7 +32,7 @@ When the user says "explore X" / "let's sketch <idea>" / "ideia nova":
    - `summary: <one-line>` — what's the idea in 8-12 words. Will appear in `exploring/index.md` table.
    - `apps: [...]` — affected components (keys from `meta.apps.values`).
 5. Fill the body following the template: `## Idea`, `## Context`, `## Options / sketches`, `## Open questions`, `## Promotion / drop criteria`. Author's voice; free prose.
-6. Re-emit `exploring/index.md`'s table to include the new row via `cumaru tag set exploring/index.md exploring <new body>` — v4 shape: `| [<slug>](<slug>/index.md) | <one-line description of the idea, including apps if relevant> |`.
+6. Re-emit `exploring/index.md`'s table to include the new row via `cumaru tag set exploring/index.md exploring <new body>` — default shape: `| [<slug>](<slug>/index.md) | <one-line description of the idea, including apps if relevant> |`.
 7. `cumaru doctor` — orphan check should be clean.
 
 ## Recipe: evolve status (idea → considering)

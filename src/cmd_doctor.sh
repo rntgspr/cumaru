@@ -6,17 +6,18 @@
 #   [⚠] label   detail            — soft issue (warning; never fails)
 #   [✗] label   detail            — hard issue (error; exit 1 at end)
 #
-# Composition (v4 — pillar-agnostic; structural checks use the schema):
+# Composition (v5 — pillar-agnostic; structural checks use the schema):
 #   1. Schema conformance — universal markdown, index.md, pillar index, entity
-#      frontmatter, EARS, framework-version match. Walks root.entities from
+#      frontmatter, pattern rules, framework-version match. Walks root.entities from
 #      schema.yaml; no hardcoded pillar names.
 #   2. Orphan check — walks raiz + pilares (from root.entities), shows every
 #      markdown-table tag found, lists orphans both ways. LLM reconciles.
 #   3. Stale work-marker files (any *.delete-me.md anywhere under .cumaru/).
 #   4. Unrefined RAW blocks (any Markdown file containing <!-- BEGIN RAW).
-#   5. File references — links inside [Link, Description] tag bodies exist on
-#      disk (`reference` rows resolve from the project root; breaking the
-#      source-file rule reports as invalid).
+#   5. File references — links inside default [Link, Description] tag bodies
+#      exist on disk (`reference` rows resolve from the project root; breaking
+#      the source-file rule reports as invalid). Custom/prose/mixed/other tag
+#      bodies are not path-resolved.
 #   6. External tools available (curl, jq, git).
 #   7. Agent hook — CUMARU-HOOK block in AGENTS.md / CLAUDE.md present and
 #      matching canonical prose; warns if missing or drifted.
@@ -38,13 +39,13 @@ Usage:
 Options:
   --quiet   suppress [✓] pass lines; warnings, errors, and the summary still print.
 
-Checks (v4 — pillar-agnostic; structural checks use the schema):
+Checks (v5 — pillar-agnostic; structural checks use the schema):
   [1] Schema conformance — sub-passes:
         [0] H1 + human_revised on every .md (rules.markdown)
         [1] index.md universal frontmatter (generated, apps; apps values valid)
         [2] Pillar index.md (generated-at + pillar extras like intake.tracker)
         [3] Entity frontmatter (schema-driven walk of root.entities)
-        [4] Pattern rules (EARS, GWT, …) — schema-driven from rules.*
+        [4] Pattern rules (EARS / RFC 2119, GWT, …) — schema-driven from rules.*
         Cross — framework-version in .cumaru/index.md ≡ version in schema.yaml.
   [2] Orphan check — walks raiz + pilares (from root.entities), shows each
       markdown-table tag, reports both directions:
@@ -53,9 +54,10 @@ Checks (v4 — pillar-agnostic; structural checks use the schema):
       The LLM reconciles per the orphan-row guidance in the cumaru-doctor skill.
   [3] Stale work-marker files — any `*.delete-me.md` anywhere under .cumaru/.
   [4] Unrefined RAW blocks — any Markdown file containing `<!-- BEGIN RAW`.
-  [5] File references — links inside [Link, Description] tag bodies resolve on
-      disk. `reference` rows resolve from the project root and must target
-      repository source files; rule-breaking rows report as invalid.
+  [5] File references — links inside default [Link, Description] tag bodies
+      resolve on disk. `reference` rows resolve from the project root and must
+      target repository source files; rule-breaking rows report as invalid.
+      Custom/prose/mixed/other tag bodies are not path-resolved.
   [6] External tools available (curl, jq, git).
   [7] Agent hook — CUMARU-HOOK block in AGENTS.md / CLAUDE.md present and
       matching the canonical prose (warning if missing or drifted).
@@ -67,8 +69,8 @@ Checks (v4 — pillar-agnostic; structural checks use the schema):
   `applies_to:` (e.g. ears, gherkin) is scanned. Bullets under the named
   section that don't match emit that rule's severity (warning unless the rule
   declares severity: error). The section marker is the quoted substring of each
-  applies_to entry. Cross-file checks (path resolution, depends-on, deltas
-  references) are listed in schema.yaml under cross_file_checks.deferred.
+  applies_to entry. Cross-file semantic checks (path resolution, depends-on,
+  deltas references) are not enforced by doctor.
 
 Exit codes:
   0   all checks pass (warnings allowed)
@@ -138,9 +140,9 @@ _doctor_apps_values() {
 # TAB-separated record per (rule × applies_to entry):
 #   <severity>\t<pattern>\t<section-marker>
 # The section marker is the quoted substring of each applies_to entry
-# (`- intake tickets — "## Acceptance Criteria (EARS)"` → `## Acceptance
-# Criteria (EARS)`); entries without quotes fall back to the trimmed bullet.
-# This is what makes EARS/GWT/any future rule fully schema-driven — the doctor
+# (`- intake tickets — "## Acceptance Criteria (EARS / RFC 2119)"` → `## Acceptance
+# Criteria (EARS / RFC 2119)`); entries without quotes fall back to the trimmed bullet.
+# This is what makes EARS/RFC 2119/GWT/any future rule fully schema-driven — the doctor
 # carries no hardcoded section names or regexes.
 _doctor_pattern_rules() {
   [[ -f "$SCHEMA" ]] || return 0
@@ -197,7 +199,7 @@ _doctor_disk_files_for_path() {
   shopt -u nullglob
 }
 
-# Run frontmatter / EARS / version checks against the schema. Verbose by
+# Run frontmatter / pattern-rule / version checks against the schema. Verbose by
 # default (the [0]..[5] sub-passes); silenced by the orchestrator via QUIET.
 # Bumps the local `errors` and `warnings` counters; returns non-zero if any
 # error landed.
@@ -301,7 +303,7 @@ _doctor_check_schema() {
   # section that does NOT match the pattern emits `sev` (warning unless the
   # rule declares severity: error). The marker is matched as a LITERAL prefix
   # (index == 1), so prose that merely cites the heading inside backticks
-  # (`## Requirements (EARS)`) never toggles the scanner — only a real heading
+  # (`## Requirements (EARS / RFC 2119)`) never toggles the scanner — only a real heading
   # at column 1 does.
   check_pattern() {
     local file="$1" sev="$2" pat="$3" marker="$4"
@@ -384,15 +386,15 @@ _doctor_check_schema() {
     done < <(_doctor_disk_files_for_path "$path_pattern")
   done < <(_doctor_schema_entities)
 
-  # [4] Pattern rules (schema-driven) — EARS, GWT, and any future rules.<name>
+  # [4] Pattern rules (schema-driven) — EARS/RFC 2119, GWT, and any future rules.<name>
   # carrying a `pattern:` + `applies_to:`. Each (severity, pattern, marker) is
   # read once from the schema; every .md is scanned against every rule. No
   # section name or regex is hardcoded here anymore.
   say ""
-  say "[4] Pattern rules (schema-driven: EARS, GWT, …)"
+  say "[4] Pattern rules (schema-driven: EARS / RFC 2119, GWT, …)"
   # sort -u dedups identical (severity, pattern, marker) triples — several
   # applies_to entries can share one marker (e.g. "intake tickets" and
-  # "slug-based plans" both map to "## Acceptance Criteria (EARS)"); without
+  # "slug-based plans" both map to "## Acceptance Criteria (EARS / RFC 2119)"); without
   # this each shared-marker bullet would be flagged once per entry.
   local _pat_rules=() _pr _sev _pat _marker
   while IFS= read -r _pr; do
@@ -413,8 +415,8 @@ _doctor_check_schema() {
             check_required_from_csv check_pattern check_h1 check_human_revised
 
   # Emit the warning tally on a sentinel line so the orchestrator — which runs
-  # this function in a captured subshell — can surface pattern warnings (EARS /
-  # GWT) even when there are zero errors. The orchestrator strips this line.
+  # this function in a captured subshell — can surface pattern warnings even
+  # when there are zero errors. The orchestrator strips this line.
   printf 'WARNCOUNT:%s\n' "$warnings"
 
   if [[ $errors -gt 0 ]]; then
@@ -434,7 +436,7 @@ _doctor_check_schema_pass() {
   # Pull the warning tally out of the sentinel line, then strip it from the
   # detail. With QUIET=1 the captured `out` holds only the red/yellow problem
   # lines (the [0]..[4] headers are suppressed), so when there are no errors it
-  # is exactly the pattern-rule (EARS/GWT) warnings.
+  # is exactly the pattern-rule warnings.
   warn_count=$(printf '%s\n' "$out" | sed -n 's/^WARNCOUNT:\([0-9][0-9]*\)$/\1/p' | tail -1)
   [[ -z "$warn_count" ]] && warn_count=0
   out=$(printf '%s\n' "$out" | grep -v '^WARNCOUNT:')
@@ -445,7 +447,7 @@ _doctor_check_schema_pass() {
   elif [[ "$warn_count" -gt 0 ]]; then
     # No errors, but pattern rules flagged bullets — surface them in the summary
     # instead of swallowing them (the old behaviour discarded `out` on pass).
-    _doctor_warn_emit "Schema conformance: ${warn_count} pattern warning(s) (EARS/GWT)" "$out"
+    _doctor_warn_emit "Schema conformance: ${warn_count} pattern warning(s)" "$out"
   else
     _doctor_pass "Schema conformance (frontmatter, patterns, version)"
   fi
@@ -524,16 +526,8 @@ _doctor_schema_pillar_extras() {
 }
 
 # Anchor dir for resolving a table's row paths.
-# Raiz index / domain.md → project root (e.g. components table points at
-# project dirs). Pillar index → its own dir (e.g. plans table points at
-# plans/AAA-XXXX/).
 _doctor_orphan_anchor() {
-  local idx="$1"
-  if [[ "$idx" == "$CUMARU_DIR/index.md" || "$idx" == "$CUMARU_DIR/domain.md" ]]; then
-    (cd "$(dirname "$CUMARU_DIR")" && pwd)
-  else
-    dirname "$idx"
-  fi
+  fm_tag_anchor_dir "$CUMARU_DIR" "$1"
 }
 
 # Extract candidate paths from one table row. Each markdown link target and
@@ -578,6 +572,7 @@ _doctor_check_orphans() {
 
     while IFS= read -r name; do
       [[ -z "$name" ]] && continue
+      fm_schema_tag_is_default "$CUMARU_DIR" "$name" || continue
       body=$(fm_block_extract "$idx" "$name")
       header=$(printf '%s\n' "$body" | awk 'NF && /^[[:space:]]*\|/ { print; exit }')
       [[ -z "$header" ]] && continue   # not a markdown-table tag
@@ -588,14 +583,6 @@ _doctor_check_orphans() {
       fi
       report+=("  Table: $name")
       report+=("    $header")
-
-      # v4: every tag body is a [Link, Description] table. For the archive
-      # pillar specifically, the ephemeral-directory model (pruned after Phase
-      # 4) means a row whose Link points at a missing dir is EXPECTED — that's
-      # the post-prune steady state. We tolerate it on archive/index.md only
-      # and let the row description carry the commit reference.
-      local archive_tolerate=0
-      [[ "$name" == "archive" ]] && archive_tolerate=1
 
       local claimed=() row found cand label
       while IFS= read -r row; do
@@ -620,11 +607,6 @@ _doctor_check_orphans() {
         if [[ -n "$found" ]]; then
           report+=("    ✓ $found")
           claimed+=("$found")
-        elif [[ $archive_tolerate -eq 1 ]]; then
-          # Archive row pointing at a pruned dir is expected; not an orphan.
-          label=$(_doctor_row_paths "$row" | head -1)
-          [[ -z "$label" ]] && label=$(printf '%s\n' "$row" | awk -F'|' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          report+=("    ✓ ${label:-?} (archived — directory pruned)")
         else
           label=$(_doctor_row_paths "$row" | head -1)
           if [[ -z "$label" ]]; then
@@ -722,18 +704,11 @@ _doctor_check_raw_blocks() {
 # pillar-agnostic; workflow integrity is the LLM's responsibility per the
 # recipe skills (e.g. cumaru-archive for sdlc, which owns the archive recipe).
 
-# v4: every tag body is a [Link, Description] table. Validate that each link's
-# target path resolves on disk. The orphan check (above) already covers links
-# anchored at pillar/raiz indexes; this check is the catch-all for every other
-# .md that hosts a tag — `templates/index.md`, sub-area indexes, handoffs, etc.
-# Detection is by BODY SHAPE (lines containing `[name](path)`), not by marker
-# name. Files already audited by the orphan check are skipped to avoid double-
-# counting. The anchor for resolving each link is the file's own directory
-# (relative links inside a .md resolve next to the .md), not the project root —
-# EXCEPT `reference` rows, which resolve from the project root and must target
-# repository source files (the coverage rule); rows breaking it are `invalid`.
+# v5: default tag bodies are [Link, Description] tables. Validate that each
+# link target resolves on disk. Custom table tags are deterministic but not
+# path-resolved by default; prose/mixed/other tags are preserved-only here.
 _doctor_check_file_refs() {
-  local missing=() invalid=() file tag link desc target status
+  local missing=() invalid=() shape=() file tag link desc target status expected actual
   while IFS=$'\t' read -r file tag link desc target status; do
     case "$status" in
       missing) missing+=("${file} [${tag}]: ${target}") ;;
@@ -741,7 +716,11 @@ _doctor_check_file_refs() {
     esac
   done < <(fm_tag_table_rows "$CUMARU_DIR")
 
-  if [[ ${#missing[@]} -eq 0 && ${#invalid[@]} -eq 0 ]]; then
+  while IFS=$'\t' read -r file tag expected actual; do
+    shape+=("${file} [${tag}]: expected ${expected}; saw ${actual}")
+  done < <(fm_tag_table_shape_issues "$CUMARU_DIR")
+
+  if [[ ${#missing[@]} -eq 0 && ${#invalid[@]} -eq 0 && ${#shape[@]} -eq 0 ]]; then
     _doctor_pass "File references resolve on disk"
   else
     local detail=""
@@ -752,7 +731,11 @@ _doctor_check_file_refs() {
       [[ -n "$detail" ]] && detail+=$'\n'
       detail+=$(printf '  • %s — invalid reference (must be a repository source file, project-root-relative)\n' "${invalid[@]}")
     fi
-    _doctor_warn_emit "File references not found or invalid ($((${#missing[@]} + ${#invalid[@]}))):" "$detail"
+    if [[ ${#shape[@]} -gt 0 ]]; then
+      [[ -n "$detail" ]] && detail+=$'\n'
+      detail+=$(printf '  • %s — table header/column mismatch\n' "${shape[@]}")
+    fi
+    _doctor_warn_emit "File references not found, invalid, or malformed ($((${#missing[@]} + ${#invalid[@]} + ${#shape[@]}))):" "$detail"
   fi
 }
 

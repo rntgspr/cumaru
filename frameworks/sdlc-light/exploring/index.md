@@ -40,13 +40,13 @@ exploring/<slug>/
 └── *.md              ← optional aux (referenced via `aux:` only)
 ```
 
-`<slug>` is **pure kebab-case** — no `maintenance-` prefix, no tracker key. An exploration is **not** a plan: no `scope:`, no DAG, no EARS criteria required. The body is free-form.
+`<slug>` is **pure kebab-case** — no `maintenance-` prefix, no tracker key. An exploration is **not** a plan: no `scope:`, no DAG, no EARS / RFC 2119 criteria required. The body is free-form.
 
 ## Lifecycle of an exploration
 
 An exploration is **transient by design** — it should eventually either become a plan or be discarded. Two valid exits:
 
-- **Promote** — the idea matured into committed work. The Admin moves the directory to `plans/maintenance-<slug>/` (or `plans/<KEY>/` when a tracker item lands for it), authors the plan-level frontmatter (`scope:`, EARS criteria, DAG), and removes the entry from `exploring/`.
+- **Promote** — the idea matured into committed work. The Admin moves the directory to `plans/maintenance-<slug>/` (or `plans/<KEY>/` when a tracker item lands for it), authors the plan-level frontmatter (`scope:`, EARS / RFC 2119 criteria, DAG), and removes the entry from `exploring/`.
 - **Drop** — the idea won't happen. The Admin deletes the directory.
 
 Stale entries are a smell: prune or promote, don't accumulate.

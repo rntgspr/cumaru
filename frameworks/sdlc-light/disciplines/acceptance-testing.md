@@ -16,8 +16,8 @@ failing criterion is a blocker, not a review comment — never close or archive 
 
 ## Cycle
 
-1. **Source the criteria** — the EARS criteria already authored for the work: `## Acceptance
-   Criteria (EARS)` in `intake/<KEY>/`, plus any `## Requirements (EARS)` in the spec areas the
+1. **Source the criteria** — the EARS / RFC 2119 criteria already authored for the work: `## Acceptance
+   Criteria (EARS / RFC 2119)` in `intake/<KEY>/`, plus any `## Requirements (EARS / RFC 2119)` in the spec areas the
    plan's `scope:` touches. If a behavior has no criterion, write it first — don't invent a pass.
 2. **Prove each one** — run a deterministic check appropriate to the criterion (unit / integration
    test, API call, UI driver, or a recorded manual repro) and capture the evidence. Each criterion

@@ -1,7 +1,7 @@
 ---
 human_revised: true         # flip to false once a human has reviewed this file
 generated: true             # true = machine-generated output; false = hand-authored
-generated-at: <ISO datetime> # set at generation time; update on every regen
+generated-at: <ISO datetime> # set at generation time; update when re-emitting the index
 apps: [meta]                # component scope: `meta` means .cumaru/ itself; replace
                             # with your component keys from schema.yaml meta.apps.values
 ---

@@ -21,6 +21,6 @@ Argument: `$ARGUMENTS` may be a kebab-case slug (`move-to-opentofu`), an existin
 Hard rules:
 
 - Spikes **never** flow to `archive/`. Only completed changesets do. Drop = `cumaru flow exploring/<slug> remove` after explicit confirmation.
-- Body is **free-form prose** — no EARS, no scope, no DAG. A spike that needs structure is ready to become a changeset.
+- Body is **free-form prose** — no acceptance criteria, no scope, no DAG. A spike that needs structure is ready to become a changeset.
 - Re-emit `exploring/index.md` row via `cumaru tag set` after bootstrap and after promote/drop (the row appears or disappears).
 - The promote recipe hands off to `/cumaru:plan` to write changeset frontmatter — this command only stages the body and moves the dir.

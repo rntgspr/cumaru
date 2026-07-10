@@ -27,9 +27,9 @@ sections under `## Files` and `## Topics` are yours to write.
        cross-area imports detected below), `apps:` (from the project's
        `schema.yaml` `apps.values`), `deltas: []`.
      - `## Overview` — 1-3 paragraphs: what the area does, why it exists.
-     - `## Requirements (EARS)` — observable behaviors as
-       `WHEN <trigger> THE SYSTEM SHALL <response>`. Light pass produces
-       broad, possibly imprecise EARS; the deep pass refines.
+     - `## Requirements (EARS / RFC 2119)` — EARS for observable behaviors,
+        RFC 2119 for constraints/invariants. Light pass produces
+        broad, possibly imprecise requirements; the deep pass refines.
      - `## Decisions` — non-obvious design choices visible in the code, or
        `(none surfaced)` if you cannot tell.
      - `## Files` — markdown list with one-line role descriptions per file.
@@ -54,7 +54,7 @@ sections under `## Files` and `## Topics` are yours to write.
      - For each topic addressed: `### Topic: <slug>` followed by findings
        (file refs, decisions discovered, reconciliations made).
 
-  4. Refine `topology/<area>/index.md` with what you learned: tighten EARS,
+  4. Refine `topology/<area>/index.md` with what you learned: tighten requirements,
      add `## Decisions`, update `## Files` descriptions, split into
      `<area>/<concern>.md` if it grows large — or promote a concern to a
      `<area>/<subarea>/` directory (with its own `index.md`) when it grows

@@ -36,10 +36,10 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 
 | Mode / flag | Description |
 |---|---|
-| *(default)* | Full report: refs, covered, uncovered, stale, invalid, summary. |
+| *(default)* | Full report: refs, covered, uncovered, stale, invalid, foreign, summary. |
 | `--refs` | List every reference row, grouped by spec file (same view `cumaru tag all` gives indexes). |
 | `--gaps` | Only uncovered source files, one per line — pipeable. |
-| `--rows` | Machine-readable TSV: `bucket<TAB>path<TAB>spec_host<TAB>detail`. |
+| `--rows` | Machine-readable TSV: `bucket<TAB>path<TAB>spec_host<TAB>detail` (buckets: covered, uncovered, stale, invalid, foreign). |
 | `--strict` | Exit 1 when any uncovered/stale/invalid entry exists — CI gate. |
 
 ## Schema attributes (`meta` section)
@@ -47,9 +47,9 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 | Attribute | Default | Description |
 |---|---|---|
 | `specification_dir` | `specs` | Which pillar holds the durable specification whose `reference` tables count. Domains ship it preset: `specs` (sdlc), `topology` (iac-basic), `coverage` (qa-basic). |
-| `coverage.source` | `[]` (everything) | Array of fnmatch-style globs narrowing which tracked files count as coverable source (`*` crosses `/`, so `src/**` ≡ `src/*`). `.cumaru/` and `.agents/` are always excluded. |
+| `coverage.source` | `[]` (everything) | Array of fnmatch-style globs narrowing which tracked files count as coverable source (`*` crosses `/`, so `src/**` ≡ `src/*`). Supports both block and inline YAML list forms. `.cumaru/` and `.agents/` are always excluded. |
 
-Both are adopter-owned values, like `meta.apps.values`.
+Both are adopter-owned values, like `meta.apps.values`. When `coverage.source` is empty/absent, every tracked file (minus `.cumaru/` and `.agents/`) counts as coverable.
 
 ## Buckets
 
@@ -61,14 +61,15 @@ Both are adopter-owned values, like `meta.apps.values`.
 | `invalid` | Row breaks the source-file rule (`.cumaru/` path, directory, absolute path, URL, anchor). | `cumaru doctor` check 5 (invalid) |
 | `foreign` | Row target exists but is outside the source scope (untracked or filtered by `coverage.source`). Informational. | — |
 
+Rows with `template` placeholders (`<...>`) or empty bodies are skipped — starter files don't pollute the report. Reference rows hosted outside the specification pillar are counted in a separate notice line.
+
 Rows with `template` placeholders (`<...>`) or empty bodies are skipped —
 starter files don't pollute the report. Reference rows hosted outside the
 specification pillar are ignored (counted in a notice line).
 
 ## Requirements
 
-A **git work tree** — the source list is `git ls-files` (tracked files only),
-so `.gitignore` is respected for free. Read-only; nothing is written.
+A **git work tree** — the source list is `git ls-files` (tracked files only; `core.quotepath=off` so non-ASCII paths are kept literal), so `.gitignore` is respected for free. Read-only; nothing is written.
 
 ## Examples
 
@@ -84,4 +85,4 @@ cumaru coverage --rows | awk -F'\t' '$1 == "stale"'
 
 - `cumaru-refs` skill / `/cumaru:refs` command — the reconciliation recipe: adjudicate uncovered files, write rows via `cumaru tag set`, fix stale/invalid rows.
 - [`cumaru tag`](tag.md) — reads/writes the `reference` blocks (`cumaru tag <spec-file> get|set reference`).
-- [`cumaru doctor`](doctor.md) — check 5 validates every reference row's target on disk.
+- [`cumaru doctor`](doctor.md) — check 5 validates every reference row's target on disk and surfaces shape mismatches for custom table tags.
