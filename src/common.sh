@@ -35,32 +35,13 @@ say()    { [[ "${QUIET:-0}" == "1" ]] || printf '%s\n' "$*"; }
 # Extract the scalar value of a top-level frontmatter key from $1. Empty if missing.
 fm_scalar() {
   local file="$1" key="$2"
-  awk -v key="$key" '
-    /^---$/ { c++; if (c == 2) exit; next }
-    c == 1 && $0 ~ "^"key":" {
-      sub("^"key":[[:space:]]*", "")
-      sub(/[[:space:]]+$/, "")
-      print
-      exit
-    }
-  ' "$file"
+  yq --front-matter=extract ".[\"$key\"] // \"\"" "$file"
 }
 
 # Extract a YAML list under a top-level frontmatter key from $1. One item per line.
 fm_list() {
   local file="$1" key="$2"
-  awk -v key="$key" '
-    /^---$/                                    { c++; if (c == 2) exit; next }
-    c == 1 && $0 ~ "^"key":[[:space:]]*$"      { in_list = 1; next }
-    in_list && /^[[:space:]]+-[[:space:]]+/ {
-      sub(/^[[:space:]]+-[[:space:]]+/, "")
-      sub(/[[:space:]]+#.*/, "")
-      sub(/[[:space:]]+$/, "")
-      print
-      next
-    }
-    in_list && /^[a-zA-Z]/                     { exit }
-  ' "$file"
+  yq --front-matter=extract ".[\"$key\"][] // \"\"" "$file"
 }
 
 # First H1 line in $1, with the leading `# ` stripped.
@@ -197,52 +178,49 @@ fm_block_walk() {
 # Compatibility: an empty mapping (`tag: {}`) is read as `default` so older
 # installed trees can still be inspected while they migrate to v5.
 fm_schema_tag_specs() {
-  local root="${1:-$CUMARU_DIR}" schema="$root/schema.yaml"
+  local root schema
+  root="${1:-$CUMARU_DIR}"
+  schema="$root/schema.yaml"
   [[ -f "$schema" ]] || return 0
-  command -v ruby >/dev/null 2>&1 || return 0
-  ruby -ryaml -e '
-    def spec_for(value)
-      host = ""
-      spec = value
-      if value.is_a?(Hash)
-        host = (value["host_file"] || "").to_s
-        spec = value["type"] || value["body"] || value["shape"]
-        spec = "default" if spec.nil? && (value.keys - ["host_file"]).empty?
-      end
-
-      case spec
-      when nil
-        ["default", "Link,Description", host]
-      when String
-        type = spec.empty? ? "default" : spec
-        cols = type == "default" ? "Link,Description" : ""
-        [type, cols, host]
-      when Array
-        ["table", spec.map(&:to_s).join(","), host]
-      when Hash
-        ["default", "Link,Description", host]
+  yq -o=json "$schema" | jq -r '
+    def classify(spec):
+      if spec == null then
+        ["default", "Link,Description"]
+      elif spec | type == "string" then
+        if spec == "" or spec == "default" then ["default", "Link,Description"]
+        else [spec, ""]
+        end
+      elif spec | type == "array" then
+        ["table", (spec | join(","))]
+      elif spec | type == "object" then
+        ["default", "Link,Description"]
       else
-        ["other", "", host]
-      end
-    end
+        ["other", ""]
+      end;
 
-    def emit_tags(tags)
-      (tags || {}).each do |name, value|
-        type, cols, host = spec_for(value)
-        puts [name, type, cols, host].join("\t")
-      end
-    end
+    def spec_for(value):
+      if value == null then
+        ["default", "Link,Description", ""]
+      elif value | type == "object" then
+        (value.host_file // "") as $host |
+        (value.type // value.body // value.shape // null) as $spec |
+        (if $spec == null and ([value | keys[] | select(. != "host_file")] | length) == 0 then
+          classify("default")
+        else
+          classify($spec)
+        end) + [$host]
+      else
+        classify(value) + [""]
+      end;
 
-    def walk(node)
-      return unless node.is_a?(Hash)
-      emit_tags(node["tags"])
-      (node["entities"] || {}).each_value { |child| walk(child) }
-    end
+    def emit_tags(tags):
+      (tags // {}) | to_entries[] |
+      spec_for(.value) as $out |
+      "\(.key)\t\($out[0])\t\($out[1])\t\($out[2])";
 
-    data = YAML.load_file(ARGV[0]) || {}
-    walk(data["root"] || {})
-    emit_tags((data["meta"] || {})["tags"])
-  ' "$schema"
+    ((.root // {}) | .. | objects | select(has("tags")) | emit_tags(.tags)),
+    emit_tags((.meta // {}).tags)
+  '
 }
 
 fm_schema_tag_type() {

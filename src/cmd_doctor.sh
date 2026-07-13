@@ -121,18 +121,8 @@ _doctor_fail() {
 
 # Read meta.apps.values (v4 location). Each line = one valid app key.
 _doctor_apps_values() {
-  awk '
-    /^meta:[[:space:]]*$/                                   { state="meta"; next }
-    state=="meta"   && /^[^ ]/                              { state="" }
-    state=="meta"   && /^  apps:[[:space:]]*$/              { state="apps"; next }
-    state=="apps"   && /^  [^ ]/                            { state="meta" }
-    state=="apps"   && /^    values:[[:space:]]*$/          { state="values"; next }
-    state=="values" && /^    [a-z]/                         { state="apps" }
-    state=="values" && /^      -[[:space:]]+/ {
-      v=$0; sub(/^[[:space:]]+-[[:space:]]+/, "", v); sub(/[[:space:]]+#.*/, "", v); sub(/[[:space:]]+$/, "", v)
-      if (length(v) > 0) print v
-    }
-  ' "$SCHEMA"
+  [[ -f "$SCHEMA" ]] || return 0
+  yq '.meta.apps.values // [] | .[]' "$SCHEMA"
 }
 
 # Read every pattern rule under `rules:` — any rule that declares both a
@@ -146,34 +136,7 @@ _doctor_apps_values() {
 # carries no hardcoded section names or regexes.
 _doctor_pattern_rules() {
   [[ -f "$SCHEMA" ]] || return 0
-  awk '
-    /^rules:[[:space:]]*$/                              { st="rules"; next }
-    st=="rules" && /^[^ ]/                              { st="" }
-    st=="rules" && /^  [a-zA-Z][a-zA-Z0-9_-]*:[[:space:]]*$/ {
-      sev=""; pat=""; inap=0; next
-    }
-    st=="rules" && /^    severity:[[:space:]]/ {
-      sev=$0; sub(/^    severity:[[:space:]]*/, "", sev); sub(/[[:space:]]+$/, "", sev); next
-    }
-    st=="rules" && /^    pattern:[[:space:]]/ {
-      pat=$0; sub(/^    pattern:[[:space:]]*/, "", pat)
-      if (match(pat, /"[^"]*"/)) {
-        pat=substr(pat, RSTART+1, RLENGTH-2)             # quoted value — ignores any trailing # comment
-      } else {
-        sub(/[[:space:]]*#.*/, "", pat); sub(/[[:space:]]+$/, "", pat)  # bare value — strip comment + trailing space
-      }
-      next
-    }
-    st=="rules" && /^    applies_to:[[:space:]]*$/      { inap=1; next }
-    st=="rules" && inap && /^      -[[:space:]]/ {
-      m=$0
-      if (match(m, /"[^"]*"/)) { mk=substr(m, RSTART+1, RLENGTH-2) }
-      else { mk=m; sub(/^      -[[:space:]]*/, "", mk); sub(/[[:space:]]+$/, "", mk) }
-      if (pat != "" && mk != "") print sev "\t" pat "\t" mk
-      next
-    }
-    st=="rules" && /^    [a-zA-Z]/                      { inap=0 }
-  ' "$SCHEMA"
+  yq '.rules // {} | to_entries[] | select(.value.pattern != null and (.value.applies_to | length > 0)) | .value.applies_to[] as $at | [(.value.severity // ""), .value.pattern, ($at | capture("\"(?<m>[^\"]*)\"").m // $at)] | @tsv' "$SCHEMA"
 }
 
 # Given an entity path pattern (e.g. `plans/<PLAN-ID>` or `plans/<PLAN-ID>/t<N>.md`),
@@ -223,11 +186,11 @@ _doctor_check_schema() {
 
   # Framework-version check
   local schema_version
-  schema_version=$(awk '/^version:[[:space:]]/ {print $2; exit}' "$SCHEMA")
+  schema_version=$(yq '.version' "$SCHEMA")
   local front_door="$CUMARU_DIR/index.md"
   if [[ -f "$front_door" ]]; then
     local fd_version
-    fd_version=$(awk '/^---$/{c++; if(c==2) exit; next} c==1 && /^framework-version:[[:space:]]/ {print $2; exit}' "$front_door")
+    fd_version=$(yq --front-matter=extract '.["framework-version"] // ""' "$front_door")
     if [[ -z "$fd_version" ]]; then
       red "✗ $front_door missing framework-version: in frontmatter (schema is at version $schema_version)"
       errors=$((errors + 1))
@@ -466,15 +429,7 @@ _doctor_check_schema_pass() {
 # Pillar keys from schema's root.entities. Empty if pre-v4 or unreadable.
 _doctor_orphan_pillars() {
   [[ -f "$SCHEMA" ]] || return 0
-  awk '
-    /^root:/                          { state = "root"; next }
-    state == "root" && /^  entities:/ { state = "ents"; next }
-    state == "ents" && /^[^ ]/        { state = "" }
-    state == "ents" && /^  [^ ]/      { state = "root" }
-    state == "ents" && /^    [a-z][a-z0-9_-]*:[[:space:]]*$/ {
-      k = $0; sub(/^    /, "", k); sub(/:[[:space:]]*$/, "", k); print k
-    }
-  ' "$SCHEMA"
+  yq '.root.entities // {} | keys[]' "$SCHEMA"
 }
 
 # Walk root.entities recursively and emit one TAB-separated record per entity:
@@ -483,31 +438,22 @@ _doctor_orphan_pillars() {
 # without `path:` defaults to its key). frontmatter is the inline-list value
 # verbatim from schema (with `!` markers preserved).
 #
-# Implementation note — Ruby instead of awk: this is the only spot in the CLI
-# that needs a true recursive YAML walk. Pure-awk would be ~80 lines of stack
-# bookkeeping. Ruby's `psych` ships with macOS stdlib (`ruby -ryaml -e …`),
-# and the schema is small. The CLI's only Ruby dependency lives in this one
-# function; everything else stays bash + awk.
+# Recursive YAML walk via yq→jq pipe (yq v4 lacks `def`, so jq handles the
+# recursion).
 _doctor_schema_entities() {
   [[ -f "$SCHEMA" ]] || return 0
-  command -v ruby >/dev/null 2>&1 || {
-    yellow "⚠ ruby not found — schema entity walk skipped (install ruby for full schema-conformance checks)" >&2
-    return 0
-  }
-  ruby -ryaml -e '
-    d = YAML.load_file(ARGV[0])
-    def walk(node, path)
-      ents = node["entities"] || {}
-      ents.each do |key, edef|
-        seg = edef["path"] || key
-        new_path = path.empty? ? seg : "#{path}/#{seg}"
-        fm = (edef["frontmatter"] || []).join(",")
-        puts "#{new_path}\t#{fm}" unless fm.empty?
-        walk(edef, new_path)
-      end
-    end
-    walk(d["root"] || {}, "")
-  ' "$SCHEMA"
+  yq -o=json "$SCHEMA" | jq -r '
+    def walk_entities(node; parent_path):
+      (node.entities // {}) | to_entries[] |
+      (
+        (.value.path // .key) as $seg |
+        (if parent_path == "" then $seg else "\(parent_path)/\($seg)" end) as $new_path |
+        (.value.frontmatter // []) as $fm |
+        (if ($fm | length) > 0 then "\($new_path)\t\($fm | join(","))" else empty end),
+        walk_entities(.value; $new_path)
+      );
+    {entities: .root.entities} | walk_entities(.; "")
+  '
 }
 
 # Same as above but limited to pillars (top-level under root.entities) — emits
@@ -515,14 +461,7 @@ _doctor_schema_entities() {
 # empty (so `intake → tracker!` and `plans → ` both surface).
 _doctor_schema_pillar_extras() {
   [[ -f "$SCHEMA" ]] || return 0
-  command -v ruby >/dev/null 2>&1 || return 0
-  ruby -ryaml -e '
-    d = YAML.load_file(ARGV[0])
-    (d.dig("root", "entities") || {}).each do |key, edef|
-      fm = (edef["frontmatter"] || []).join(",")
-      puts "#{key}\t#{fm}"
-    end
-  ' "$SCHEMA"
+  yq '.root.entities // {} | to_entries[] | [.key, (.value.frontmatter // []) | join(",")] | @tsv' "$SCHEMA"
 }
 
 # Anchor dir for resolving a table's row paths.
@@ -742,13 +681,13 @@ _doctor_check_file_refs() {
 _doctor_check_external_tools() {
   local missing=()
   local tool
-  for tool in curl jq git; do
+  for tool in curl jq yq git; do
     command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
   done
   if [[ ${#missing[@]} -eq 0 ]]; then
-    _doctor_pass "External tools available (curl, jq, git)"
+    _doctor_pass "External tools available (curl, jq, yq, git)"
   else
-    _doctor_warn_emit "Missing external tools: ${missing[*]}" "→ Some commands won't work (intake needs curl+jq; update from a git URL needs git)"
+    _doctor_warn_emit "Missing external tools: ${missing[*]}" "→ Some commands won't work (intake needs curl+jq+yq; update from a git URL needs git)"
   fi
 }
 

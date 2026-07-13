@@ -78,53 +78,14 @@ EOF
 # Read `meta.specification_dir` from the schema. Empty when absent.
 _coverage_spec_dir() {
   [[ -f "$SCHEMA" ]] || return 0
-  awk '
-    /^meta:/              { st = "meta"; next }
-    st == "meta" && /^[^ ]/ { st = "" }
-    st == "meta" && /^  specification_dir:[[:space:]]*/ {
-      v = $0
-      sub(/^  specification_dir:[[:space:]]*/, "", v)
-      sub(/[[:space:]]*#.*$/, "", v)
-      gsub(/["'\''[:space:]]/, "", v)
-      if (v != "") print v
-      exit
-    }
-  ' "$SCHEMA"
+  yq '.meta.specification_dir // ""' "$SCHEMA"
 }
 
 # Read the `meta.coverage.source` glob array (block or inline form), one glob
 # per line. Empty when absent.
 _coverage_source_globs() {
   [[ -f "$SCHEMA" ]] || return 0
-  awk '
-    /^meta:/                { st = "meta"; next }
-    st == "meta"  && /^[^ ]/                     { st = "" }
-    st == "meta"  && /^  coverage:[[:space:]]*$/ { st = "cov"; next }
-    st == "cov"   && /^  [^ ]/                   { st = "meta" }
-    st == "cov"   && /^    source:[[:space:]]*\[/ {
-      v = $0
-      sub(/^    source:[[:space:]]*\[/, "", v)
-      sub(/\].*$/, "", v)
-      n = split(v, a, /,/)
-      for (i = 1; i <= n; i++) {
-        g = a[i]
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", g)
-        gsub(/["'\'']/, "", g)
-        if (g != "") print g
-      }
-      next
-    }
-    st == "cov"   && /^    source:[[:space:]]*(#.*)?$/ { st = "src"; next }
-    st == "src"   && /^      -[[:space:]]+/ {
-      g = $0
-      sub(/^      -[[:space:]]+/, "", g)
-      sub(/[[:space:]]*#.*$/, "", g)
-      gsub(/["'\'']/, "", g)
-      if (g != "") print g
-      next
-    }
-    st == "src"   && !/^      / { st = "cov" }
-  ' "$SCHEMA"
+  yq '.meta.coverage.source[]' "$SCHEMA"
 }
 
 # Emit the coverable source files (project-root-relative, sorted): tracked

@@ -204,38 +204,14 @@ _tag_resolve_file() {
 # Emit the keys of `root.tags` in the schema (one per line).
 _tag_schema_root_keys() {
   [[ -f "$SCHEMA" ]] || return 0
-  awk '
-    /^root:/                       { state="root"; next }
-    state=="root" && /^[^ ]/       { state="" }
-    state=="root" && /^  tags:[[:space:]]*$/ { state="rtags"; next }
-    state=="rtags" && /^    [a-z"]/ {
-      k=$0; sub(/^    /, "", k); sub(/:.*$/, "", k); gsub(/"/, "", k)
-      print k
-      next
-    }
-    state=="rtags" && /^  [a-z]/   { state="root" }
-  ' "$SCHEMA"
+  yq '.root.tags // {} | keys[]' "$SCHEMA"
 }
 
 # Emit the keys of `root.entities.<pillar>.tags` (one per line).
 _tag_schema_pillar_keys() {
   local pillar="$1"
   [[ -f "$SCHEMA" ]] || return 0
-  awk -v p="$pillar" '
-    /^root:/                                       { st="root"; next }
-    st=="root" && /^[^ ]/                          { st="" }
-    st=="root" && /^  entities:[[:space:]]*$/      { st="ents"; next }
-    st=="ents" && /^  [^ ]/                        { st="root" }
-    st=="ents" && $0 ~ "^    " p ":[[:space:]]*$"  { st="pil"; next }
-    st=="pil"  && /^    [a-z]/                     { st="ents" }
-    st=="pil"  && /^      tags:[[:space:]]*$/      { st="ptags"; next }
-    st=="ptags" && /^      [a-z]/                  { st="pil" }
-    st=="ptags" && /^        [a-z"]/ {
-      k=$0; sub(/^        /, "", k); sub(/:.*$/, "", k); gsub(/"/, "", k)
-      print k
-      next
-    }
-  ' "$SCHEMA"
+  yq ".root.entities.\"$pillar\".tags // {} | keys[]" "$SCHEMA"
 }
 
 # Emit each top-level meta.tags entry as "<name>\t<host_file>".
@@ -245,45 +221,7 @@ _tag_schema_pillar_keys() {
 #             host_file: "domain.md"
 _tag_schema_meta_table() {
   [[ -f "$SCHEMA" ]] || return 0
-  awk '
-    /^meta:/                              { st="meta"; pending_name=""; next }
-    st=="meta" && /^[^ ]/                 { st=""; next }
-    st=="meta" && /^  tags:[[:space:]]*$/ { st="mtags"; next }
-    st=="mtags" && /^  [^ ]/              { st="meta" }
-
-    # 4-space: top-level meta.tags entry. Reset any in-progress block form.
-    # Names may carry colon segments (pattern tags like `files:touched`), so
-    # the name match allows `:` and extraction cuts at the key separator (the
-    # colon followed by whitespace), not at the first colon.
-    st=="mtags" && /^    [a-z"]/ {
-      pending_name=""
-      line=$0; sub(/^    /, "", line); gsub(/"/, "", line)
-      # Inline object: name: {host_file: X, ...}
-      if (match(line, /^[a-z][a-z0-9_:*-]*:[[:space:]]*\{/)) {
-        name=line; sub(/:[[:space:]]*\{.*$/, "", name)
-        host=""
-        if (match(line, /host_file:[[:space:]]*[^,}]+/)) {
-          host=substr(line, RSTART+10, RLENGTH-10)
-          sub(/^[[:space:]]*/, "", host); sub(/[[:space:]]*$/, "", host)
-        }
-        print name "\t" host
-        next
-      }
-      # Block form: name: with no inline value — children follow at deeper indent.
-      if (match(line, /^[a-z][a-z0-9_:*-]*:[[:space:]]*$/)) {
-        pending_name=line; sub(/:[[:space:]]*$/, "", pending_name)
-        next
-      }
-    }
-    # 6-space: child key of a block-form entry — capture host_file when present.
-    st=="mtags" && pending_name != "" && /^      / && /host_file:[[:space:]]/ {
-      host=$0; sub(/^[[:space:]]*host_file:[[:space:]]*/, "", host)
-      sub(/[[:space:]]+$/, "", host)
-      print pending_name "\t" host
-      pending_name=""
-      next
-    }
-  ' "$SCHEMA"
+  yq '.meta.tags // {} | to_entries[] | [.key, (.value.host_file // "")] | @tsv' "$SCHEMA"
 }
 
 # Emit expected tag NAMES for <file>. Combines:
