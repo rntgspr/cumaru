@@ -17,7 +17,6 @@
 - [SDLC archive → specs absorptions](sdlc_archive_absorptions.md) — archive is transient staging; durable `SHA | KEY | Description` ledger lives in `specs/index.md`
 - [v5 update smoke on gitboiler](update_v5_gitboiler.md) — legacy `flavor:` fallback, source-schema tag typing, reference row correction, schema apply to v5
 - [Cleanup: regen + cross_file_checks](regen_cleanup.md) — removed stale `cumaru regen` references and unused schema cross_file_checks metadata
-- [TODO: implementation gaps review](todo_review_gaps.md) — open items + v4 work stream
 - [User: Renato](user_renato.md) — role and context
 - [Feedback: git read-only](feedback_git_readonly.md) — git is read-only by default
 - [Feedback: commit messages](feedback_commit_messages.md) — one-line gitmoji commits under 120 chars
