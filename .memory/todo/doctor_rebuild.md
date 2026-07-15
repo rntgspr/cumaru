@@ -1,10 +1,14 @@
 ---
 name: cumaru-doctor-rebuild
-description: "Plan: cumaru doctor rebuild — programmatic index-table reconstruction from actual directory/file tree"
-status: planned
+description: "Superseded: materialized index tables are replaced by virtual tree navigation in virtual_tree_v6.md"
+status: superseded
 ---
 
-## Command
+> Superseded by [Virtual Tree V6](virtual_tree_v6.md). The filesystem and
+> frontmatter summaries are now the structural source of truth; no table
+> reconstruction command will be introduced.
+
+## Historical Proposal
 
 `cumaru doctor rebuild [<area>]`
 
