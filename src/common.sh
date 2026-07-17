@@ -17,9 +17,8 @@ AGENTS_DIR=".agents"
 # Marker convention:
 #   `<!-- cumaru:NAME -->` or (legacy) `<!-- llm:NAME -->` ... `<!-- /cumaru:NAME -->`
 #   where NAME is any string matching `[a-z0-9_:-]+`. Single-token names
-#   (`intake`, `plans`, `components`, `root`) are the canonical form. Two-token
-#   names (`files:touched`, etc.) remain valid for pattern-based tags
-#   declared in schema.yaml under `tags:`.
+#   (`touched`, `components`, `root`) are the canonical form. Colon-separated
+#   names remain valid when explicitly declared by a schema.
 # The parser accepts `cumaru:` prefix for marker blocks
 # trees are not broken during migration.
 
@@ -57,8 +56,8 @@ fm_h1() {
 # rule explanation) from being treated as real boundaries.
 
 # List every marker NAME present in $1 (one per line, sorted unique). NAME is
-# whatever sits between `<!-- cumaru:` and ` -->`; may contain `:` for
-# two-token tags (e.g. `files:touched`).
+# whatever sits between `<!-- cumaru:` and ` -->`; it may contain `:` for
+# schema-declared nested tags (for example, `specs:auth`).
 fm_block_list() {
   local file="$1"
   awk '
@@ -524,7 +523,7 @@ fm_tag_table_shape_issues() {
   done
 }
 
-# Print the canonical CUMARU-HOOK block for AGENTS.md / CLAUDE.md.
+# Print the canonical CUMARU-HOOK block for .agents/AGENTS.md.
 # Args: rel_index (path from project root to .cumaru/index.md), created (0|1).
 # When created==1, the BEGIN marker says "created" instead of the default.
 _cumaru_hook_block() {

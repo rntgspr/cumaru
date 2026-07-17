@@ -14,6 +14,7 @@
 #   flow <src> <verb> [<dst>]     safe file ops inside .cumaru/ (move/copy/create/remove)
 #   tag [<file> [<tag>]]          read/write/audit <!-- cumaru:NAME --> blocks
 #   coverage [--refs|--gaps|--rows] [--strict]  report spec↔code reference coverage
+#   tree [<directory-or-md>] [--deep] [--rows]  list filesystem-backed navigation candidates
 #   migrate [--apply]             migrate a project tree from llm (legacy) to cumaru
 #   help                          print top-level help
 #
@@ -30,7 +31,7 @@ set -uo pipefail
 # Resolve the real location of this script, following symlinks. Any global
 # symlink (e.g. ~/.local/bin/llm → /path/to/dot-llm/llm) resolves back to
 # the real checkout so SCRIPT_DIR points at the dot-llm repo, where src/,
-# frameworks/ (including __base/) live.
+# domains/ (including __base/) live.
 _resolve_self() {
   local p="$1" n=0
   while [[ -L "$p" ]]; do
@@ -53,34 +54,34 @@ SCRIPT_DIR="$(_resolve_self "${BASH_SOURCE[0]}")"
 SRC="$SCRIPT_DIR/src"
 # SKILLS_SRC holds opt-in skills (--with <name>) only. Universal cumaru-*
 # skills + every slash command live INSIDE each domain at
-# frameworks/<domain>/{skills,commands}/ and are sourced from there.
+# domains/<domain>/{skills,commands}/ and are sourced from there.
 SKILLS_SRC="$SCRIPT_DIR/skills"
 
 # Multi-domain layout: all domains (including the minimal kernel) live under
-# `frameworks/`. The kernel is `frameworks/__base/`; pre-built domains are
-# `frameworks/<name>/`. Each domain is fully self-contained (its own schema +
+# `domains/`. The kernel is `domains/__base/`; pre-built domains are
+# `domains/<name>/`. Each domain is fully self-contained (its own schema +
 # starter files); the adopter installs one.
-FRAMEWORKS_DIR="$SCRIPT_DIR/frameworks"
-BASE_FRAMEWORK_SRC="$FRAMEWORKS_DIR/__base"
-DEFAULT_DOMAIN="sdlc-it-project-basic"
-# FRAMEWORK_SRC resolves at command time via _resolve_domain_src; defaults
+DOMAINS_DIR="$SCRIPT_DIR/domains"
+BASE_DOMAIN_SRC="$DOMAINS_DIR/__base"
+DEFAULT_DOMAIN="sdlc-full"
+# DOMAIN_SRC resolves at command time via _resolve_domain_src; defaults
 # below preserve the prior single-source behaviour for modules that only need
 # templates/roles (e.g. cmd_install reads it; cmd_update resolves its own).
-FRAMEWORK_SRC="$FRAMEWORKS_DIR/$DEFAULT_DOMAIN"
+DOMAIN_SRC="$DOMAINS_DIR/$DEFAULT_DOMAIN"
 
-# Resolve a framework name (or `base`) to its source directory. Echoes the
+# Resolve a domain name (or `base`) to its source directory. Echoes the
 # path on success; returns 1 with an error on stderr if unknown. Empty arg
 # defaults to $DEFAULT_FRAMEWORK.
 _resolve_domain_src() {
   local name="${1:-$DEFAULT_DOMAIN}"
   case "$name" in
-    base) printf '%s\n' "$BASE_FRAMEWORK_SRC" ;;
+    base) printf '%s\n' "$BASE_DOMAIN_SRC" ;;
     *)
-      local p="$FRAMEWORKS_DIR/$name"
+      local p="$DOMAINS_DIR/$name"
       if [[ -d "$p" ]]; then
         printf '%s\n' "$p"
       else
-        printf '✗ unknown domain: %s (looked in %s)\n' "$name" "$FRAMEWORKS_DIR" >&2
+        printf '✗ unknown domain: %s (looked in %s)\n' "$name" "$DOMAINS_DIR" >&2
         return 1
       fi
       ;;
@@ -104,6 +105,8 @@ warnings=0
 . "$SRC/cmd_uninstall.sh"
 # shellcheck source=src/cmd_doctor.sh
 . "$SRC/cmd_doctor.sh"
+# shellcheck source=src/cmd_doctor_v6.sh
+. "$SRC/cmd_doctor_v6.sh"
 # shellcheck source=src/cmd_update.sh
 . "$SRC/cmd_update.sh"
 # shellcheck source=src/cmd_intake.sh
@@ -114,8 +117,12 @@ warnings=0
 . "$SRC/cmd_tag.sh"
 # shellcheck source=src/cmd_coverage.sh
 . "$SRC/cmd_coverage.sh"
+# shellcheck source=src/cmd_tree.sh
+. "$SRC/cmd_tree.sh"
 # shellcheck source=src/cmd_migrate.sh
 . "$SRC/cmd_migrate.sh"
+# shellcheck source=src/cmd_migrate_v6.sh
+. "$SRC/cmd_migrate_v6.sh"
 # shellcheck source=src/cmd_domains.sh
 . "$SRC/cmd_domains.sh"
 
@@ -167,9 +174,14 @@ case "$sub" in
     cmd_coverage "$@"
     exit $?
     ;;
+  tree)
+    shift
+    cmd_tree "$@"
+    exit $?
+    ;;
   migrate)
     shift
-    cmd_migrate "$@"
+    if [[ "${1:-}" == "v6" ]]; then shift; cmd_migrate_v6 "$@"; else cmd_migrate "$@"; fi
     exit $?
     ;;
   domains)

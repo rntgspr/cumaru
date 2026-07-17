@@ -1,35 +1,30 @@
 ---
-name: cumaru install — current state and pending considerations
-description: Snapshot of `cmd_install` and what it does today
+name: cumaru install — current v6 state
+description: Current installer contract, dependencies, domain installation, agent artifacts, and upgrade behavior
 type: project
 originSessionId: 507d571c-f4de-4425-8d7c-cb5b12395a28
 ---
-**Source:** `src/cmd_install.sh`.
+**Sources:** `src/cmd_install.sh`, `src/install.sh`, `docs/install.md`, and `docs/upgrade.md`.
 
-**Steps today:**
-1. Parse `--with <skill>` (repeatable). Positional install targets are no longer accepted.
-2. Default `target` is fixed to `./.cumaru`.
-3. Pre-checks: the framework source exists, `target` does NOT exist, every requested `--with <name>` resolves to `skills/<name>/SKILL.md`.
-4. `cp -R "$FRAMEWORK_SRC" "$target"` — wholesale copy of the starter.
-5. For each `--with <name>`: `mkdir -p target/skills/<name>` + copy `skills/<name>/SKILL.md`.
-6. **CLAUDE.md hook (auto-wired):** at `dirname $target` (the project root), creates or appends a block delimited by `<!-- BEGIN/END CUMARU-HOOK -->` containing a textual instruction to read `.cumaru/index.md` first plus a `@.cumaru/index.md` import (Claude Code auto-load syntax). Idempotent: skips if the marker is already present. Helper: `_install_print_hook_block`.
-7. Print "Next steps" hint: edit `index.md`, edit `schema.yaml` `apps.values`, run `cumaru doctor`. Mentions the CLAUDE.md hook.
+## Runtime prerequisites
 
-**What it does NOT do:**
-- Doesn't add `.cumaru/` to the adopter's `.gitignore`.
-- Doesn't symlink `cumaru` globally.
-- Doesn't run `cumaru validate` automatically.
-- Doesn't accept a config file.
+- Bash, cURL, Git, `jq`, and Mike Farah `yq` v4 must be available on `PATH`.
+- The Python package also named `yq` is incompatible with Cumaru's frontmatter and YAML expressions.
+- Recommended macOS command: `brew install git jq yq`.
+- `jq` owns JSON tracker payloads; `yq` owns schema/frontmatter operations; Git owns installation, upgrade, and coverage inventory; cURL owns the remote installer and tracker adapters.
 
-**`cumaru upgrade` + kernel integrity check (added 2026-06-09):**
-- New `upgrade` subcommand in the `cumaru` entry script: does NOTHING beyond `exec bash "$SRC/install.sh"` — re-runs the tool installer (wipe `~/.cumaru`, shallow clone, strip `.git/`, relink `~/.local/bin/cumaru`). Renato's explicit design: upgrade = re-run install, no extra behavior.
-- `src/install.sh` now verifies the snapshot before linking: every `frameworks/<domain>/index.md` must be byte-identical (`cmp -s`) to `frameworks/__base/index.md`; any divergence → `✗ kernel drift`, abort with exit 1.
-- The drift check deliberately does NOT live in `cumaru doctor` — doctor audits the ADOPTER's tree, which never contains `__base`. Kernel drift is a distribution problem, caught where the snapshot lands. Documented in `docs/upgrade.md` + `docs/architecture.md`.
-- `CUMARU_DIR` is now fixed to `.cumaru` in `src/common.sh`; changing it there is a checkout-wide override, not a per-project setting.
+## Project installation
 
-**v4 note (2026-06):** the kernel drift check still runs unchanged. With v4, the universal artifacts that must match across domains include the per-domain `__base/index.md` mirror — but tag-shape consistency does not need a check: there is only one shape (`[Link, Description]`) and the parser hardcodes it.
+1. `cumaru install [--domain <name>] [--with <skill>...]` always targets `./.cumaru`; the default domain is `sdlc-full` and `base` resolves to `domains/__base/`.
+2. The selected domain is copied from `domains/`, then its `skills/` and `commands/` source directories are pruned from `.cumaru/` because installed agent artifacts belong under `.agents/`.
+3. Domain-shipped `cumaru-*` skills and slash commands are installed under `.agents/`. Opt-in top-level skills are added only through repeatable `--with` flags.
+4. The installer creates or updates the canonical `CUMARU-HOOK` instruction block in `.agents/AGENTS.md`. Cumaru does not install or manage prompt hooks.
+5. Fresh installs always create framework v6 trees. Existing v5 adopter trees are not upgraded by reinstalling the CLI; they must run `cumaru migrate v6 --apply`.
+6. The installer does not add `.cumaru/` to `.gitignore`, accept a config file, or run doctor automatically.
 
-**Smoke-tested scenarios for the hook:**
-- CLAUDE.md absent → creates with `# Project instructions` header + CUMARU-HOOK block.
-- CLAUDE.md exists, no hook → appends with a leading blank line, preserving prior content.
-- CLAUDE.md exists with hook → skips (`· CLAUDE.md hook already present (skip)`).
+## Upgrade and integrity
+
+- `cumaru upgrade` executes `src/install.sh`: it replaces `~/.cumaru` with a fresh shallow checkout and relinks `~/.local/bin/cumaru`. It is destructive to a development symlink and must never be run without explicit user authorization.
+- Distribution integrity compares every domain kernel `domains/<domain>/index.md` and universal artifact against `domains/__base`; drift aborts before linking.
+- Kernel integrity is deliberately outside doctor. Doctor validates an installed adopter tree and accepts only framework v6; pre-v6 trees are directed to migration.
+- `CUMARU_DIR` remains fixed to `.cumaru` in `src/common.sh`.

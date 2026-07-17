@@ -6,6 +6,12 @@ metadata:
   type: feedback
 ---
 
+> Historical through V5. V6 keeps the tag-body preservation invariant but
+> changes framework-owned Markdown updates: files are rebuilt from canonical
+> source, tag bodies are restored, local-only files remain adopter-owned, and
+> `--keep-prose` is the explicit divergence path. Frontmatter outside marker
+> bodies is no longer universally adopter-owned. See [[v6_virtual_tree]].
+
 These principles apply to any script-LLM split in the cumaru framework (update, doctor's orphan check, `cumaru flow` file ops, future migration tooling). Easy to violate; expensive to get wrong.
 
 **1. Tag bodies are NEVER overwritten mechanically.** `<!-- cumaru:NAME -->` block contents are adopter data — preserve always. v4 makes every body a `[Link, Description]` table; the script REPORTS row drift (rows pointing at missing paths, rows whose link doesn't match the canonical `[name](path/index.md)` shape) and the LLM DECIDES how to reshape, keeping rows. The script never invents new rows or drops existing ones.

@@ -7,6 +7,10 @@ metadata:
   originSessionId: ea685735-0853-461c-af23-330eda256308
 ---
 
+> Historical layout. V6 renamed `frameworks/` to `domains/`, added
+> `cumaru-summarize`, and installs agent artifacts under `.agents/`. See
+> [[v6_virtual_tree]].
+
 The cumaru repo is **multi-domain**. Each domain is **self-contained** (its own `schema.yaml` + starter files); the adopter picks one at install time. No merging, no inheritance.
 
 ## Repo layout

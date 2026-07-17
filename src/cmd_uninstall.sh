@@ -7,13 +7,11 @@
 #      touched.
 #   2. .agents/skills/cumaru-*/ — the `cumaru-` prefix is the
 #      skill namespace marker; same ownership rule.
-#   3. .agents/hooks/ — framework hook scripts.
-#   4. the UserPromptSubmit context hook in .agents/hooks.json.
-#   5. the <!-- BEGIN/END CUMARU-HOOK --> block (or the legacy DOT-LLM-HOOK)
+#   3. the <!-- BEGIN/END CUMARU-HOOK --> block (or the legacy DOT-LLM-HOOK)
 #      in .agents/AGENTS.md, plus the single blank line install inserted before
 #      it. The file is removed entirely when nothing but the install-created
 #      header remains.
-#   6. the <target> tree (.cumaru/).
+#   4. the <target> tree (.cumaru/).
 #
 # Destructive: prompts before acting. Pass --yes for non-interactive runs
 # (an agent or CI has no TTY; without --yes and without a TTY it refuses).
@@ -30,17 +28,15 @@ cmd_uninstall() {
         red "unexpected arg: $1"; cmd_uninstall_help; return 2 ;;
     esac
   done
-  local parent agents_dir agents_md hooks_json
+  local parent agents_dir agents_md
   parent=$(dirname "$target")
   agents_dir="$parent/$AGENTS_DIR"
   agents_md="$agents_dir/AGENTS.md"
-  hooks_json="$agents_dir/hooks.json"
 
   # --- discover what exists to remove ---
-  local has_target=0 has_agents_hook=0 has_context_hook=0
+  local has_target=0 has_agents_hook=0
   [[ -d "$target" ]] && has_target=1
   [[ -f "$agents_md" ]] && (grep -q "BEGIN CUMARU-HOOK" "$agents_md" || grep -q "BEGIN DOT-LLM-HOOK" "$agents_md") && has_agents_hook=1
-  [[ -f "$hooks_json" ]] && grep -q "context-loader" "$hooks_json" && has_context_hook=1
 
   # Validate an existing tree before removing any part of the install footprint.
   local target_abs=""
@@ -56,7 +52,6 @@ cmd_uninstall() {
   # Framework-owned namespaces under .agents/:
   #   commands/cumaru/ — the `cumaru` subdir is the framework namespace
   #   skills/cumaru-*/ — the `cumaru-` prefix marks these as ours
-  #   hooks/ — framework hook scripts
   local removable_cmds_dir="$agents_dir/commands/cumaru"
   [[ -d "$removable_cmds_dir" ]] || removable_cmds_dir=""
 
@@ -67,11 +62,8 @@ cmd_uninstall() {
     removable_skill_dirs+=("${skill_dir%/}")
   done
 
-  local removable_hooks_dir="$agents_dir/hooks"
-  [[ -d "$removable_hooks_dir" ]] || removable_hooks_dir=""
-
-  if [[ $has_target -eq 0 && $has_agents_hook -eq 0 && $has_context_hook -eq 0 && \
-        -z "$removable_cmds_dir" && ${#removable_skill_dirs[@]} -eq 0 && -z "$removable_hooks_dir" ]]; then
+  if [[ $has_target -eq 0 && $has_agents_hook -eq 0 && \
+        -z "$removable_cmds_dir" && ${#removable_skill_dirs[@]} -eq 0 ]]; then
     say "Nothing to uninstall — no .cumaru tree, no .agents/ install footprint at $parent."
     return 0
   fi
@@ -80,10 +72,8 @@ cmd_uninstall() {
   echo "cumaru uninstall will remove:"
   [[ $has_target -eq 1 ]] && echo "  - directory: $target"
   [[ $has_agents_hook -eq 1 ]] && echo "  - CUMARU-HOOK block in: $agents_md"
-  [[ $has_context_hook -eq 1 ]] && echo "  - context hook in: $hooks_json"
   [[ -n "$removable_cmds_dir" ]] && echo "  - commands: $removable_cmds_dir/"
   for d in "${removable_skill_dirs[@]+"${removable_skill_dirs[@]}"}"; do echo "  - skill: $d"; done
-  [[ -n "$removable_hooks_dir" ]] && echo "  - hooks: $removable_hooks_dir/"
 
   # --- confirm ---
   if [[ $assume_yes -ne 1 ]]; then
@@ -106,12 +96,6 @@ cmd_uninstall() {
   for d in "${removable_skill_dirs[@]+"${removable_skill_dirs[@]}"}"; do
     rm -rf "$d" && green "  - removed skill: $d"
   done
-  if [[ -n "$removable_hooks_dir" ]]; then
-    rm -rf "$removable_hooks_dir" && green "  - removed hooks: $removable_hooks_dir/"
-  fi
-  if [[ $has_context_hook -eq 1 ]]; then
-    _uninstall_strip_context_hook "$hooks_json"
-  fi
   _uninstall_prune_dirs "$agents_dir"
 
   if [[ $has_agents_hook -eq 1 ]]; then
@@ -178,44 +162,6 @@ _uninstall_strip_hook() {
   fi
 }
 
-# Remove only the install-managed UserPromptSubmit command that points to the
-# context loader under .agents/. Other hooks and settings remain untouched.
-_uninstall_strip_context_hook() {
-  local file="$1"
-  command -v jq >/dev/null 2>&1 || { red "✗ jq is required to remove context hook from $file"; return 1; }
-  local tmp
-  tmp=$(mktemp)
-  jq '
-    if .hooks.UserPromptSubmit then
-      .hooks.UserPromptSubmit |= (
-        map(
-          .hooks = ((.hooks // []) | map(select((.command // "" | contains("context-loader")) | not)))
-        )
-        | map(select((.hooks // []) | length > 0))
-      )
-    else
-      .
-    end |
-    if (.hooks.UserPromptSubmit? // [] | length) == 0 then
-      del(.hooks.UserPromptSubmit)
-    else
-      .
-    end |
-    if (.hooks? // {} | length) == 0 then
-      del(.hooks)
-    else
-      .
-    end
-  ' "$file" > "$tmp"
-
-  if [[ "$(jq 'length' "$tmp")" == "0" ]]; then
-    rm -f "$file" "$tmp"
-  else
-    mv "$tmp" "$file"
-  fi
-  green "  - removed context hook from: $file"
-}
-
 cmd_uninstall_help() {
   cat <<'EOF'
 cumaru uninstall — reverse `cumaru install` for a project
@@ -236,10 +182,7 @@ What it removes (only what `cumaru install` created):
   3. Every .agents/skills/cumaru-*/ dir — the `cumaru-` prefix is the skill
      namespace marker. Opt-ins (any skill without the `cumaru-` prefix) and
      adopter-authored skills are NEVER touched.
-  4. The .agents/hooks/ dir — framework hook scripts.
-  5. The UserPromptSubmit context hook in .agents/hooks.json when it points
-     to the context loader.
-   6. The <!-- BEGIN/END CUMARU-HOOK --> block (or legacy DOT-LLM-HOOK)
+  4. The <!-- BEGIN/END CUMARU-HOOK --> block (or legacy DOT-LLM-HOOK)
       in .agents/AGENTS.md (and the file itself if only install-created
       boilerplate remains).
 

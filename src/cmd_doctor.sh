@@ -1,26 +1,12 @@
 # cmd_doctor.sh — run health checks on a .cumaru/ tree.
 #
-# `cumaru doctor` runs all checks: schema conformance plus tree-wide
-# structural checks. Each check emits one of:
+# `cumaru doctor` validates framework v6 trees. Each check emits one of:
 #   [✓] label                     — pass
 #   [⚠] label   detail            — soft issue (warning; never fails)
 #   [✗] label   detail            — hard issue (error; exit 1 at end)
 #
-# Composition (v5 — pillar-agnostic; structural checks use the schema):
-#   1. Schema conformance — universal markdown, index.md, pillar index, entity
-#      frontmatter, pattern rules, framework-version match. Walks root.entities from
-#      schema.yaml; no hardcoded pillar names.
-#   2. Orphan check — walks raiz + pilares (from root.entities), shows every
-#      markdown-table tag found, lists orphans both ways. LLM reconciles.
-#   3. Stale work-marker files (any *.delete-me.md anywhere under .cumaru/).
-#   4. Unrefined RAW blocks (any Markdown file containing <!-- BEGIN RAW).
-#   5. File references — links inside default [Link, Description] tag bodies
-#      exist on disk (`reference` rows resolve from the project root; breaking
-#      the source-file rule reports as invalid). Custom/prose/mixed/other tag
-#      bodies are not path-resolved.
-#   6. External tools available (curl, jq, git).
-#   7. Agent hook — CUMARU-HOOK block in AGENTS.md / CLAUDE.md present and
-#      matching canonical prose; warns if missing or drifted.
+# Pre-v6 trees must migrate before doctor runs; the migration adapter is
+# independent and does not call doctor internally.
 #
 # Workflow-specific checks (tasks-done-without-handoff, orphan delta-drafts
 # after archive) **moved out of doctor in v4** — workflow integrity is
@@ -39,38 +25,20 @@ Usage:
 Options:
   --quiet   suppress [✓] pass lines; warnings, errors, and the summary still print.
 
-Checks (v5 — pillar-agnostic; structural checks use the schema):
-  [1] Schema conformance — sub-passes:
-        [0] H1 + human_revised on every .md (rules.markdown)
-        [1] index.md universal frontmatter (generated, apps; apps values valid)
-        [2] Pillar index.md (generated-at + pillar extras like intake.tracker)
-        [3] Entity frontmatter (schema-driven walk of root.entities)
-        [4] Pattern rules (EARS / RFC 2119, GWT, …) — schema-driven from rules.*
-        Cross — framework-version in .cumaru/index.md ≡ version in schema.yaml.
-  [2] Orphan check — walks raiz + pilares (from root.entities), shows each
-      markdown-table tag, reports both directions:
-        ✗ row points at a missing file/dir
-        ⚠ file/dir on disk not claimed by any row (pilares only)
-      The LLM reconciles per the orphan-row guidance in the cumaru-doctor skill.
-  [3] Stale work-marker files — any `*.delete-me.md` anywhere under .cumaru/.
-  [4] Unrefined RAW blocks — any Markdown file containing `<!-- BEGIN RAW`.
-  [5] File references — links inside default [Link, Description] tag bodies
-      resolve on disk. `reference` rows resolve from the project root and must
-      target repository source files; rule-breaking rows report as invalid.
-      Custom/prose/mixed/other tag bodies are not path-resolved.
-  [6] External tools available (curl, jq, git).
-  [7] Agent hook — CUMARU-HOOK block in AGENTS.md / CLAUDE.md present and
-      matching the canonical prose (warning if missing or drifted).
+Framework version 6 runs eight mechanical checks:
+    1. directory indexes and Markdown summaries
+    2. retired and unknown marker contracts
+    3. stale `*.delete-me.md` work markers
+    4. unrefined `<!-- BEGIN RAW` blocks
+    5. retained project-file references
+    6. external tools (curl, jq, yq, git)
+    7. canonical agent instruction block
 
-  Workflow-specific checks (tasks-done-without-handoff, orphan delta-drafts)
-  moved to domain-specific recipe skills (e.g. cumaru-archive for sdlc) — doctor stays mechanical.
+Pre-v6 schemas are not diagnosed by this command. Run `cumaru migrate v6`
+first; a fresh `cumaru install` already creates a v6 tree.
 
-  Pattern rules are schema-driven: each rules.<name> declaring a `pattern:` +
-  `applies_to:` (e.g. ears, gherkin) is scanned. Bullets under the named
-  section that don't match emit that rule's severity (warning unless the rule
-  declares severity: error). The section marker is the quoted substring of each
-  applies_to entry. Cross-file semantic checks (path resolution, depends-on,
-  deltas references) are not enforced by doctor.
+Doctor stays mechanical and pillar-agnostic. Workflow integrity remains in
+domain recipe skills.
 
 Exit codes:
   0   all checks pass (warnings allowed)
@@ -325,15 +293,15 @@ _doctor_check_schema() {
     check_apps_value "$f"
   done < <(find "$CUMARU_DIR" -name index.md -type f 2>/dev/null | sort)
 
-  # [2] Pillar index.md — rules.pillar_index (generated-at) + pillar's own extras.
+  # [2] Pillar index.md — rules.pillar_index (generated) + pillar's own extras.
   say ""
-  say "[2] Pillar index.md (generated-at + pillar extras)"
+  say "[2] Pillar index.md (generated + pillar extras)"
   local pillar pextras
   while IFS=$'\t' read -r pillar pextras; do
     [[ -z "$pillar" ]] && continue
     local pidx="$CUMARU_DIR/$pillar/index.md"
     [[ -f "$pidx" ]] || continue
-    check_required "$pidx" "$pillar pillar index" generated-at
+    check_required "$pidx" "$pillar pillar index" generated
     [[ -n "$pextras" ]] && check_required_from_csv "$pidx" "$pillar pillar" "$pextras"
   done < <(_doctor_schema_pillar_extras)
 
@@ -691,23 +659,17 @@ _doctor_check_external_tools() {
   fi
 }
 
-# Check the CUMARU-HOOK block in the adopter's AGENTS.md / CLAUDE.md.
+# Check the CUMARU-HOOK block in the adopter's .agents/AGENTS.md.
 # Warns if the block is missing or its prose diverges from the canonical —
 # the LLM decides whether to accept the drift or reconcile via cumaru update.
 _doctor_check_agent_hook() {
   local parent
   parent="$(dirname "$CUMARU_DIR")"
 
-  # Locate the agents instruction file.
-  local agents_file=""
-  if [[ -f "$parent/$AGENTS_DIR/AGENTS.md" ]]; then
-    agents_file="$parent/$AGENTS_DIR/AGENTS.md"
-  elif [[ -f "$parent/CLAUDE.md" ]]; then
-    agents_file="$parent/CLAUDE.md"
-  fi
+  local agents_file="$parent/$AGENTS_DIR/AGENTS.md"
 
-  if [[ -z "$agents_file" ]]; then
-    _doctor_warn_emit "No AGENTS.md or CLAUDE.md found — CUMARU-HOOK not present" \
+  if [[ ! -f "$agents_file" ]]; then
+    _doctor_warn_emit ".agents/AGENTS.md not found — CUMARU-HOOK not present" \
       "→ Run 'cumaru install' or 'cumaru update --apply' to wire the agent hook."
     return
   fi
@@ -750,32 +712,31 @@ _doctor_check_agent_hook() {
 # --- driver ---
 
 cmd_doctor() {
+  local version
   if [[ ! -d "$CUMARU_DIR" ]]; then
     red "✗ $CUMARU_DIR not found — run 'cumaru install' first"
     return 1
   fi
 
-  echo "Running diagnostic checks on $CUMARU_DIR/ ..."
-  echo
-
-  # Reset orchestrator counters (subcommand may be called more than once in a process)
-  _doctor_ok=0
-  _doctor_warn=0
-  _doctor_err=0
-
-  _doctor_check_schema_pass
-  _doctor_check_orphans
-  _doctor_check_stale_markers
-  _doctor_check_raw_blocks
-  _doctor_check_file_refs
-  _doctor_check_external_tools
-  _doctor_check_agent_hook
-
-  echo
-  printf 'Summary: %d error(s), %d warning(s), %d ok\n' "$_doctor_err" "$_doctor_warn" "$_doctor_ok"
-
-  if [[ $_doctor_err -gt 0 ]]; then
+  if ! command -v yq >/dev/null 2>&1; then
+    red "✗ yq not found — install mikefarah/yq v4 first"
     return 1
   fi
-  return 0
+  if [[ ! -f "$SCHEMA" || -L "$SCHEMA" ]]; then
+    red "✗ $SCHEMA not found or not a regular file"
+    return 1
+  fi
+  version=$(yq -r '.version // ""' "$SCHEMA" 2>/dev/null) || {
+    red "✗ cannot read framework version from $SCHEMA"
+    return 1
+  }
+  if [[ "$version" != 6* ]]; then
+    red "✗ cumaru doctor supports framework v6; found v${version:-unknown}"
+    yellow "→ Run 'cumaru migrate v6' for a dry-run, then repeat with --apply."
+    return 1
+  fi
+
+  echo "Running diagnostic checks on $CUMARU_DIR/ ..."
+  echo
+  cmd_doctor_v6
 }

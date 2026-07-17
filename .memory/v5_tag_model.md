@@ -5,6 +5,10 @@ metadata:
   type: project
 ---
 
+> Tag typing remains valid in V6, but structural inventories do not. Marker
+> blocks now carry only semantic adopter data; filesystem candidates come from
+> `cumaru tree`. See [[v6_virtual_tree]].
+
 Decision from Renato (2026-07-10): v4's "every tag is `[Link, Description]`" was too strict. A tag is a named adopter-owned block; its body can be typed by schema.
 
 **Schema shape.** Use scalar/array values under `tags:`:

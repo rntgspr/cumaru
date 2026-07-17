@@ -11,11 +11,42 @@
 
 # `.cumaru/` framework
 
-A spec-driven, agent-friendly knowledge framework for any project that can be version-controlled or stored as text—codebases,
-design systems, research notes, legal docs, or any other discipline. It lives at `.cumaru/` in any repo or folder that adopts it.
+A spec-driven, agent-friendly interactive knowledge framework for any project that can be version-controlled or
+stored as text—codebases. Can be used to organize, track, and collaborate projects like: codebases, design systems,
+research notes, legal docs, or any other discipline. It lives at `.cumaru/` in any repo or folder that adopts it.
 This repository hosts the framework definition, the `cumaru` CLI, and the published skills.
 
 ## Installing the `cumaru` CLI
+
+### Prerequisites
+
+Cumaru is a Bash CLI and expects these commands on `PATH`:
+
+| Tool | Used for |
+|---|---|
+| Bash | CLI and installed agent hooks |
+| cURL | Installer and tracker intake |
+| Git | Installer, updates, migrations, and source coverage |
+| [`jq`](https://formulae.brew.sh/formula/jq) | Agent hook configuration and JSON APIs |
+| [Mike Farah `yq`](https://formulae.brew.sh/formula/yq) v4 | Schema and Markdown frontmatter parsing; another program named `yq` is incompatible |
+
+On macOS, install the non-system dependencies with Homebrew:
+
+```bash
+brew install git jq yq
+```
+
+macOS normally provides Bash and cURL. Verify everything before installing:
+
+```bash
+bash --version
+curl --version
+git --version
+jq --version
+yq --version # must identify mikefarah/yq v4
+```
+
+On Linux, install Bash, cURL, Git, and `jq` with the system package manager, then install Mike Farah `yq` v4 from its [official installation options](https://github.com/mikefarah/yq#install). Distribution packages named `yq` may provide a different, incompatible implementation.
 
 ```bash
 curl -fsSL https://pixelpunk.works/cumaru/install.sh | bash
@@ -29,15 +60,15 @@ Alternatively, clone the repo and symlink `cumaru` onto your PATH — then `git 
 
 The original Apache HTTP server had a simple idea: each directory could carry an `index.html` that described its contents — navigable without prior knowledge of what was inside. Without one, the server generated a listing. Either way, the directory was *self-describing*.
 
-`.cumaru/` brings that convention to any version-controlled tree and extends it for agents. Every directory in the tree carries an `index.md` that declares its contents, its loading rules, and what an agent must pull before acting. The agent reads only what is declared; everything else stays on disk, version-controlled, but out of context.
+`.cumaru/` brings that convention to any version-controlled tree and extends it for agents. Every non-hidden directory carries an `index.md` that explains its purpose and rules. The filesystem supplies navigation candidates, and each Markdown file carries a concise `summary:` so an agent can decide what to load without reading every body.
 
 > **Load only what is declared. Everything else stays on disk but out of context.**
 
-`schema.yaml` describes the whole tree as one recursive node under `root:`. Every folder is a node; every node can have children. Adding a new area or pillar is a schema edit — no code change, no special tooling. The default domain ships five pillars suited for execution work, but the model is not bound to any discipline — software, design, research, legal, or anything else that lives in a folder.
+`schema.yaml` describes the domain contract as one recursive node under `root:`. The filesystem is the source of structural truth; `cumaru tree` projects its current candidates and summaries. Adding a new area remains a filesystem operation governed by the schema — no CLI code change or persisted child inventory.
 
 ## Framework layout
 
-Every `.cumaru/` tree shares the same skeleton: a root `index.md` (front door), a `schema.yaml` (the node contract), and any number of pillar directories — each with its own `index.md` shallow index. The pillars are **schema-defined**, not hardcoded; adding or renaming one is a schema edit.
+Every `.cumaru/` tree shares the same skeleton: a root `index.md` (front door), a `schema.yaml` (the domain contract), `domain.md` (domain and adopter context), and any number of schema-declared pillar directories. Every non-hidden directory has an `index.md`; `cumaru tree` is the live shallow index.
 
 ```
 .cumaru/
@@ -47,7 +78,7 @@ Every `.cumaru/` tree shares the same skeleton: a root `index.md` (front door), 
 ├── roles/        ← agent role definitions
 ├── templates/    ← entity templates
 ├── <pillar>/     ← any pillar declared in schema.yaml
-│   ├── index.md  ← pillar's shallow index (required)
+│   ├── index.md  ← purpose and rules for the directory
 │   └── …
 └── <pillar>/
     ├── index.md  ← every pillar must have one
@@ -56,28 +87,29 @@ Every `.cumaru/` tree shares the same skeleton: a root `index.md` (front door), 
 
 The front door splits in two: `index.md` is the **kernel** — the loading rule, the node model, conduct and language rules — identical in every domain and updated from source. `domain.md` is the **domain hook**, declared as the kernel's `depends-on`: it carries everything domain-specific (pillars, roles, how work enters) plus the two adopter-owned marker blocks — the `<!-- cumaru:components -->` table and the `<!-- cumaru:root -->` project-context prose.
 
-Every pillar directory **must** contain an `index.md` — it is the shallow index the agent reads before deciding whether to drill deeper. Without it, the pillar is invisible to the loading rules.
+Every non-hidden directory **must** contain an `index.md`. The agent reads it, runs `cumaru tree <directory>`, prunes candidates by `summary:`, and only then loads relevant files or descends into selected directories.
 
-Four starting points ship with this repository:
+Six starting points ship with this repository:
 
-- **`frameworks/__base/`** — the minimal kernel: no pillars, an empty `entities:` map. Start here to build a custom domain from scratch.
-- **`frameworks/sdlc-it-project-basic/`** *(default)* — software delivery workflows. Pillars: `intake`, `plans`, `archive`, `specs`, `exploring`.
-- **`frameworks/iac-basic/`** — tool-agnostic infrastructure-as-code. Pillars: `intake`, `plans`, `archive`, `topology`, `exploring`, `runbooks`; the `apps:` axis enumerates environments.
-- **`frameworks/qa-basic/`** — test strategy & coverage. Pillars: `intake`, `plans`, `archive`, `coverage`, `exploring`, `standards`.
-- **`frameworks/vault-memory/`** — memory-vault workflow. Pillars: `inbox`, `drafts`, `memories`, `attachments`; durable memories are typed graph nodes.
+- **`domains/__base/`** — the minimal kernel: no pillars, an empty `entities:` map. Start here to build a custom domain from scratch.
+- **`domains/sdlc-full/`** *(default)* — software delivery workflows. Pillars: `intake`, `plans`, `archive`, `specs`, `exploring`.
+- **`domains/sdlc-light/`** — simplified software delivery. Pillars: `plans`, `specs`, `exploring`; direct plan-to-spec absorption, without `intake` or `archive`.
+- **`domains/iac-basic/`** — tool-agnostic infrastructure-as-code. Pillars: `intake`, `plans`, `archive`, `topology`, `exploring`, `runbooks`; the `apps:` axis enumerates environments.
+- **`domains/qa-basic/`** — test strategy & coverage. Pillars: `intake`, `plans`, `archive`, `coverage`, `exploring`, `standards`.
+- **`domains/vault-memory/`** — memory-vault workflow. Pillars: `inbox`, `drafts`, `memories`, `attachments`; durable memories are typed graph nodes.
 
 Each domain is **self-contained** (its own `schema.yaml` + starter files + skills); you install one, they don't compose. A different domain — research notes, legal matter management, design system documentation — would declare different pillars in its own `schema.yaml` while the skeleton stays identical.
 
 ## What the framework is
 
-A recursive node tree where every node is a directory with an `index.md`. The root node is `.cumaru/` itself; its direct children are the **pillars** — the top-level categories of knowledge for that project. `schema.yaml` declares everything: which pillars exist, what frontmatter each `index.md` carries, what columns each shallow index renders, and which nodes are never loaded by default.
+A recursive domain contract over a filesystem-backed tree. The root node is `.cumaru/`; its schema-declared children are the **pillars**. `schema.yaml` defines frontmatter, semantic tags, entity shapes, and validation rules. Directory children are discovered from disk through `cumaru tree`, not duplicated in marker tables.
 
 Two structural fixtures ship with every installation regardless of domain:
 
 - **`roles/`** — agent role definitions: who reads what, who writes where, and under what conditions.
 - **`templates/`** — entity templates used when creating new nodes.
 
-Everything else — pillars, entity shapes, domain conventions — is defined by the domain's `schema.yaml` and described in its `domain.md`. The minimal base (`frameworks/__base/`) ships no pillars; the SDLC domain ships five pillars and a Lead/Dev/Ghost role set (see [`frameworks/sdlc-it-project-basic/domain.md`](frameworks/sdlc-it-project-basic/domain.md)); IaC and QA ship their own pillar sets and role pairs. The loading rule itself lives in the kernel [`frameworks/__base/index.md`](frameworks/__base/index.md), shared verbatim by all domains.
+Everything else — pillars, entity shapes, domain conventions — is defined by the domain's `schema.yaml` and described in its `domain.md`. The minimal base (`domains/__base/`) ships no pillars; the SDLC domain ships five pillars and a Lead/Dev/Ghost role set (see [`domains/sdlc-full/domain.md`](domains/sdlc-full/domain.md)); IaC and QA ship their own pillar sets and role pairs. The loading rule itself lives in the kernel [`domains/__base/index.md`](domains/__base/index.md), shared verbatim by all domains.
 
 ## How it compares
 
@@ -94,6 +126,7 @@ The framework grew out of the web development / software tooling space, so the c
 # Inside the project that will adopt the framework:
 cumaru install                                      # SDLC domain (default)
 cumaru install --domain base                        # minimal kernel — build your own pillars
+cumaru install --domain sdlc-light                  # simplified software delivery domain
 cumaru install --domain iac-basic                   # infrastructure-as-code domain
 cumaru install --domain qa-basic                    # test strategy & coverage domain
 cumaru install --domain vault-memory                # personal/team memory vault domain
@@ -103,33 +136,34 @@ cumaru install --with git                           # unlocks mutating git comma
 cumaru install --domain iac-basic --with terraform --with pulumi
 ```
 
-Install copies the domain into `.cumaru/`, then installs operating skills and slash commands into `.agents/`. Every domain ships the universal set (`cumaru-doctor`, `cumaru-update`, `cumaru-refs`), its own tuned `cumaru-install`, plus one skill per pillar that needs orchestration (SDLC: `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-archive`). Mechanical primitives `cumaru tag`, `cumaru flow`, and `cumaru coverage` are CLI-only — no skill needed; the recipe skills compose them. Opt-in skills like `git` only ship when explicitly added via `--with` (without `git`, roles stay read-only on the repo: `status`, `log`, `diff`, `blame`, `show`).
+Install copies the domain into `.cumaru/`, then installs operating skills and slash commands into `.agents/`. Every domain ships the universal set (`cumaru-doctor`, `cumaru-update`, `cumaru-refs`, `cumaru-summarize`), its own tuned `cumaru-install`, plus one skill per pillar that needs orchestration (SDLC: `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-archive`). Mechanical primitives `cumaru tag`, `cumaru flow`, and `cumaru coverage` are CLI-only — no skill needed; the recipe skills compose them. Opt-in skills like `git` only ship when explicitly added via `--with` (without `git`, roles stay read-only on the repo: `status`, `log`, `diff`, `blame`, `show`).
 
 The post-install work is **LLM-driven via the installed skills**:
 1. **Components** — the `cumaru-install` skill walks the user through editing `.cumaru/domain.md`'s components table and `meta.apps.values` in `.cumaru/schema.yaml`.
 2. **Spec bootstrap** — the `cumaru-specs` skill (SDLC domain) walks the user through identifying functional areas and seeding `specs/<area>/index.md` skeletons.
-3. **Validate** — run `cumaru` (or `cumaru doctor`) any time to check schema conformance, orphans, and file refs.
+3. **Validate** — run `cumaru` (or `cumaru doctor`) to check navigation, summaries, retained marker contracts and file references, tools, and agent hook wiring.
 
-## Skills (Claude integration)
+## Skills and agent integration
 
 Skills follow the official Anthropic format (`SKILL.md` with frontmatter). They are organized in two tiers:
 
-**Domain-shipped skills** at `frameworks/<domain>/skills/cumaru-*/` — installed into the selected agent skill dirs with the domain. Every domain carries the universal set:
+**Domain-shipped skills** at `domains/<domain>/skills/cumaru-*/` — installed into the selected agent skill dirs with the domain. Every domain carries the universal set:
 
 - `cumaru-doctor` — run the health checks, interpret orphans, propose fixes.
 - `cumaru-update` — pull framework-file updates from the source, replace skills and slash commands; adjudicate frontmatter key drift, tag-body reshapes, orphan/relocated tags.
 - `cumaru-refs` — spec↔code reference coverage: adjudicate the gaps `cumaru coverage` reports and wire source files into spec `reference` tables.
+- `cumaru-summarize` — curate missing or invalid `summary:` frontmatter without changing semantic content.
 
 …plus `cumaru-install` (adopt the framework, then bootstrap the durable pillar) — shipped by every domain but **domain-owned**: its post-install recipe hands off to the domain's pillar skill (`cumaru-specs` / `cumaru-topology` / `cumaru-coverage`), so it is exempt from the kernel drift-check.
 
 …plus its own orchestration skills, one per pillar that needs them:
 
-- **SDLC**: `cumaru-intake` (mirror a tracker issue under `intake/<KEY>/`), `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-archive`.
+- **SDLC**: `cumaru-intake` (mirror a tracker issue as `intake/<KEY>.md`), `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-archive`.
 - **IaC**: `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-topology` (≈ specs for stacks; `depends-on` = apply order), `cumaru-archive`, plus `cumaru-arch` (render the topology graph as Mermaid/ASCII, read-only).
 - **QA**: `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-coverage`, `cumaru-archive`.
 - **Vault Memory**: `cumaru-capture`, `cumaru-draft`, `cumaru-distill`, `cumaru-link`.
 
-**Slash commands** at `frameworks/<domain>/commands/cumaru/*.md` — installed into the selected agent command dirs. Each is a user-invoked entry point (`/cumaru:plan`, `/cumaru:explore`, `/cumaru:topology`, …) that loads the matching skill and dispatches by intent. Skills without lifecycle (e.g. `cumaru-arch`) have no command — they trigger on conversation.
+**Slash commands** at `domains/<domain>/commands/cumaru/*.md` — installed into the selected agent command dirs. Each is a user-invoked entry point (`/cumaru:plan`, `/cumaru:explore`, `/cumaru:topology`, …) that loads the matching skill and dispatches by intent. `/cumaru:summarize` launches the universal summary-curation skill. `cumaru-install` remains the bootstrap exception because slash commands do not exist before installation.
 
 **Opt-in skills** at the top-level `skills/<name>/` (no `cumaru-` prefix) — installed only with `--with <name>`:
 
@@ -139,32 +173,31 @@ Skills follow the official Anthropic format (`SKILL.md` with frontmatter). They 
 
 **Mechanical primitives — no skill needed.** `cumaru tag` (read/write `<!-- cumaru:NAME -->` marker blocks; schema-validated), `cumaru flow` (4 verbs: `move`/`copy`/`create`/`remove`, with guardrails), and `cumaru coverage` (read-only spec↔code coverage report over `reference` tables) are documented in `cumaru <cmd> --help`. Every recipe skill above composes calls to them.
 
-**Using with Claude Code or Codex:** `cumaru install` wires everything under `.agents/`. The instruction file is `.agents/AGENTS.md`. `cumaru update --apply` refreshes skills and commands for the detected installed agent target(s).
+**Using with Claude Code or Codex:** `cumaru install` wires everything under `.agents/`. The instruction file is `.agents/AGENTS.md`. `cumaru update --apply` refreshes only `.agents/` artifacts; the update skill may separately offer a user-confirmed alignment for existing `CLAUDE.md` or `.claude/` compatibility files.
 
 **Using with claude.ai:** upload `SKILL.md` via the custom skills UI, or automate via the Skills API. claude.ai does not watch the repo — re-upload (or trigger an API call from CI) when a skill changes.
 
-## Index tables — the universal shape
+## Navigation and semantic tags
 
-v4 ships one canonical shape for every `<!-- cumaru:NAME -->` marker block in the tree: a markdown table with exactly two columns — **Link** and **Description**.
+Version 6 makes the filesystem the structural source of truth. `index.md` explains a directory; `cumaru tree` lists its current children from disk and reads their `summary:` frontmatter without loading Markdown bodies.
 
 ```markdown
-<!-- cumaru:plans -->
-| Link                          | Description                                       |
-|-------------------------------|---------------------------------------------------|
-| [AAA-1234](AAA-1234/index.md) | Migrate the auth middleware to the new session API |
-| [maintenance-deps](maintenance-deps/index.md) | Bump runtime deps and refresh lockfiles   |
-<!-- /cumaru:plans -->
+| Path | Summary |
+|---|---|
+| plans/AAA-1234/ | Migrate authentication middleware to the new session API. |
 ```
 
-Every tag in every domain renders this way — pillar indexes, the `<!-- cumaru:components -->` block in `domain.md`, the `<!-- cumaru:files -->` block in a handoff, the templates inventory. The shape is **hardcoded in the parser, doctor, update, and the `cumaru tag` CLI** — schemas no longer declare per-tag columns. Adding a new tag is just `host_file:` routing; the body shape is implicit.
+Marker blocks remain adopter-owned semantic data. The schema declares each tag as a standard `Link | Description` table, a custom-column table, `prose`, or opaque `mixed`/`other` content. Tags express relations and durable records such as `reference`, `files`, `relations`, and `absorptions`; they never inventory directory children.
 
-The two columns are deliberate: a link the agent (or a human) can follow, and one line of prose that says what is on the other side — enough signal to prune by relevance under the loading rule, no more.
+Navigation is also the bounded discovery mechanism for cross-cutting work. Empty `depends-on:` or `relates:` fields do not prove isolation: start from the relevant pillar, expand one directory at a time, follow only summaries or semantic links that match the task, and inspect selected `reference` tables before changing shared source. The result should identify affected consumers, durable knowledge outside the active scope, and uncovered gaps without bulk-loading the tree.
+
+See [`docs/tree.md`](docs/tree.md) for navigation and [`docs/tag.md`](docs/tag.md) for semantic marker bodies.
 
 ## Versioning
 
-The schema declares a `version:` (currently `4`). Each project that adopts the framework copies the schema and declares `framework-version: <N>` in its `.cumaru/index.md`. The validator enforces equality — version drift between the schema and the project's declaration surfaces as an explicit error.
+The schema declares a `version:` (currently `6`). Each adopter declares the same `framework-version:` in `.cumaru/index.md`; doctor and update enforce equality.
 
-When the framework introduces a breaking change, bump `schema.yaml` `version:` and document the migration in this repo. Adopting projects bump `framework-version:` in their `.cumaru/index.md` after applying the migration.
+Major-version changes use explicit, transactional migration adapters. For v5 adopters, run `cumaru migrate v6` for a dry-run and then repeat with `--apply`; steady-state `cumaru update --apply` refuses to cross a major version.
 
 ## CLI subcommands
 
@@ -172,15 +205,18 @@ Run `cumaru help` (or `cumaru <cmd> --help`) for full usage.
 
 | Subcommand | Purpose |
 |---|---|
-| `doctor` *(default)* | Schema checks + tree-wide health (orphans both ways, stale work-marker files, file refs, external tools) |
-| `install` `[--domain <name>] [--with <skill>...]` | Install a domain into a project's `.cumaru/`; default domain: `sdlc-it-project-basic` |
-| `uninstall` `[DIR] [-y]` | Reverse of install: strip agent hooks, drop `.cumaru/` |
-| `intake` `<KEY> [--tracker <name>]` | Fetch a tracker issue and mirror it as a flat item under `.cumaru/intake/<KEY>/` (adapters: jira, linear, clickup) |
+| `doctor` *(default)* | Validate navigation, summaries, retained markers and file references, tools, and agent integration |
+| `domains` | List installable domains discovered from `domains/` |
+| `install` `[--domain <name>] [--with <skill>...]` | Install a domain into a project's `.cumaru/`; default domain: `sdlc-full` |
+| `uninstall` `[--yes]` | Reverse install: remove `.cumaru/` and framework-owned `.agents/` artifacts |
+| `intake` `<KEY> [--tracker <name>]` | Fetch a tracker issue and mirror it at the domain schema's intake item path (adapters: jira, linear, clickup) |
 | `tag` `[FILE] [<get\|set> <tag> [<content>]]` | Inspect / get / set `<!-- cumaru:* -->` marker blocks; schema-validated |
 | `coverage` `[--refs\|--gaps\|--rows] [--strict]` | Report which repository source files are referenced by the specification pillar's `reference` tables — covered / uncovered / stale / invalid |
-| `update` `[<path>] [--from <src>] [--keep-prose] [--apply]` | Update `.cumaru/` files, skills, and slash commands from the source; preserves frontmatter values + tag bodies. Version mismatch is reported as a migration review, not blocked |
-| `upgrade` | Update the `cumaru` tool itself: re-runs the install script (replaces `~/.dot-llm` wholesale, verifies kernel integrity across domains) |
+| `tree` `[<path>] [--deep] [--rows] [--pillars <names>] [--domain <name>]` | List filesystem-backed candidates and their summaries; optionally restrict them to schema pillars or guard the installed domain |
+| `update` `[<path>] [--from <src>] [--keep-prose] [--apply]` | Refresh same-major framework content and agent artifacts while preserving tag bodies; major-version apply is blocked |
+| `upgrade` | Update the `cumaru` tool itself: re-runs the install script, replaces `~/.cumaru`, and verifies kernel integrity |
 | `flow` `<src> <verb> [<dst>]` | Safe mechanical file ops inside `.cumaru/` (verbs: `move` \| `copy` \| `create` \| `remove`). Recipe skills compose calls to it |
+| `migrate` `[v6] [--from <src>] [--apply]` | Migrate legacy naming or transactionally cross a supported framework major |
 
 Per-command details live in `cumaru <cmd> --help`.
 
@@ -190,4 +226,4 @@ Higher-level workflows — plan authoring, exploration, spec bootstrap/deepen/co
 
 ## Status
 
-Framework version: **4** (universal `[Link, Description]` shape for every marker block — pillar indexes, components table, handoff files, templates inventory; per-tag column declarations are gone from every schema). The base kernel plus three domains (SDLC, IaC, QA), the `cumaru` CLI, the domain-shipped skills and slash commands, and the seven opt-in skills are all v4-shaped. Intake adapters wired: jira, linear, clickup (Basecamp deferred). The v3 → v4 migration procedure (fuse extra columns into the Description prose) is documented but has not yet been exercised against a real v3 tree — expect rough edges on first dogfooding.
+Framework version: **6**. Filesystem-backed navigation, required summaries, `cumaru tree`, v6-aware doctor checks, a transactional v5→v6 migration, and same-major update gates are implemented across Base, SDLC Full, SDLC Light, IaC, QA, and Vault Memory. Intake adapters are wired for Jira, Linear, and ClickUp; Basecamp remains deferred.

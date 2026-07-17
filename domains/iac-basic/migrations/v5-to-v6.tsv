@@ -1,0 +1,9 @@
+# action	host	tag	schema-path	ledger
+remove	intake/index.md	intake	.root.entities.intake.tags.intake	-
+remove	plans/index.md	plans	.root.entities.plans.tags.plans	-
+remove	archive/index.md	archive	.root.entities.archive.tags.archive	topology/index.md:absorptions
+remove	topology/index.md	topology	.root.entities.topology.tags.topology	-
+remove	exploring/index.md	exploring	.root.entities.exploring.tags.exploring	-
+remove	runbooks/index.md	runbooks	.root.entities.runbooks.tags.runbooks	-
+remove	templates/index.md	templates	.meta.tags.templates	-
+remove	roles/index.md	roles	.meta.tags.roles	-

@@ -6,6 +6,10 @@ metadata:
   type: project
 ---
 
+> Historical model. V5 superseded the universal tag shape with schema-declared
+> body types; V6 superseded structural tag inventories with filesystem-backed
+> `cumaru tree` navigation. See [[v6_virtual_tree]].
+
 **v4 schema model (carried from v3).** `schema.yaml` is one recursive node tree under `root:`. Every node — root and every descendant — shares one shape `{path?, frontmatter?, tags?, entities?}`. Pillars (`intake`, `plans`, `archive`, `specs|topology|coverage`, `exploring`, `runbooks|standards`) are children of `root`. Frontmatter contract uses `!` suffix for required keys.
 
 **v4's load-bearing change — the universal tag shape.** Every `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->` block is a markdown table with exactly two columns:
@@ -16,7 +20,7 @@ metadata:
 | [name](path/index.md) | one-line prose explaining the linked file  |
 ```
 
-This applies to ALL tags: pillar indexes (intake/plans/archive/specs/exploring/topology/runbooks/coverage/standards), `<!-- cumaru:components -->` on `domain.md`, `<!-- cumaru:root -->` on `domain.md`, `<!-- cumaru:files -->` and `<!-- cumaru:files:touched -->` anywhere, `<!-- cumaru:templates -->` on `templates/index.md`. No exceptions.
+This applies to ALL tags: pillar indexes (intake/plans/archive/specs/exploring/topology/runbooks/coverage/standards), `<!-- cumaru:components -->` on `domain.md`, `<!-- cumaru:root -->` on `domain.md`, `<!-- cumaru:files -->` and `<!-- cumaru:touched -->` anywhere, `<!-- cumaru:templates -->` on `templates/index.md`. No exceptions.
 
 **Schema implication.** Per-tag declarations no longer carry `columns:`, `format:`, `description:`, or `number:`. The only sub-key that survives is `host_file:` (and only for meta tags that live outside the node tree). Tag entries become `{}` or `{ host_file: ... }`. The shape is **hardcoded** in the parser, `cumaru tag`, `cumaru doctor`, and `cumaru update` — it is a cannon system rule, not a per-tag concern.
 

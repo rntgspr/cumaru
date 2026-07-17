@@ -28,7 +28,7 @@
 # Expects from entry-point: CUMARU_DIR, SCHEMA. Reuses fm_* from common.sh.
 
 # Allow any depth of colon-joined segments: a tag NAME is the path through the
-# schema's node tree, so deep names like `plans:plan:handoff:files` are valid
+# schema's node tree, so deep names like `plans:plan:handoff:touched` are valid
 # (the `*` — not `?` — is what permits more than one colon segment).
 _TAG_NAME_RE='^[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*$'
 
@@ -88,8 +88,10 @@ Usage:
   cumaru tag all --prose     print schema-declared prose tag bodies
   cumaru tag all --mixed     print mixed/other tag bodies
 
-Status values for --rows: ok, missing, external, anchor, template, empty,
-invalid (a `reference` row breaking the source-file rule — see cumaru coverage --help).
+Status values for --rows: ok, missing, removed (an intentionally absent
+`touched` path), external, anchor, template, empty, invalid.
+`touched` resolves from the project root; `reference` additionally must
+target a contained repository source file (see cumaru coverage --help).
 EOF
         return 0 ;;
       *)

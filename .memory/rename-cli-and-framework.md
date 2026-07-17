@@ -15,9 +15,9 @@ Full 3-level rename:
 
 Plus:
 - `cumaru migrate` subcommand to migrate existing project trees
-- Legacy symlink (`llm` → `cumaru`) for transition window
-- Parser accepts both `cumaru:` and `llm:` prefixes
+- Runtime parser accepts only `cumaru:` markers
+- Legacy `.llm/`, marker, skill, and command names are accepted only as migration input and rewritten to Cumaru
 
 ## Status
 
-Completed (2026-07-03) on branch `rename-cumaru`. All three layers done, migrate subcommand included. Historical repository naming is handled manually by Renato.
+Completed and incorporated into `main`. All three layers and the migration adapter are shipped. Historical repository naming is handled manually by Renato.

@@ -16,7 +16,7 @@ cumaru tag set [<file>] <tag> [<content>]   equivalent verb-first form
 
 `<file>` must end in `.md` and is relative to `.cumaru/` unless absolute. When omitted, it defaults to the root `index.md` (`.cumaru/index.md`).
 
-Tag name format: `[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*` — colon segments repeat, so deep node-tree names like `plans:plan:handoff:files` are valid. The `cumaru:` prefix in the file is implicit — pass `specs` or `cumaru:specs`, both resolve to the same.
+Tag name format: `[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*` — colon segments repeat, so deep node-tree names like `plans:plan:handoff:touched` are valid. The `cumaru:` prefix in the file is implicit — pass `specs` or `cumaru:specs`, both resolve to the same.
 
 `<file>` audit mode (`cumaru tag <file>`) shows a diff between what the schema declares for that file and what marker blocks actually exist — tags declared in schema but absent from the file marked `[+]`, and tags present in the file but not declared marked `[✗]`.
 
@@ -26,7 +26,7 @@ Every `get` / `set` is validated against the schema:
 - The tag must be **declared** for the file (root tags, pillar tags, or `meta.tags` with matching `host_file`).
 - The set of declared tags comes from the schema walk (`root.tags`, `root.entities.<pillar>.tags`, `meta.tags`).
 
-## Body Shape (v5)
+## Body shapes
 
 Every `<!-- cumaru:* -->` block is adopter-owned, but its body type is declared by the schema:
 
@@ -79,7 +79,7 @@ cumaru tag all --mixed
 
 `--prose` and `--mixed` print raw bodies for schema-declared `prose` and `mixed`/`other` tag types respectively.
 
-Exception: rows of the `reference` tag resolve from the **project root** (the parent of `.cumaru/`) and must target repository source files — the coverage rule, hardcoded like the table shape. A `reference` row pointing inside `.cumaru/`, at a directory, an absolute path, or a URL resolves to `invalid`. See [`cumaru coverage`](coverage.md).
+Exception: rows of the `reference` tag resolve from the **project root** (the parent of `.cumaru/`) and must target repository source files. A `reference` row pointing inside `.cumaru/`, at a directory, an absolute path, or a URL resolves to `invalid`. See [`cumaru coverage`](coverage.md).
 
 ## Examples
 
@@ -104,12 +104,11 @@ cumaru tag plans/index.md get plans
 cumaru tag set intake/index.md intake "$body"
 cumaru tag intake/index.md set intake "$body"
 
-# Set a body via stdin (preferred for long content).
-cat <<'EOF' | cumaru tag specs/index.md set specs
-| Link                          | Description                                                                |
-|-------------------------------|----------------------------------------------------------------------------|
-| [auth](auth/index.md)         | OIDC + session refresh — [api, webapp]; depends on `crypto`; relates `users` |
-| [payments](payments/index.md) | Stripe checkout — [api]; depends on `auth`                                  |
+# Set a semantic tag body via stdin (preferred for long content).
+cat <<'EOF' | cumaru tag specs/auth/index.md set reference
+| Link | Description |
+|---|---|
+| [session](src/auth/session.ts) | Session lifecycle source implementation. |
 EOF
 ```
 
@@ -121,10 +120,10 @@ EOF
 
 ## Why a primitive (no skill)
 
-Skills exist when there's multi-step orchestration that doesn't fit in `--help`. Tag operations are atomic: read a body, write a body, audit a file. The recipe skills (`cumaru-archive`, `cumaru-specs`, `cumaru-plan`, `cumaru-explore`, `cumaru-intake`) compose `cumaru tag set <pillar>/index.md <pillar> <new body>` calls in their bodies to re-emit pillar index rows after structural changes.
+Skills exist when there's multi-step orchestration that doesn't fit in `--help`. Tag operations are atomic: read a body, write a body, audit a file. Lifecycle skills use `cumaru tree` for structural navigation and use `cumaru tag set` only for declared semantic tags such as `reference` or `absorptions`.
 
 ## Related
 
 - [`cumaru flow`](flow.md) — the other CLI primitive (file ops). Recipe skills compose both.
-- [`cumaru doctor`](doctor.md) — orphan check surfaces row drift that `cumaru tag set` fixes.
+- [`cumaru doctor`](doctor.md) — validates navigation, summaries, tag shapes, and retained file references.
 - [`cumaru update`](update.md) — uses `cumaru tag` internally for marker-preserving merges.

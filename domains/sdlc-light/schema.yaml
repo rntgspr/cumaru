@@ -1,0 +1,125 @@
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║  HOW TO READ THIS SCHEMA — do not delete (LLM + humans rely on it)        ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+#
+# Root sections:
+#   rules:    cross-cutting contracts every file / index satisfies.
+#   root:     the .cumaru/ node tree. `root` is the top node; its children
+#             (plans, specs, exploring) are the pillars. Every node shares
+#             one shape { path?, frontmatter?, tags?, entities? } and nests
+#             recursively.
+#   meta:     framework metadata + this project's component registry.
+#
+# frontmatter:  a list of frontmatter keys. Suffix `!` = required, no suffix =
+#               optional.  e.g. [key!, type, status!] -> key & status required.
+#               `human_revised` is universal (rules.markdown) — never repeated.
+#
+# tags:  marker blocks `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->`. The marker
+#        NAME is the path through the node tree, colon-joined: a node's index
+#        tag is just its key (-> cumaru:plans); a tag deeper in the tree joins the
+#        ancestor keys (-> cumaru:plans:plan:handoff:touched).
+#
+#        v5 — tag bodies are declared by the schema:
+#          default                    -> table [Link, Description]
+#          [SHA, KEY, Description]    -> custom deterministic table columns
+#          prose | mixed | other      -> adopter-owned body, not path-resolved
+#        Meta tags may use a mapping with host_file + type.
+#
+# path:  see the `root` section below — RELATIVE to the parent node; implicit =
+#        the node's key; a directory path resolves to that dir's index.md.
+
+version: 6
+domain: sdlc-light
+# ------------------------------------------------------------------
+# rules — cross-cutting, not specific to any single pillar.
+# ------------------------------------------------------------------
+rules:
+  markdown:
+    required_heading: h1
+    frontmatter: [human_revised!, summary!]
+  index_md:
+    frontmatter: [apps!]
+  pillar_index:
+    frontmatter: [apps!, summary!]
+  ears:
+    severity: warning
+    pattern: "(((WHEN|WHILE|WHERE|IF) .+ )?THE SYSTEM SHALL .+)|(.+ (MUST NOT|MUST|REQUIRED|SHALL NOT|SHALL|SHOULD NOT|SHOULD|RECOMMENDED|MAY|OPTIONAL) .+)"
+    applies_to:
+      - plans — "## Acceptance Criteria (EARS / RFC 2119)"
+      - specs — "## Requirements (EARS / RFC 2119)"
+# ------------------------------------------------------------------
+# root — the .cumaru/ tree.
+# ------------------------------------------------------------------
+root:
+  path:
+  frontmatter: [framework-version!, depends-on]
+  entities:
+    plans:
+      entities:
+        plan:
+          path: <PLAN-ID>
+          frontmatter: [scope!, status!, summary!, apps!, key, type, epic, story, aux]
+          entities:
+            task:
+              path: t<N>.md
+              frontmatter: [plan!, task!, depends-on!, concerns!, files!, status!, apps!, aux!]
+            handoff:
+              path: handoff-t<N>.md
+              frontmatter: [plan!, task!, status!, date!]
+              tags:
+                touched: default
+            delta_draft:
+              path: delta-draft.md
+              frontmatter: [plan!, status!, date!]
+    specs:
+      entities:
+        area:
+          path: <area>
+          frontmatter: [name!, summary!, depends-on!, relates, apps!, deltas, consolidated-at]
+          entities:
+            concern:
+              path: <concern>.md
+              frontmatter: [name!, summary!, depends-on!, relates, apps!, deltas, consolidated-at]
+    exploring:
+      entities:
+        idea:
+          path: <slug>
+          frontmatter: [status!, summary!, apps!]
+# ------------------------------------------------------------------
+# meta — framework metadata and the project's component registry.
+# ------------------------------------------------------------------
+meta:
+  apps:
+    values:
+      # === project components — replace with your own ===
+      # - webapp     # web-app/ component
+      # - api        # api/ component
+      # === reserved (do not remove) ===
+      - platform
+      - meta
+  tags:
+    components: {host_file: domain.md, type: default}
+    root: {host_file: domain.md, type: prose}
+    files: {host_file: "*", type: default}
+    touched: {host_file: "*", type: default}
+    templates: {host_file: "templates/index.md", type: default}
+    roles: {host_file: "roles/index.md", type: default}
+    # Spec→code reference tag — every row targets a repository SOURCE FILE,
+    # resolved from the project root. Read by `cumaru coverage`.
+    reference: {host_file: "*", type: default}
+  # Specification coverage (`cumaru coverage`) — the durable pillar whose
+  # `reference` tables map spec files to repository source files.
+  specification_dir: specs
+  coverage:
+    # fnmatch-style globs (`*` crosses `/`) narrowing which tracked files
+    # count as coverable source. Empty = every tracked file. .cumaru/ and
+    # .agents/ are always excluded.
+    source: []
+    # - "src/**"
+  compatibility:
+    framework_version_field: framework-version
+    framework_version_location: .cumaru/index.md
+    rule:
+      - The `framework-version:` field in .cumaru/index.md must equal the `version:` field in this schema.
+      - The validator enforces equality.
+      - Bumping `version:` here without bumping `framework-version:` surfaces an explicit mismatch error — that is the migration signal.

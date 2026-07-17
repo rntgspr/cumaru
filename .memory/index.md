@@ -2,12 +2,14 @@
 
 - [advisor-mode](advisor_mode.md) — How this advisor mode works and what it does when loaded
 - [cumaru framework / CLI](cumaru.md) — what the repo is, layout, cumaru CLI surface
-- [v4 model and universal tag shape](v4_model.md) — recursive node tree, tracker-agnostic intake, `[Link, Description]` hardcoded for every tag block
-- [frameworks layout](frameworks_layout.md) — multi-domain (frameworks/__base + frameworks/<name>/); universal vs domain-specific skills; install order with skip-if-exists
-- [universal index + loading rule](universal_index.md) — index.md byte-identical across all domains from __base; loading rule is the kernel; domain-specifics → domain.md as a depends-on
+- [v6 virtual tree](v6_virtual_tree.md) — CANONICAL current model: filesystem navigation, summaries, transactional migration, and version-gated updates
+- [v4 model and universal tag shape](v4_model.md) — historical model superseded by v5 tag typing and v6 filesystem navigation
+- [frameworks layout](frameworks_layout.md) — historical layout; v6 renamed `frameworks/` to `domains/`
+- [universal index + loading rule](universal_index.md) — kernel history; v6 traversal now expands filesystem candidates through `cumaru tree`
 - [iac-basic domain](iac_domain.md) — tool-agnostic IaC domain; topology/ + runbooks/ durable, apps=environments, no ghost role; shipped, folded into main, PR #11 auto-closed
-- [sdlc-light domain](sdlc_light_domain.md) — simplified 3-pillar domain (plans/specs/exploring), single admin role, direct plans→specs absorb; installed + smoke-tested on gitboiler (2026-07-02)
-- [install command state](install_state.md) — current state of `cumaru install`; `cumaru upgrade` (re-runs install script) + kernel drift check in install.sh (2026-06-09)
+- [sdlc-light domain](sdlc_light_domain.md) — simplified 3-pillar domain (plans/specs/exploring), single Lead role, direct plans→specs absorb; installed + smoke-tested on gitboiler (2026-07-02)
+- [install command state](install_state.md) — current v6 install contract, required Bash/cURL/Git/jq/yq tooling, agent artifacts, migration boundary, and destructive upgrade behavior
+- [canonical agent dialect](agents_dialect.md) — `.agents/AGENTS.md` is the only managed instruction surface; no prompt-submit context loader or managed hooks
 - [test process](test_process.md) — repeatable test cycle: uninstall-first → verify clean → install → test → report
 - [superpowers → disciplines](superpowers_absorption.md) — don't enable the plugin; absorb select execution skills via the "discipline" artifact (loading-rule-loaded, domain-attached); skill-to-discipline tool
 - [Bugfix: cross-domain handoff + metadata + rsync + Codex format](bugfix_llm_install_cross_domain_handoff.md) — bugs #1–10: wrong skill handoffs in iac-basic/qa-basic, sdlc-light cumaru-doctor ref, context-loader.sh env vars + Codex JSON, missing frontmatter in 9 skills, orphan template, rsync cleanup; plus sdlc-light admin→lead rename
@@ -32,9 +34,11 @@
 @./feedback_install_sh_destructive.md
 @./feedback_update_design.md
 @./cumaru.md
+@./v6_virtual_tree.md
 @./frameworks_layout.md
 @./iac_domain.md
 @./install_state.md
+@./agents_dialect.md
 @./superpowers_absorption.md
 @./test_process.md
 @./universal_index.md

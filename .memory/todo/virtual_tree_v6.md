@@ -1,10 +1,14 @@
 ---
 name: virtual-tree-v6
-description: "Plan: replace materialized structural indexes with filesystem-backed tree navigation and universal summaries"
-status: planned
+description: "Implemented: filesystem-backed tree navigation, universal summaries, and transactional v6 migration"
+status: completed
 ---
 
 # V6: Virtual Tree Navigation
+
+> Implemented in the current worktree. This file remains the detailed design and
+> regression checklist; the concise canonical state is
+> [`../v6_virtual_tree.md`](../v6_virtual_tree.md).
 
 ## Goal
 
@@ -73,7 +77,7 @@ tasks and fixtures below:
    of their host directory. Do not use a global tag-name allowlist.
 5. Publish a versioned migration manifest per domain containing each removable
    `(host path, tag name)` pair. Unknown/custom tags are preserved and reported.
-6. Retain semantic tags including `reference`, `files`, `files:touched`,
+6. Retain semantic tags including `reference`, `files`, `touched`,
    `absorptions`, `components`, `root`, `relations`, and adopter-defined tags.
 7. Define retained tag resolution explicitly. `reference` keeps its repository
    source-file contract; custom/prose/mixed tags remain opaque; undeclared tags
@@ -131,7 +135,7 @@ tasks and fixtures below:
    are reported by tag audit but are not inferred as default/path tables.
 6. Fix reference validation ordering: containment and tag-specific validity
    precede existence, and a final symlink cannot escape the project root.
-7. Define and test project-root semantics for `files`/`files:touched`, their
+7. Define and test project-root semantics for `files`/`touched`, their
    canonical name, and intentionally removed files before carrying them to v6.
 8. Detect source-known structural marker blocks left after migration.
 9. Verify the installed context hook script, `.agents/hooks.json` wiring, and

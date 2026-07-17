@@ -1,6 +1,6 @@
 # `cumaru uninstall`
 
-Reverse of [`cumaru install`](install.md). Removes `.cumaru/`, strips the installed agent hook block from `.agents/AGENTS.md`, removes the context hook from `.agents/hooks.json`, and removes `.agents/commands/cumaru/`, `.agents/skills/cumaru-*/`, and `.agents/hooks/`. Refuses non-interactive (no TTY) unless `--yes` is passed.
+Reverse of [`cumaru install`](install.md). Removes `.cumaru/`, strips the installed instruction block from `.agents/AGENTS.md`, and removes `.agents/commands/cumaru/` and `.agents/skills/cumaru-*/`. Refuses non-interactive (no TTY) unless `--yes` is passed.
 
 ## Usage
 
@@ -17,17 +17,15 @@ cumaru uninstall [--yes]
 1. **Pre-checks**:
    - If `.cumaru/` exists, it must look like an install (`index.md` + `schema.yaml` at its root). Also verifies the path resolves inside the filesystem (refuses `/`, `$HOME`, or non-absolute targets).
    - If `--yes` is not set and stdin is not a TTY, refuses with a hint to pass `--yes`.
-2. **Discovery** — scans what exists to remove (`.cumaru/` tree, `CUMARU-HOOK` block, context hook in `hooks.json`, framework commands dir, framework skill dirs, framework hooks dir). If nothing is found, exits silently.
+2. **Discovery** — scans what exists to remove (`.cumaru/` tree, `CUMARU-HOOK` block, framework commands dir, and framework skill dirs). If nothing is found, exits silently.
 3. **Confirmation** (TTY without `--yes`):
    - Prints the target path + what will be removed.
    - Reads `y/N` from stdin; aborts on anything else.
 4. **Removes framework commands** — the entire `.agents/commands/cumaru/` directory. The `cumaru` subdir is the framework namespace; every `.md` inside is framework-owned. Adopter-authored commands at other paths or namespaces are not touched.
 5. **Removes framework skills** — every `.agents/skills/cumaru-*/` directory. The `cumaru-` prefix is the framework namespace marker. Opt-ins (any skill without the `cumaru-` prefix) and adopter-authored skills are not touched.
-6. **Removes framework hooks** — the entire `.agents/hooks/` directory.
-7. **Strips context hooks** — removes only the `UserPromptSubmit` command hook pointing at `context-loader` from `.agents/hooks.json`, using `jq`. Other hooks and settings remain untouched.
-8. **Prunes empty agent subdirs** — removes `.agents/commands/`, `.agents/skills/`, `.agents/` if they're empty after cleanup.
-9. **Strips agent instruction hooks** — locates the `<!-- BEGIN CUMARU-HOOK -->` / `<!-- DOT-LLM-HOOK -->` block in `.agents/AGENTS.md` (also detects the legacy `DOT-LLM-HOOK` marker) and removes it (along with surrounding blank lines). If install created the file (detected via the `created` marker in the BEGIN comment) and only its boilerplate remains, removes it entirely.
-10. **Removes the install tree** — `rm -rf .cumaru/`.
+6. **Prunes empty agent subdirs** — removes `.agents/commands/`, `.agents/skills/`, `.agents/` if they're empty after cleanup.
+7. **Strips agent instruction hooks** — locates the `<!-- BEGIN CUMARU-HOOK -->` / `<!-- DOT-LLM-HOOK -->` block in `.agents/AGENTS.md` (also detects the legacy `DOT-LLM-HOOK` marker) and removes it (along with surrounding blank lines). If install created the file (detected via the `created` marker in the BEGIN comment) and only its boilerplate remains, removes it entirely.
+8. **Removes the install tree** — `rm -rf .cumaru/`.
 
 ## When to use
 

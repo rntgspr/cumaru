@@ -2,9 +2,9 @@
 
 Fetch a tracker issue and mirror it under `.cumaru/intake/`. **Tracker-agnostic by design** — wired adapters: **Jira, Linear, ClickUp** (Basecamp planned; TODO header in `src/cmd_intake.sh`).
 
-## Layout (v3 flat — no per-issuetype subdirs)
+## Layout
 
-Every item lives at `.cumaru/intake/<KEY>/index.md` regardless of type. The `type:` field discriminates (`epic`, `story`, `task`, `bug`, `spike`). The pillar's `intake/index.md` declares which tracker(s) the project pulls from via `tracker:` (a list — e.g. `[jira]` or `[jira, linear]`).
+In `sdlc-full`, every item lives at `.cumaru/intake/<KEY>.md` regardless of type. The `type:` field discriminates (`epic`, `story`, `task`, `bug`, `spike`). IaC and QA retain their directory-item layouts. The pillar's `intake/index.md` declares which tracker(s) the project pulls from via `tracker:` (a list — e.g. `[jira]` or `[jira, linear]`).
 
 ## Usage
 
@@ -37,7 +37,7 @@ External tools: `curl`, `jq`.
 **First run (file does not exist yet):**
 1. Resolves the tracker (see above) and dispatches to its adapter; each adapter normalizes the issue into the same shape (summary, type, status, description, relates).
 2. Picks the matching template from `.cumaru/templates/intake-{epic,story,ticket}.md`.
-3. Writes `intake/<KEY>/index.md` with frontmatter:
+3. Writes the schema-declared intake item path (`intake/<KEY>.md` in `sdlc-full`) with frontmatter:
    - `key`, `tracker` (scalar — which source this item came from), `type`, `status`, `synced-at`, `apps: []`, `relates: [...]`
    - `relates:` is auto-populated from the source (parent epic / parent story / epic link when known) so cross-item links are clear from the start.
 4. Sets H1 to the issue summary; body from the template.
@@ -68,7 +68,7 @@ After `cumaru intake <KEY>`, open the file and follow the embedded RAW-block ins
 4. Set `apps: [...]` from the project's `meta.apps.values` in `.cumaru/schema.yaml`.
 5. Verify `relates: [...]` lists parent epic / story / cross-item references correctly.
 6. **Delete the entire `BEGIN RAW / END RAW` block** when done. The presence of this block is `cumaru doctor`'s signal that the item is still raw.
-7. Add a row for the new item in `intake/index.md` via `cumaru tag set intake/index.md intake <new body>` — v4 shape: `| [<KEY>](<KEY>/index.md) | <type, status, one-line title> |`.
+7. Set a valid `summary:` on the new item. Do not add a structural row to `intake/index.md`; `cumaru tree intake` discovers the directory.
 
 The `/cumaru:intake <KEY>` slash command walks all of this with user confirmation.
 
@@ -89,6 +89,6 @@ cumaru intake 86c2abc --tracker clickup # ClickUp task id
 
 ## Related
 
-- [`cumaru tag`](tag.md) — used by the refinement workflow to add the new item's row to `intake/index.md`.
-- [`cumaru doctor`](doctor.md) — orphan check catches a new item that hasn't been added to the table yet.
-- `/cumaru:intake` slash command — orchestrates fetch + refinement + table row.
+- [`cumaru tree`](tree.md) — lists the new intake item after its summary is valid.
+- [`cumaru doctor`](doctor.md) — validates the new item's navigation contract, frontmatter, and summary.
+- `/cumaru:intake` slash command — orchestrates fetch, refinement, and summary curation.

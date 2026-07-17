@@ -65,5 +65,5 @@ Skills exist when there's multi-step orchestration that doesn't fit in `--help`.
 ## Related
 
 - [`cumaru tag`](tag.md) — the other CLI primitive (marker-block content). Recipe skills compose both.
-- [`cumaru doctor`](doctor.md) — orphan check + file refs check verify the result of flow operations.
+- [`cumaru doctor`](doctor.md) — navigation and summary validation + file refs check verify the result of flow operations.
 - `cumaru-archive`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs` skills — recipes that compose `cumaru flow` into workflows.

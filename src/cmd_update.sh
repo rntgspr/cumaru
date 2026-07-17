@@ -1,30 +1,23 @@
 # cmd_update.sh — update an installed .cumaru/ tree from the framework source.
 #
-# Three regions per file (v4 model):
-#   1. frontmatter  — adopter VALUES are kept verbatim; key drift is reported so
-#                     the LLM can reconcile against schema.yaml.
-#   2. tag bodies   — `<!-- cumaru:NAME -->` blocks: local body is preserved; a
-#                     marker present in source but absent locally is added empty.
-#                     Every body is a [Link, Description] table (hardcoded shape);
-#                     bodies are never rewritten mechanically.
-#   3. prose        — everything else: taken FROM SOURCE by default (framework
-#                     rules land here). `--keep-prose` keeps the adopter's prose
-#                     with a per-file warning that the tree may diverge.
+# Framework-owned Markdown is rebuilt from source. Existing marker bodies are
+# captured and restored at matching markers; --keep-prose opts out of canonical
+# prose replacement. Adopter-created entities without a source counterpart are
+# left untouched.
 #
 # "Both-sides" files only: every file shipped in the framework starter that
 # also exists locally is updated; a starter file absent locally is created;
-# adopter-created entities (intake/<KEY>/, plans/<PLAN-ID>/, specs/<area>/…)
+# adopter-created entities (intake items, plans/<PLAN-ID>/, specs/<area>/…)
 # have no source counterpart and are left untouched.
 #
-# Skills, hooks, and slash commands:
-#   Updated deterministically — sources in the dot-llm checkout replace the
+# Skills and slash commands:
+#   Updated deterministically — sources in the Cumaru checkout replace the
 #   installed copies wholesale (no adopter customisation is expected here;
-#   these are framework-owned artifacts). Deprecated commands/hooks (present
+#   these are framework-owned artifacts). Deprecated commands (present
 #   locally but absent from the source) are listed for review but NOT removed.
 #
-# Version drift: if the source `version:` differs from the local
-# `framework-version:`, this is a MIGRATION. Dry-run surfaces that fact; --apply
-# still applies the requested update so migration work is not blocked.
+# Version drift is gated: local schema and root versions must agree, downgrade
+# is refused, and a higher source major is dry-run only until migrated.
 #
 # Expects from the entry-point: SCRIPT_DIR, CUMARU_DIR, AGENTS_DIR, SCHEMA, QUIET,
 # SKILLS_SRC, and the _framework_install_skills /
@@ -68,35 +61,10 @@ _update_tag_is_table() {
 
 _update_build_expected() {
   local src="$1" tgt="$2" keep_prose="$3" has_fm="$4"
-
-  if [[ "$keep_prose" == "1" ]]; then
-    local out missing=()
-    out=$(cat "$tgt")
-    local name
-    while IFS= read -r name; do
-      [[ -z "$name" ]] && continue
-      fm_block_list "$tgt" | grep -qxF "$name" || missing+=("$name")
-    done < <(fm_block_list "$src")
-    if [[ ${#missing[@]} -gt 0 ]]; then
-      local tmp; tmp=$(mktemp)
-      printf '%s\n' "$out" > "$tmp"
-      _tag_insert_empty "$tmp" "${missing[@]}" 2>/dev/null || true
-      cat "$tmp"; rm -f "$tmp"
-    else
-      printf '%s\n' "$out"
-    fi
-    return 0
-  fi
-
-  local injected; injected=$(mktemp)
-  _update_inject_blocks "$src" "$tgt" > "$injected"
-  if [[ "$has_fm" == "1" ]] && _update_has_fm "$tgt"; then
-    _update_fm_region "$tgt"
-    _update_body_after_fm "$injected"
-  else
-    cat "$injected"
-  fi
-  rm -f "$injected"
+  # Framework-owned files are replaced wholesale. Only marker bodies are
+  # adopter-owned: capture them from the local file and rehydrate them at the
+  # source markers, or at the top when the source no longer has that marker.
+  _update_inject_blocks "$src" "$tgt"
 }
 
 _update_needs_attention() {
@@ -234,7 +202,7 @@ _update_render() {
   fi
 
   echo
-  echo "--- Diff (local → result of --apply: prose from source, bodies + frontmatter kept) ---"
+  echo "--- Diff (local → result of --apply: canonical source + preserved marker bodies) ---"
   local merged; merged=$(mktemp)
   _update_build_expected "$src" "$tgt" "$keep_prose" "$has_fm" > "$merged"
   diff -u "$tgt" "$merged" 2>/dev/null || true
@@ -244,12 +212,11 @@ _update_render() {
 
 cmd_update_help() {
   cat <<'EOF'
-cumaru update — update an installed .cumaru/ tree + skills + hooks + slash commands
+cumaru update — update an installed .cumaru/ tree + skills + slash commands
 
 Usage:
   cumaru update [<path>] [--from <path|git-url>] [--keep-prose] [--apply]
   cumaru update skills   [--from <path|git-url>] [--apply]
-  cumaru update hooks    [--from <path|git-url>] [--apply]
   cumaru update commands [--from <path|git-url>] [--apply]
   cumaru update schema   [--from <path|git-url>] [--apply]
 
@@ -260,13 +227,12 @@ Arguments:
                  owned paths (no framework source counterpart) are rejected.
   skills         update ONLY framework skills for installed agent target(s).
                   Without --apply, prints a dry-run summary. With --apply, replaces
-                  skills wholesale. Skips the .cumaru/ file merge, hooks, and commands.
-  hooks          update ONLY framework hooks inside .agents/hooks/.
+                  skills wholesale. Skips the .cumaru/ file merge and commands.
                   Without --apply, prints a dry-run summary. With --apply, replaces
                   hook files wholesale. Skips the .cumaru/ file merge, skills, and commands.
   commands       update ONLY slash commands for installed agent target(s).
                   Without --apply, prints a dry-run summary. With --apply, replaces
-                  commands wholesale. Skips the .cumaru/ file merge, skills, and hooks.
+                  commands wholesale. Skips the .cumaru/ file merge and skills.
   schema         review or replace .cumaru/schema.yaml. Never auto-merged by the
                  general `cumaru update` (mixes framework-owned contracts with
                  adopter-owned regions like `meta.apps.values`). Without --apply,
@@ -275,19 +241,18 @@ Arguments:
                  local schema with the source — destructive on purpose.
 
 Options:
-  --from <src>   path to a dot-llm checkout, or a git URL to clone shallowly
+  --from <src>   path to a Cumaru checkout, or a git URL to clone shallowly
                  (default: the checkout this `cumaru` script was sourced from).
   --keep-prose   keep the adopter's prose instead of taking it from the source.
                  Prints a per-file warning when framework prose is skipped.
-  --apply        apply the merge mechanically (preserve frontmatter values and
-                 tag bodies, take prose from source, add missing markers) AND
-                  replace skills + hooks + slash commands from the source.
+  --apply        rebuild framework Markdown from canonical source while
+                 preserving matching marker bodies, AND
+                  replace skills + slash commands from the source.
                   Without it, prints a structured per-file review for the LLM.
 
-Skills, hooks, and commands (always applied with --apply, never in general dry-run):
+Skills and commands (always applied with --apply, never in general dry-run):
   Skills and slash commands are framework-owned artifacts installed under
-  .agents/. Hooks also live under .agents/hooks/. --apply replaces them
-  wholesale from the source checkout. Deprecated commands/hooks (locally
+  .agents/. --apply replaces them wholesale from the source checkout. Deprecated commands (locally
   present, absent from source) are listed but NOT removed — remove them
   manually after review.
 
@@ -295,29 +260,25 @@ Domain detection:
   The installed domain is read from the `domain:` field in .cumaru/schema.yaml
   (legacy `flavor:` is accepted as a fallback). Falls back to `base` if absent.
 
-Per-file model (v5):
-  • Frontmatter — adopter values are kept verbatim; only key drift is reported.
-  • Tag bodies  — local body preserved; a marker missing locally is added empty.
-                  v5: body type comes from schema (`default`, custom table,
-                  `prose`, `mixed`, `other`).
-                  Bodies are never rewritten mechanically.
-  • Prose       — taken FROM SOURCE by default (--keep-prose to retain local).
+Per-file model (v6):
+  • Framework-owned Markdown — rebuilt from the canonical domain source.
+  • Marker bodies — captured locally and restored at matching source markers.
+  • Local-only entities — untouched because they have no source counterpart.
+  • Prose — taken from source by default; --keep-prose retains local prose.
 
 Version drift:
-  If the source `version:` differs from the local `framework-version:`, this is
-  a MIGRATION. Dry-run surfaces the migration procedure; --apply still applies
-  the requested update.
+  Local schema and root versions must agree. A higher source major may be
+  reviewed in dry-run, but --apply is refused until `cumaru migrate v6` runs.
+  Downgrades are refused.
 
 Examples:
   cumaru update                          dry-run from the active checkout
-  cumaru update --apply                  apply the merge + replace skills/hooks/commands
+  cumaru update --apply                  apply the merge + replace skills/commands
   cumaru update templates --apply        only update templates/
   cumaru update intake/index.md          review just one file
   cumaru update --keep-prose --apply     apply, but keep local prose (warns)
   cumaru update skills                   dry-run: show which skills would change
   cumaru update skills --apply           replace only skills
-  cumaru update hooks                    dry-run: show which hooks would change
-  cumaru update hooks --apply            replace only hooks
   cumaru update commands                 dry-run: show which commands would change
   cumaru update commands --apply         replace only slash commands
   cumaru update schema                   diff source schema vs local for LLM review
@@ -325,13 +286,13 @@ Examples:
 EOF
 }
 
-# Reconcile the hook block in AGENTS.md and/or CLAUDE.md. On --apply,
+# Reconcile the hook block in .agents/AGENTS.md. On --apply,
 # replaces a legacy DOT-LLM-HOOK marker with CUMARU-HOOK, or adds it
 # if absent. Idempotent.
 _update_reconcile_agent_hook() {
   local parent="$1" apply="$2"
   local rel_index="$CUMARU_DIR/index.md"
-  local candidates=( "$parent/$AGENTS_DIR/AGENTS.md" "$parent/CLAUDE.md" )
+  local candidates=( "$parent/$AGENTS_DIR/AGENTS.md" )
   local any=0
 
   for instructions in "${candidates[@]}"; do
@@ -360,7 +321,7 @@ _update_reconcile_agent_hook() {
     if [[ $apply -eq 1 ]]; then
       _install_wire_agent_hook "$parent"
     else
-      say "  Agent hook: absent in AGENTS.md / CLAUDE.md (will be created on --apply)"
+      say "  Agent hook: absent in .agents/AGENTS.md (will be created on --apply)"
     fi
   fi
 }
@@ -420,10 +381,10 @@ cmd_update() {
   # 1) Resolve source root (the dot-llm checkout).
   local source_root tmpdir=""
   if [[ -z "$from" ]]; then
-    if [[ -f "$SCRIPT_DIR/cumaru" && -d "$SCRIPT_DIR/frameworks" ]]; then
+    if [[ -f "$SCRIPT_DIR/cumaru" && -d "$SCRIPT_DIR/domains" ]]; then
       source_root="$SCRIPT_DIR"
     else
-      red "✗ --from required (path to a dot-llm checkout or git URL)"; return 1
+      red "✗ --from required (path to a Cumaru checkout or git URL)"; return 1
     fi
   elif [[ "$from" =~ ^(git@|https?://|ssh://) ]] || [[ "$from" =~ \.git$ ]]; then
     tmpdir=$(mktemp -d)
@@ -443,19 +404,19 @@ cmd_update() {
   # RETURN traps are scoped to the current function invocation.
   [[ -n "$tmpdir" ]] && trap 'rm -rf "$tmpdir"' RETURN
 
-    if [[ ! -f "$source_root/cumaru" || ! -d "$source_root/frameworks" ]]; then
-    red "✗ source $source_root does not look like a dot-llm checkout (need cumaru and frameworks/)"
+  if [[ ! -f "$source_root/cumaru" || ! -d "$source_root/domains" ]]; then
+    red "✗ source $source_root does not look like a cumaru checkout (need cumaru and domains/)"
     return 1
   fi
 
   # 2) Resolve source domain.
-  local source_framework
-  source_framework="$source_root/frameworks/$( [[ "$domain" == "base" ]] && echo "__base" || echo "$domain" )"
-  if [[ ! -d "$source_framework" ]]; then
-    red "✗ domain '$domain' not found at $source_framework"
+  local source_domain
+  source_domain="$source_root/domains/$( [[ "$domain" == "base" ]] && echo "__base" || echo "$domain" )"
+  if [[ ! -d "$source_domain" ]]; then
+    red "✗ domain '$domain' not found at $source_domain"
     return 1
   fi
-  local source_schema="$source_framework/schema.yaml"
+  local source_schema="$source_domain/schema.yaml"
 
   # 3) Pre-flight: target must be installed.
   if [[ ! -f "$CUMARU_DIR/index.md" || ! -f "$SCHEMA" ]]; then
@@ -463,35 +424,44 @@ cmd_update() {
     return 1
   fi
 
-  # 4) Version drift notice.
-  local source_version target_version
-  source_version=$(awk '/^version:[[:space:]]/ {print $2; exit}' "$source_schema")
-  target_version=$(awk '/^---$/{c++; if(c==2) exit; next} c==1 && /^framework-version:[[:space:]]/ {print $2; exit}' "$CUMARU_DIR/index.md")
-  local migration_notice=0
-  if [[ -z "$source_version" || -z "$target_version" ]]; then
+  # 4) Major-version gate. Steady-state update never crosses a major version.
+  local source_version source_index_version target_schema_version target_version source_schema_domain
+  source_version=$(yq -r '.version // ""' "$source_schema" 2>/dev/null || true)
+  source_index_version=$(yq --front-matter=extract -r '.["framework-version"] // ""' "$source_domain/index.md" 2>/dev/null || true)
+  target_schema_version=$(yq -r '.version // ""' "$SCHEMA" 2>/dev/null || true)
+  target_version=$(yq --front-matter=extract -r '.["framework-version"] // ""' "$CUMARU_DIR/index.md" 2>/dev/null || true)
+  source_schema_domain=$(yq -r '.domain // ""' "$source_schema" 2>/dev/null || true)
+
+  if [[ -z "$target_schema_version" || "$target_schema_version" != "$target_version" ]]; then
+    red "✗ local version disagreement: schema is ${target_schema_version:-<unset>}, framework-version is ${target_version:-<unset>}"
+    return 1
+  fi
+  if [[ -z "$source_version" || "$source_version" != "$source_index_version" ]]; then
+    red "✗ source version disagreement: schema is ${source_version:-<unset>}, framework-version is ${source_index_version:-<unset>}"
+    return 1
+  fi
+  if [[ "$source_schema_domain" != "$domain" ]]; then
+    red "✗ source domain disagreement: selected $domain, schema declares ${source_schema_domain:-<unset>}"
+    return 1
+  fi
+
+  local source_major="${source_version%%.*}" target_major="${target_version%%.*}" migration_notice=0
+  if [[ ! "$source_major" =~ ^[0-9]+$ || ! "$target_major" =~ ^[0-9]+$ ]]; then
+    red "✗ cannot determine numeric framework major versions"
+    return 1
+  fi
+  if (( source_major < target_major )); then
+    red "✗ refusing framework downgrade: source v$source_version, local v$target_version"
+    return 1
+  fi
+  if (( source_major > target_major )); then
     migration_notice=1
-    yellow "⚠ cannot determine the framework version on both sides — treating this as a migration review."
-    yellow "  source framework version: ${source_version:-<unset> ($source_schema)}"
-    yellow "  local framework-version:  ${target_version:-<unset> ($CUMARU_DIR/index.md)}"
-    say ""
-    say "Dry-run continues so the LLM can inspect the update. Re-run with --apply"
-    say "to apply the requested update, then reconcile framework-version and any"
-    say "migration-specific changes using the cumaru-update skill."
-    say ""
-  elif [[ "$source_version" != "$target_version" ]]; then
-    migration_notice=1
-    yellow "⚠ version mismatch — this is a MIGRATION."
-    yellow "  source framework version: $source_version"
-    yellow "  local framework-version:  $target_version"
-    say ""
-    say "Dry-run continues so the LLM can inspect the update. Re-run with --apply"
-    say "to apply the requested update."
-    say ""
-    say "Migration guidance: open the cumaru-update skill at"
-    say "  .agents/skills/cumaru-update/SKILL.md"
-    say "and follow the '## Migration to v${source_version:-the source version} (from any earlier version)' section."
-    say "That section is the source of truth for follow-up reconciliation."
-    say ""
+    yellow "⚠ major framework upgrade: source v$source_version, local v$target_version"
+    say "  Run: cumaru migrate v$source_major --from $source_root"
+    if [[ $apply -eq 1 ]]; then
+      red "✗ cannot cross a major version boundary with cumaru update --apply"
+      return 1
+    fi
   fi
 
   say "Source: $source_root (framework version ${source_version:-unset})"
@@ -500,8 +470,8 @@ cmd_update() {
   say ""
 
   # Override SKILLS_SRC (opt-ins source) to point at the resolved source root
-  # when --from was given. Skills, hooks, and commands themselves are always sourced
-  # from $source_framework — no override needed because $source_framework
+  # when --from was given. Skills and commands themselves are always sourced
+  # from $source_domain — no override needed because $source_domain
   # already resolved from $source_root.
   local skills_src_effective="${source_root}/skills"
   [[ -d "$SKILLS_SRC" && "$source_root" == "$SCRIPT_DIR" ]] && skills_src_effective="$SKILLS_SRC"
@@ -549,29 +519,22 @@ cmd_update() {
     return 0
   fi
 
-  # 5a) Special targets: `skills`, `hooks`, and `commands` bypass the .cumaru/ file merge.
-  if [[ "$path_filter" == "skills" || "$path_filter" == "hooks" || "$path_filter" == "commands" ]]; then
+  # 5a) Special targets: `skills` and `commands` bypass the .cumaru/ file merge.
+  if [[ "$path_filter" == "skills" || "$path_filter" == "commands" ]]; then
     if [[ $apply -eq 0 ]]; then
       if [[ "$path_filter" == "skills" ]]; then
         say "Dry-run — cumaru-* skills that would be installed under $AGENTS_DIR/skills/:"
-        find "$source_framework/skills" -mindepth 1 -maxdepth 1 -type d -name 'cumaru-*' 2>/dev/null \
+        find "$source_domain/skills" -mindepth 1 -maxdepth 1 -type d -name 'cumaru-*' 2>/dev/null \
           | while read -r d; do basename "$d"; done | sort -u | while read -r n; do
           say "  · $n"
         done
         if [[ -d "$CUMARU_DIR/skills" ]]; then
           yellow "  (will remove legacy $CUMARU_DIR/skills — skills no longer live inside .cumaru/)"
         fi
-      elif [[ "$path_filter" == "hooks" ]]; then
-        say "Dry-run — hooks that would be replaced in $AGENTS_DIR/hooks/"
-        find "$source_framework/hooks" -type f 2>/dev/null | sort | while read -r f; do
-          local rel="${f#"$source_framework/hooks"/}"
-          say "  · $rel"
-        done
-        _update_report_deprecated_hooks "$source_framework"
       else
         say "Dry-run — slash commands that would be replaced under $AGENTS_DIR/commands/:"
-        find "$source_framework/commands" -name '*.md' 2>/dev/null | sort | while read -r f; do
-          local rel="${f#"$source_framework/commands"/}"
+        find "$source_domain/commands" -name '*.md' 2>/dev/null | sort | while read -r f; do
+          local rel="${f#"$source_domain/commands"/}"
           local slash="${rel%.md}"; slash="/${slash//\//:}"
           say "  · $slash"
         done
@@ -584,20 +547,16 @@ cmd_update() {
       local _orig_skills_src="$SKILLS_SRC"
       SKILLS_SRC="$skills_src_effective"
       _framework_prune_legacy_cumaru_skills "$CUMARU_DIR"
-      _framework_install_skills "$parent" "$source_framework" "1"
-      _framework_prune_deprecated_cumaru_skills "$parent" "$source_framework"
+      _framework_install_skills "$parent" "$source_domain" "1"
+      _framework_prune_deprecated_cumaru_skills "$parent" "$source_domain"
       # Remove the one-shot migration skill if it exists — it's a transition
       # tool, not a recurring recipe.
       rm -rf "$AGENTS_DIR/skills/cumaru-migrate" 2>/dev/null || true
       SKILLS_SRC="$_orig_skills_src"
-    elif [[ "$path_filter" == "hooks" ]]; then
-      say "Hooks:"
-      _update_copy_hooks "$source_framework"
-      _update_report_deprecated_hooks "$source_framework"
     else
       say "Slash commands:"
-      _framework_copy_commands "$parent" "$source_framework" "1"
-      _update_report_deprecated_commands "$parent" "$source_framework"
+      _framework_copy_commands "$parent" "$source_domain" "1"
+      _update_report_deprecated_commands "$parent" "$source_domain"
     fi
     green "✓ Update complete."
     return 0
@@ -606,14 +565,13 @@ cmd_update() {
   # 5b) Discover both-sides candidates by walking the source framework dir.
   local rels=() rel
   while IFS= read -r rel; do
-    rel="${rel#"$source_framework"/}"
+    rel="${rel#"$source_domain"/}"
     [[ "$rel" == *.bkp.* ]] && continue
-    # Never feed the framework's own skills/, hooks/, or commands/ subtrees into the
+    # Never feed the framework's own skills/ or commands/ subtrees into the
     # .cumaru/ file merge — those are framework-owned artifacts installed under
     # agent project dirs, handled by the dedicated helpers
     # below.
     [[ "$rel" == skills/* ]] && continue
-    [[ "$rel" == hooks/* ]] && continue
     [[ "$rel" == commands/* ]] && continue
     # schema.yaml is also out of the mechanical merge — it mixes framework-owned
     # contracts with adopter-owned regions (meta.apps.values, locally-added
@@ -625,7 +583,7 @@ cmd_update() {
       [[ "$rel" == "$path_filter" || "$rel" == "$path_filter"/* ]] || continue
     fi
     rels+=("$rel")
-  done < <(find "$source_framework" -type f \( -name '*.md' -o -name '*.yaml' \) | sort)
+  done < <(find "$source_domain" -type f \( -name '*.md' -o -name '*.yaml' \) | sort)
 
   if [[ -n "$path_filter" && ${#rels[@]} -eq 0 ]]; then
     if [[ -e "$CUMARU_DIR/$path_filter" ]]; then
@@ -640,21 +598,21 @@ cmd_update() {
   # 6) Compute the changed set.
   local changed=()
   for rel in "${rels[@]}"; do
-    local src="$source_framework/$rel" tgt="$CUMARU_DIR/$rel"
+    local src="$source_domain/$rel" tgt="$CUMARU_DIR/$rel"
     local has_fm=0; _update_has_fm "$src" && has_fm=1
     _update_needs_attention "$src" "$tgt" "$keep_prose" "$has_fm" && changed+=("$rel")
   done
 
   local total=${#changed[@]}
 
-  # 7) --apply: mechanical merge of .cumaru/ files + replace skills/hooks/commands.
+  # 7) --apply: mechanical merge of .cumaru/ files + replace skills/commands.
   if [[ $apply -eq 1 ]]; then
     [[ $keep_prose -eq 1 ]] && yellow "⚠ --keep-prose: framework prose updates are NOT applied; the tree may diverge."
 
     # .cumaru/ file merge.
     if [[ $total -gt 0 ]]; then
       for rel in "${changed[@]}"; do
-        local src="$source_framework/$rel" tgt="$CUMARU_DIR/$rel"
+        local src="$source_domain/$rel" tgt="$CUMARU_DIR/$rel"
         mkdir -p "$(dirname "$tgt")"
         if [[ ! -f "$tgt" ]]; then
           cp "$src" "$tgt"; green "  ✓ created $rel"; continue
@@ -690,25 +648,19 @@ cmd_update() {
     local _orig_skills_src="$SKILLS_SRC"
     SKILLS_SRC="$skills_src_effective"
     _framework_prune_legacy_cumaru_skills "$CUMARU_DIR"
-    _framework_install_skills "$parent" "$source_framework" "1"
-    _framework_prune_deprecated_cumaru_skills "$parent" "$source_framework"
+    _framework_install_skills "$parent" "$source_domain" "1"
+    _framework_prune_deprecated_cumaru_skills "$parent" "$source_domain"
     # Remove the one-shot migration skill if it exists.
     rm -rf "$AGENTS_DIR/skills/cumaru-migrate" 2>/dev/null || true
     SKILLS_SRC="$_orig_skills_src"
 
-    # Hooks: replace from the domain source into .agents/hooks/.
-    say ""
-    say "Hooks:"
-    _update_copy_hooks "$source_framework"
-    _update_report_deprecated_hooks "$source_framework"
-
     # Slash commands: replace from the domain source.
     say ""
     say "Slash commands:"
-    _framework_copy_commands "$parent" "$source_framework" "1"
+    _framework_copy_commands "$parent" "$source_domain" "1"
 
     # Deprecated commands.
-    _update_report_deprecated_commands "$parent" "$source_framework"
+    _update_report_deprecated_commands "$parent" "$source_domain"
 
     say ""
     green "✓ Update complete."
@@ -728,7 +680,7 @@ cmd_update() {
       yellow "  Review:  cumaru update schema"
       yellow "  Replace: cumaru update schema --apply   (destructive: loses meta.apps.values)"
     fi
-    say "  Run with --apply to replace skills, hooks, and slash commands from the source under $AGENTS_DIR/."
+    say "  Run with --apply to replace skills and slash commands from the source under $AGENTS_DIR/."
     return 0
   fi
 
@@ -739,9 +691,8 @@ cmd_update() {
     say "Update review (v$source_version steady state) — $total file(s) need attention"
   fi
   say "═══════════════════════════════════════════════════════════════════════"
-  say "Per file: frontmatter values are kept; tag bodies are preserved (every"
-  say "block is a [Link, Description] table); prose comes from source. Reconcile"
-  say "reported frontmatter key drift against:"
+  say "Per file: framework frontmatter and prose come from canonical source;"
+  say "matching marker bodies are preserved. Review the resulting contract against:"
   say "  $SCHEMA"
   [[ $keep_prose -eq 1 ]] && yellow "⚠ --keep-prose active: prose will be kept local (framework updates skipped)."
   [[ -n "$path_filter" ]] && say "Path filter: $path_filter"
@@ -749,9 +700,9 @@ cmd_update() {
   local idx=0
   for rel in "${changed[@]}"; do
     idx=$((idx + 1))
-    local src="$source_framework/$rel" tgt="$CUMARU_DIR/$rel"
+    local src="$source_domain/$rel" tgt="$CUMARU_DIR/$rel"
     local has_fm=0; _update_has_fm "$src" && has_fm=1
-    _update_render "$idx" "$total" "$rel" "$src" "$tgt" "$has_fm" "$keep_prose" "$source_framework"
+    _update_render "$idx" "$total" "$rel" "$src" "$tgt" "$has_fm" "$keep_prose" "$source_domain"
   done
 
   say "═══════════════════════════════════════════════════════════════════════"
@@ -766,59 +717,9 @@ cmd_update() {
     yellow "  Replace: cumaru update schema --apply   (destructive: loses meta.apps.values)"
     say ""
   fi
-  say "Skills, hooks, and slash commands will also be replaced from the source on --apply under $AGENTS_DIR/."
-  say "Re-run with --apply to merge .cumaru/ files and replace skills/hooks/commands."
+  say "Skills and slash commands will also be replaced from the source on --apply under $AGENTS_DIR/."
+  say "Re-run with --apply to merge .cumaru/ files and replace skills/commands."
   return 0
-}
-
-# Copy framework-owned hook files into .agents/hooks/.
-_update_copy_hooks() {
-  local source_framework="$1"
-  local hooks_src="$source_framework/hooks"
-  if [[ ! -d "$hooks_src" ]]; then
-    yellow "  · no hooks/ directory in source framework (skip)"
-    return 0
-  fi
-
-  local hook_files=() hook_file
-  while IFS= read -r -d '' hook_file; do
-    hook_files+=("$hook_file")
-  done < <(find "$hooks_src" -type f -print0)
-  [[ ${#hook_files[@]} -eq 0 ]] && { yellow "  · no hook files in source framework (skip)"; return 0; }
-
-  local parent rel dest
-  parent=$(dirname "$CUMARU_DIR")
-  for hook_file in "${hook_files[@]}"; do
-    rel="${hook_file#"$hooks_src"/}"
-    dest="$parent/$AGENTS_DIR/hooks/$rel"
-    mkdir -p "$(dirname "$dest")"
-    cp "$hook_file" "$dest"
-    chmod --reference="$hook_file" "$dest" 2>/dev/null || chmod +x "$dest" 2>/dev/null || true
-    green "  ↺ $AGENTS_DIR/hooks/$rel"
-  done
-}
-
-# Report installed hook files that no longer exist in the source framework.
-_update_report_deprecated_hooks() {
-  local source_framework="$1"
-  local hooks_src="$source_framework/hooks"
-  local parent
-  parent=$(dirname "$CUMARU_DIR")
-  local hooks_dir="$parent/$AGENTS_DIR/hooks"
-  [[ -d "$hooks_dir" ]] || return 0
-  [[ -d "$hooks_src" ]] || return 0
-
-  local any=0 file rel
-  while IFS= read -r -d '' file; do
-    rel="${file#"$hooks_dir"/}"
-    [[ -f "$hooks_src/$rel" ]] && continue
-    if [[ $any -eq 0 ]]; then
-      yellow ""
-      yellow "  Deprecated hooks (locally present, absent from source — review and remove manually):"
-      any=1
-    fi
-    yellow "    · $AGENTS_DIR/hooks/$rel ($file)"
-  done < <(find "$hooks_dir" -type f -print0)
 }
 
 _update_report_deprecated_commands() {

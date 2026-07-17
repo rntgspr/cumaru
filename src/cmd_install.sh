@@ -1,13 +1,13 @@
 # cmd_install.sh — install a domain into a project's .cumaru/.
 #
 # Each domain is self-contained (its own schema + starter files):
-#   --domain base                    → frameworks/__base/   (minimal kernel)
-#   --domain sdlc-it-project-basic   → frameworks/sdlc-it-project-basic/   (default)
-#   --domain <other>                 → frameworks/<other>/  (future domains)
+#   --domain base                    → domains/__base/   (minimal kernel)
+#   --domain sdlc-full               → domains/sdlc-full/   (default)
+#   --domain <other>                 → domains/<other>/  (future domains)
 #
 # Expects from the entry-point:
-#   BASE_FRAMEWORK_SRC  — path to frameworks/__base/
-#   FRAMEWORKS_DIR      — path to frameworks/
+#   BASE_DOMAIN_SRC     — path to domains/__base/
+#   DOMAINS_DIR         — path to domains/
 #   DEFAULT_DOMAIN      — default domain name
 #   _resolve_domain_src — function to resolve domain name → source dir
 #   SKILLS_SRC          — path to skills/ (opt-in skills sourced via --with)
@@ -20,7 +20,7 @@ cmd_install() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --domain)
-        [[ -n "${2:-}" ]] || { red "✗ --domain requires a name (e.g. sdlc-it-project-basic, base)"; return 2; }
+        [[ -n "${2:-}" ]] || { red "✗ --domain requires a name (e.g. sdlc-full, base)"; return 2; }
         domain="$2"; shift 2 ;;
       --domain=*)
         domain="${1#--domain=}"; shift ;;
@@ -39,10 +39,10 @@ cmd_install() {
   done
 
   # Resolve domain → source dir.
-  local framework_src
-  framework_src=$(_resolve_domain_src "$domain") || return 1
-  if [[ ! -d "$framework_src" ]]; then
-    red "✗ framework not found at $framework_src"
+  local domain_src
+  domain_src=$(_resolve_domain_src "$domain") || return 1
+  if [[ ! -d "$domain_src" ]]; then
+    red "✗ domain not found at $domain_src"
     return 1
   fi
 
@@ -70,32 +70,25 @@ cmd_install() {
   parent=$(dirname "$target")
   mkdir -p "$parent"
 
-  # Copy the chosen domain wholesale, then drop the skills/, commands/, and
-  # hooks/ subdirs — those are framework-owned artifacts that live exclusively
+  # Copy the chosen domain wholesale, then drop the skills/ and commands/
+  # subdirs — those are framework-owned artifacts that live exclusively
   # under .agents/. The cp -R is kept (atomic, simpler than per-entry
   # filtering); the immediately-after rm -rf is the explicit declaration that
   # none of these subdirs belongs inside the adopter's .cumaru/ tree.
-  cp -R "$framework_src" "$target"
-  rm -rf "$target/skills" "$target/commands" "$target/hooks"
+  cp -R "$domain_src" "$target"
+  rm -rf "$target/skills" "$target/commands"
   green "✓ installed domain '$domain' to $target"
 
   # Install framework skills (domain-shipped cumaru-* + universal cumaru-* +
   # opt-ins) into .agents/skills/.
-  _framework_install_skills "$parent" "$framework_src" "0" "${with_skills[@]+"${with_skills[@]}"}"
-
-  # Copy framework hooks from the domain source into .agents/hooks/.
-  _install_copy_hooks "$parent" "$framework_src"
+  _framework_install_skills "$parent" "$domain_src" "0" "${with_skills[@]+"${with_skills[@]}"}"
 
   # Wire the agent instruction file so the LLM auto-loads
   # .cumaru/index.md on every session.
   _install_wire_agent_hook "$parent"
 
-  # Wire real prompt-submit hooks so the client refreshes relevant
-  # .cumaru/ context on every prompt.
-  _install_wire_context_hook "$parent"
-
   # Install slash commands into .agents/commands/ (skip-if-exists).
-  _framework_copy_commands "$parent" "$framework_src" "0"
+  _framework_copy_commands "$parent" "$domain_src" "0"
 
   cat <<EOF
 
@@ -223,30 +216,6 @@ _framework_copy_commands() {
   done
 }
 
-# Copy framework-owned hook files from the domain source into .agents/hooks/.
-# Args: parent framework_src
-_install_copy_hooks() {
-  local parent="$1" framework_src="$2"
-  local hooks_src="$framework_src/hooks"
-  [[ -d "$hooks_src" ]] || return 0
-
-  local hook_files=() hook_file
-  while IFS= read -r -d '' hook_file; do
-    hook_files+=("$hook_file")
-  done < <(find "$hooks_src" -type f -print0)
-  [[ ${#hook_files[@]} -eq 0 ]] && return 0
-
-  local rel dest
-  for hook_file in "${hook_files[@]}"; do
-    rel="${hook_file#"$hooks_src"/}"
-    dest="$parent/$AGENTS_DIR/hooks/$rel"
-    mkdir -p "$(dirname "$dest")"
-    cp "$hook_file" "$dest"
-    chmod --reference="$hook_file" "$dest" 2>/dev/null || chmod +x "$dest" 2>/dev/null || true
-    green "  + $AGENTS_DIR/hooks/$rel"
-  done
-}
-
 # List cumaru-* commands under .agents/commands/ that no longer
 # exist in the framework domain source. Prints one rel path per line.
 # Args: parent framework_src
@@ -302,70 +271,12 @@ _install_wire_agent_hook() {
   fi
 }
 
-_install_wire_context_hook() {
-  local parent="$1"
-  local config_file="$parent/$AGENTS_DIR/hooks.json"
-  local hook_script="$parent/$AGENTS_DIR/hooks/context-loader.sh"
-
-  if [[ ! -f "$hook_script" ]]; then
-    yellow "  · $AGENTS_DIR/hooks/context-loader.sh not present; context hook skipped"
-    return 0
-  fi
-
-  if ! command -v jq >/dev/null 2>&1; then
-    red "✗ jq is required to wire context hooks"
-    return 1
-  fi
-
-  mkdir -p "$(dirname "$config_file")"
-  [[ -f "$config_file" ]] || printf '{}\n' > "$config_file"
-
-  local command="bash \"$AGENTS_DIR/hooks/context-loader.sh\""
-
-  local existed=0
-  if jq -e --arg command "$command" '
-    any(.hooks.UserPromptSubmit[]?; any(.hooks[]?; .type == "command" and .command == $command))
-  ' "$config_file" >/dev/null 2>&1; then
-    existed=1
-  fi
-
-  local tmp
-  tmp=$(mktemp)
-  jq --arg command "$command" '
-    .hooks //= {} |
-    .hooks.UserPromptSubmit //= [] |
-    if any(.hooks.UserPromptSubmit[]?; any(.hooks[]?; .type == "command" and .command == $command)) then
-      .
-    else
-      .hooks.UserPromptSubmit += [{
-        hooks: [{
-          type: "command",
-          command: $command,
-          timeout: 10,
-          statusMessage: "Refreshing .cumaru context"
-        }]
-      }]
-    end
-  ' "$config_file" > "$tmp" && mv "$tmp" "$config_file"
-
-  local result
-  [[ "$existed" == "1" ]] && result="present" || result="added"
-  if jq -e --arg command "$command" '
-    any(.hooks.UserPromptSubmit[]?; any(.hooks[]?; .type == "command" and .command == $command))
-  ' "$config_file" >/dev/null 2>&1; then
-    [[ "$result" == "present" ]] && say "  · $(_agent_rel_path "$parent" "$config_file") context hook already present (skip)" || green "  + $(_agent_rel_path "$parent" "$config_file") context hook wired"
-  else
-    red "✗ failed to wire context hook in $config_file"
-    return 1
-  fi
-}
-
 # List available domains (one per line): "<name>\t<one-line summary>".
 _install_list_domains() {
   printf '%s\t%s\n' "base" "minimal kernel — rules + meta, no pillars."
-  if [[ -d "$FRAMEWORKS_DIR" ]]; then
+  if [[ -d "$DOMAINS_DIR" ]]; then
     local d name
-    for d in "$FRAMEWORKS_DIR"/*/; do
+    for d in "$DOMAINS_DIR"/*/; do
       [[ -d "$d" ]] || continue
       name=$(basename "$d")
       [[ "$name" == __* ]] && continue
@@ -422,8 +333,8 @@ Usage:
   cumaru install [--domain <name>] [--with <skill>...]
 
 Options:
-  --domain <name>        which domain to install. Default: sdlc-it-project-basic.
-                         Available (discovered from frameworks/, including __base/):
+  --domain <name>        which domain to install. Default: sdlc-full.
+                         Available (discovered from domains/, including __base/):
 EOF
   _install_list_domains | awk -F'\t' '{ printf "                           %-26s %s\n", $1, $2 }'
   cat <<'EOF'
@@ -438,9 +349,9 @@ EOF
 Skills, commands, hooks, and config are installed under .agents/ — a single
 agent-agnostic directory that replaces the old .claude/ and .codex/ split.
 
-Auto-installed skills (shipped by every domain; sourced from frameworks/__base/skills/):
+Auto-installed skills (shipped by every domain; sourced from domains/__base/skills/):
 EOF
-  for d in "$BASE_FRAMEWORK_SRC"/skills/cumaru-*/; do
+  for d in "$BASE_DOMAIN_SRC"/skills/cumaru-*/; do
     [[ -d "$d" ]] || continue
     printf '  %s\n' "$(basename "$d")"
   done
@@ -450,6 +361,6 @@ Examples:
   cumaru install                                       # default domain at .cumaru/
   cumaru install --with git                            # default domain + git skill
   cumaru install --domain base                         # minimal kernel only
-  cumaru install --domain sdlc-it-project-basic --with git
+  cumaru install --domain sdlc-full --with git
 EOF
 }

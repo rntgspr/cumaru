@@ -1,0 +1,7 @@
+# action	host	tag	schema-path	ledger
+remove	inbox/index.md	inbox	.root.entities.inbox.tags.inbox	-
+remove	drafts/index.md	drafts	.root.entities.drafts.tags.drafts	-
+remove	memories/index.md	memories	.root.entities.memories.tags.memories	-
+remove	attachments/index.md	attachments	.root.entities.attachments.tags.attachments	-
+remove	templates/index.md	templates	.meta.tags.templates	-
+remove	roles/index.md	roles	.meta.tags.roles	-

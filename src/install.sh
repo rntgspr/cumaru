@@ -15,48 +15,48 @@ rm -rf "$DEST"
 git clone --depth=1 "$REPO" "$DEST"
 rm -rf "$DEST/.git"
 
-# Kernel integrity check: index.md, every universal skill under skills/, every
-# hook under hooks/, and every command under commands/cumaru/ are authored once in
-# frameworks/__base and propagated verbatim into every domain. A snapshot where
+# Kernel integrity check: index.md, every universal skill under skills/, and
+# every command under commands/cumaru/ are authored once in
+# domains/__base and propagated verbatim into every domain. A snapshot where
 # any domain's copy of a universal artifact diverges from __base's is a broken
 # distribution — refuse it.
 #
 # Exception: skills/cumaru-install/ is DOMAIN-OWNED — its post-install recipe
 # hands off to the domain's durable-pillar skill (cumaru-specs / cumaru-topology /
 # cumaru-coverage), so each domain ships its own tuned copy.
-BASE_DIR="$DEST/frameworks/__base"
+BASE_DIR="$DEST/domains/__base"
 
 # 1) index.md — single file at the domain root.
-for domain_index in "$DEST"/frameworks/*/index.md; do
+for domain_index in "$DEST"/domains/*/index.md; do
   [[ "$domain_index" == "$BASE_DIR/index.md" ]] && continue
   if ! cmp -s "$BASE_DIR/index.md" "$domain_index"; then
-    echo "✗ kernel drift: $domain_index differs from frameworks/__base/index.md" >&2
+    echo "✗ kernel drift: $domain_index differs from domains/__base/index.md" >&2
     echo "  The snapshot is inconsistent — report this upstream. Aborting." >&2
     exit 1
   fi
 done
 
-# 2) Universal skills + hooks + commands — every file under __base/skills/,
-# __base/hooks/, and __base/commands/ must exist byte-identical in each domain.
+# 2) Universal skills + commands — every file under __base/skills/ and
+# __base/commands/ must exist byte-identical in each domain.
 while IFS= read -r src; do
   rel="${src#"$BASE_DIR"/}"
   case "$rel" in
     skills/cumaru-install/*) continue ;;   # domain-owned — see the exception note above
   esac
-  for domain_dir in "$DEST"/frameworks/*/; do
+  for domain_dir in "$DEST"/domains/*/; do
     domain_dir="${domain_dir%/}"
     [[ "$domain_dir" == "$BASE_DIR" ]] && continue
     dest="$domain_dir/$rel"
     if [[ ! -f "$dest" ]]; then
-      echo "✗ kernel drift: $dest missing (must mirror frameworks/__base/$rel verbatim)" >&2
+      echo "✗ kernel drift: $dest missing (must mirror domains/__base/$rel verbatim)" >&2
       exit 1
     fi
     if ! cmp -s "$src" "$dest"; then
-      echo "✗ kernel drift: $dest differs from frameworks/__base/$rel" >&2
+      echo "✗ kernel drift: $dest differs from domains/__base/$rel" >&2
       exit 1
     fi
   done
-done < <(find "$BASE_DIR"/skills "$BASE_DIR"/hooks "$BASE_DIR"/commands -type f 2>/dev/null)
+done < <(find "$BASE_DIR"/skills "$BASE_DIR"/commands -type f 2>/dev/null)
 
 mkdir -p "$BIN"
 ln -sf "$DEST/cumaru" "$BIN/cumaru"

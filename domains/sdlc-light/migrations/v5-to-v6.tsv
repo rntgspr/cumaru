@@ -1,0 +1,6 @@
+# action	host	tag	schema-path	ledger
+remove	plans/index.md	plans	.root.entities.plans.tags.plans	-
+remove	specs/index.md	specs	.root.entities.specs.tags.specs	-
+remove	exploring/index.md	exploring	.root.entities.exploring.tags.exploring	-
+remove	templates/index.md	templates	.meta.tags.templates	-
+remove	roles/index.md	roles	.meta.tags.roles	-

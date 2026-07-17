@@ -25,8 +25,8 @@
 #   linear    LINEAR_API_KEY      (https://linear.app/settings/api)
 #   clickup   CLICKUP_API_TOKEN   (ClickUp → Settings → Apps → API Token)
 #
-# Layout (v3 flat):
-#   intake/<KEY>/index.md   (no per-issuetype subdirs)
+# Layout is declared by the selected domain schema. SDLC full uses one file per
+# tracker item (`intake/<KEY>.md`); IaC and QA retain directory entities.
 #
 # Type normalization:
 #   jira     Epic → epic; Story → story; Bug → bug; Spike/Research → spike; * → task
@@ -61,8 +61,9 @@ Tracker resolution (first match wins):
   3. the first entry of intake/index.md `tracker:` list
 The resolved tracker must be declared in intake/index.md `tracker:` list.
 
-Layout (v3 flat — no per-issuetype subdirs):
-  intake/<KEY>/index.md
+Layout:
+  the selected domain schema declares the item path. SDLC full uses
+  intake/<KEY>.md; IaC and QA use intake/<KEY>/index.md.
 
 Frontmatter:
   key:       the issue id (e.g. AAA-1234, ABC-42, 86c2abc)
@@ -74,7 +75,7 @@ Frontmatter:
   relates:   list of related <KEY>s — epic link, parent story/task, etc.
 
 Behavior:
-  - First run: creates intake/<KEY>/index.md from the type-specific template
+  - First run: creates the schema-declared intake item from the type-specific template
     (intake-{epic,story,ticket}.md), fills frontmatter, sets H1 to summary,
     and appends a RAW block at the bottom with the source description plus
     instructions for the LLM to refine the body and delete the block.
@@ -311,8 +312,19 @@ cmd_intake() {
     return 1
   fi
 
-  local target_dir="${CUMARU_DIR}/intake/${key}"
-  local target_file="${target_dir}/index.md"
+  local item_path target_dir="" target_file
+  item_path=$(yq -r '.root.entities.intake.entities.item.path // "<KEY>"' "$SCHEMA" 2>/dev/null || true)
+  case "$item_path" in
+    '<KEY>.md') target_file="${CUMARU_DIR}/intake/${key}.md" ;;
+    '<KEY>')
+      target_dir="${CUMARU_DIR}/intake/${key}"
+      target_file="${target_dir}/index.md"
+      ;;
+    *)
+      red "✗ unsupported intake item path in schema: ${item_path:-<unset>}"
+      return 1
+      ;;
+  esac
 
   # 2) Resolve the tracker: item's own frontmatter → --tracker → pillar default.
   local trackers tracker_name=""
@@ -394,12 +406,12 @@ cmd_intake() {
       red "✗ template not found: $src_template"
       return 1
     fi
-    mkdir -p "$target_dir"
+    [[ -z "$target_dir" ]] || mkdir -p "$target_dir"
 
     {
       echo "---"
       echo "human_revised: false"
-      echo "generated: false"
+      echo "generated: $synced_at"
       echo "key: $key"
       echo "tracker: $tracker_name"
       echo "type: $INTAKE_TYPE"

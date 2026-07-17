@@ -8,9 +8,9 @@ and prints the diff. Closing the gaps is the `cumaru-refs` skill's job
 
 ## The model
 
-Spec files under the durable pillar carry `reference` blocks — ordinary v4
-`[Link, Description]` tables with one extra rule, hardcoded like the table
-shape itself:
+Spec files under the durable pillar carry schema-declared `reference` blocks
+using the standard `[Link, Description]` table shape, with one additional
+source-file rule:
 
 > **Every `reference` row targets a repository SOURCE FILE, resolved from the
 > project root** (the parent of `.cumaru/`) — never a path inside `.cumaru/`, never
@@ -60,8 +60,6 @@ Both are adopter-owned values, like `meta.apps.values`. When `coverage.source` i
 | `stale` | Row points at a file that no longer exists. | `cumaru doctor` check 5 (missing) |
 | `invalid` | Row breaks the source-file rule (`.cumaru/` path, directory, absolute path, URL, anchor). | `cumaru doctor` check 5 (invalid) |
 | `foreign` | Row target exists but is outside the source scope (untracked or filtered by `coverage.source`). Informational. | — |
-
-Rows with `template` placeholders (`<...>`) or empty bodies are skipped — starter files don't pollute the report. Reference rows hosted outside the specification pillar are counted in a separate notice line.
 
 Rows with `template` placeholders (`<...>`) or empty bodies are skipped —
 starter files don't pollute the report. Reference rows hosted outside the

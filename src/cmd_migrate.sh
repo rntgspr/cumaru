@@ -8,13 +8,15 @@
 
 cmd_migrate_help() {
   cat <<'EOF'
-cumaru migrate — migrate a project tree from llm (legacy) to cumaru
+cumaru migrate — run a supported Cumaru migration adapter
 
 Usage:
   cumaru migrate [--apply]
+  cumaru migrate v6 [--from <source>] [--apply]
 
-Without --apply, shows a dry-run plan of what would change.
-With --apply, performs the migration.
+Without a version, migrates legacy `.llm/` naming and agent artifacts to
+Cumaru. `migrate v6` transactionally converts a framework v5 tree to v6.
+Both adapters default to dry-run; --apply performs the migration.
 
 What it does:
   1. Renames .llm/ → .cumaru/ (if .llm/ exists and .cumaru/ does not)

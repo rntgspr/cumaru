@@ -1,17 +1,43 @@
 # `cumaru migrate`
 
-Migrate a project tree from the legacy `llm` naming to `cumaru`. Idempotent —
-safe to run on an already-migrated project (detects `.cumaru/` first and skips).
+Migrate a project tree from legacy naming or a supported earlier framework major.
+The v6 migration is transactional: it stages `.cumaru/` and framework-owned
+`.agents/` artifacts, validates the result, then swaps both together.
 
 ## Usage
 
 ```
 cumaru migrate [--apply]
+cumaru migrate v6 [--from <source>] [--apply]
 ```
 
 | Flag | Description |
 |---|---|
 | `--apply` | Perform the migration. Without this flag, only a dry-run plan is shown. |
+| `--from <source>` | V6 only: source checkout containing `domains/<domain>/` and its migration manifest. |
+
+## V6
+
+`cumaru migrate v6` is the only supported way to cross into framework version
+6. It requires an explicit adapter for the installed domain, preserves unknown
+tags and adopter content, removes only manifest-listed structural inventories,
+installs matching agent artifacts, and recovers an interrupted swap from its
+rollback journal. A dry-run is the default; `--apply` is refused when summaries
+or domain layout need LLM adjudication.
+
+Recommended sequence:
+
+```bash
+cumaru migrate v6 --from /path/to/cumaru
+cumaru migrate v6 --from /path/to/cumaru --apply
+cumaru doctor
+```
+
+The adapter is selected from `domains/<domain>/migrations/v5-to-v6.tsv`.
+Migration derives summaries before removing manifest-listed structural tags,
+normalizes the touched-file marker to `touched`, preserves unknown tags and
+local-only content, and swaps `.cumaru/` together with framework-owned
+`.agents/` artifacts only after validation succeeds.
 
 ## What it does
 
@@ -41,4 +67,3 @@ cumaru update                   # prunes the migration skill if it landed
 
 - [`cumaru install`](install.md) — install cumaru in a new project.
 - [`cumaru doctor`](doctor.md) — run after migration to verify the tree.
-

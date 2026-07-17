@@ -1,8 +1,8 @@
 ---
 name: cumaru-rename-session
-description: "Session state — rename llm → cumaru (2026-07-03). Branch rename-cumaru, 7/8 tasks done, pending smoke test."
+description: "Completed session record — rename llm → cumaru; legacy naming remains supported only as migration input"
 type: session
-status: paused
+status: completed
 ---
 
 ## Done
@@ -19,9 +19,10 @@ status: paused
 10. **Docs/.memory/README**: zero referências ao nome legado fora de contextos de migração e histórico do repo.
 11. **Parser**: `common.sh` e `cmd_tag.sh` — só `cumaru:` como prefixo válido.
 
-## Pending
+## Completion
 
-- **Smoke test**: install num bench (ex: gitboiler) + doctor + ciclo básico.
+- Subsequent domain installation smoke tests and the v6 migration/doctor regression fixtures covered the renamed CLI, `.cumaru/` tree, agent artifacts, and legacy migration input.
+- The v6 package was committed on `main` as `5e791b4`; this session has no remaining action.
 
 ## Key decisions (Renato)
 
