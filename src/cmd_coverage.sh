@@ -22,7 +22,7 @@
 #                                 source. fnmatch-style, `*` crosses `/`
 #                                 (so `src/**` and `src/*` are equivalent).
 #                                 Empty/absent = every tracked file.
-#                                 .cumaru/ and .agents/ are always excluded.
+#                                 .cumaru/ and agent adapter files are excluded.
 #
 # The source file list comes from `git ls-files` (tracked files only), so the
 # command requires a git work tree. Read-only: nothing is written.
@@ -57,7 +57,7 @@ Model:
 
   A source file referenced by at least one row is covered. Source files come
   from `git ls-files`, optionally narrowed by the `meta.coverage.source` glob
-  array in schema.yaml. .cumaru/ and .agents/ are always excluded.
+  array in schema.yaml. .cumaru/ and agent adapter files are always excluded.
 
 Buckets:
   covered     source file with at least one reference row
@@ -89,7 +89,7 @@ _coverage_source_globs() {
 }
 
 # Emit the coverable source files (project-root-relative, sorted): tracked
-# files, always excluding .cumaru/ and .agents/, narrowed by globs when present.
+# files, always excluding .cumaru/ and agent adapter files, narrowed by globs.
 # `*` in a glob crosses `/` (bash pattern match, not pathname expansion).
 _coverage_source_files() {
   local proj="$1" globs_file="$2"
@@ -100,7 +100,7 @@ _coverage_source_files() {
   git -C "$proj" -c core.quotepath=off ls-files | while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     case "$f" in
-      .cumaru/*|.agents/*) continue ;;
+      .cumaru/*|.agents/*|.claude/*|.opencode/*|AGENTS.md|CLAUDE.md|opencode.json|opencode.jsonc) continue ;;
     esac
     if [[ -s "$globs_file" ]]; then
       matched=0

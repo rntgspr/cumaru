@@ -7,6 +7,6 @@ summary: Load the universal cumaru-summarize skill and curate stable summary fro
 
 # `/cumaru:summarize`
 
-Load `.agents/skills/cumaru-summarize/SKILL.md` and follow its workflow. The
+Load the installed `cumaru-summarize` skill and follow its workflow. The
 skill is the canonical source for summary inventory, safe edits, and doctor
 verification; do not duplicate or bypass its recipe here.

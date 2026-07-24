@@ -22,7 +22,7 @@ cumaru/
 **CLI subcommands** (current surface; see `cumaru help`):
 - `doctor [--quiet]` — default; v6-only navigation, summary, marker, reference, tool, and agent-integration checks; older trees must migrate first
 - `domains` — list installable domains discovered from `domains/`
-- `install [--domain <name>] [--with <skill>...]` / `uninstall [--yes]` — fixed `.cumaru/` target
+- `install [agent <name>] [--domain <name>] [--with <skill>...]` / `uninstall [--yes]` — fixed `.cumaru/` target plus one schema-selected adapter
 - `intake <KEY> [--tracker <name>]` — fetch tracker issue at the installed domain's schema-declared path (jira, linear, clickup)
 - `tree [<directory-or-md>] [--deep] [--rows] [--pillars <names>] [--domain <name>]` — read-only filesystem-backed navigation with schema pillar filters and an installed-domain guard
 - `update [<path>] [--from <src>] [--keep-prose] [--apply]` plus `update skills|hooks|commands|schema` — same-major steady-state refresh
@@ -52,4 +52,4 @@ cumaru/
 
 **Brew formula** (planned, not implemented): `Formula/cumaru.rb` in a tap repo. Auto-bump via `mislav/bump-homebrew-formula-action` on release tags.
 
-**Skill-gated capabilities:** git mutations require `.agents/skills/git/SKILL.md`; without it, roles use git for reading only.
+**Skill-gated capabilities:** git mutations require the `git` skill through the active adapter; without it, roles use git for reading only.

@@ -8,6 +8,7 @@ crosses a major schema version: use `cumaru migrate v6` for that transition.
 ```text
 cumaru update [<path>] [--from <src>] [--keep-prose] [--apply]
 cumaru update skills|commands|schema [--from <src>] [--apply]
+cumaru update agent <none|claude|codex|opencode> [--from <src>] [--apply]
 ```
 
 The installed `schema.yaml` selects `<source>/domains/<domain>/`; `base`
@@ -35,18 +36,14 @@ is rejected.
 
 ## Agent artifacts
 
-Skills and slash commands are framework-owned and replaced
-deterministically from `domains/<domain>/`:
+Normal update reads `agent` from schema and refreshes that adapter's native
+instructions, skills, and supported commands. Opt-in skills are untouched.
+Deprecated framework skills are pruned; deprecated commands are reported.
 
-- `skills/cumaru-*/` → `.agents/skills/`;
-- `commands/cumaru/*.md` → `.agents/commands/cumaru/`.
-
-Opt-in skills are untouched. Deprecated framework skills are pruned; deprecated
-commands are reported for review. The agent instruction hook is
-reconciled only in `.agents/AGENTS.md` before content changes. The CLI never
-reads or writes `CLAUDE.md` or `.claude/`; when those compatibility files
-exist, the installed `cumaru-update` skill offers a separate, user-confirmed
-content alignment.
+`cumaru update agent <name>` previews a switch. `--apply` removes only the old
+Cumaru-owned footprint, installs the target artifacts, and writes schema last.
+`none` restores `agent: null` and the generic `.agents/` layout. See
+[`agent-adapters.md`](agent-adapters.md) for the exact matrix.
 
 ## Version gate
 
@@ -54,8 +51,9 @@ The local schema version and root `framework-version` must agree. A source with
 a higher major version can be inspected in dry-run mode but `--apply` is
 refused and points to `cumaru migrate v<major>`. Downgrades are refused.
 
-`cumaru update schema --apply` replaces the schema and is intentionally
-destructive. It is not a major-version migration mechanism.
+`cumaru update schema --apply` replaces the framework schema and is
+intentionally destructive to other local schema customizations, but preserves
+the active `agent` state. It is not a major-version migration mechanism.
 
 ## Recommended flow
 

@@ -9,7 +9,7 @@ You are the **Dev (operator)** for this project — you execute a changeset's ap
 
 ## Output language: English
 
-All artifacts you author are in English. The chat language is set by `.agents/AGENTS.md`.
+All artifacts you author are in English. The chat language is set by the active agent instructions.
 
 ## Responsibilities
 
@@ -34,7 +34,7 @@ You may **not** write anywhere else in `.cumaru/` — not `plans/<PLAN-ID>/index
 - **Read the plan's `## Blast radius` and `## Rollback` before you apply.** Know the irreversible parts.
 - **Review the `plan` diff before `apply`.** If it shows an unintended destroy/replace, or drifts from the task, **stop and surface it** in the hand-off — do not apply.
 - **Promote one environment at a time** per the plan's promotion path; do not skip gates.
-- **Git is skill-gated** — without `.agents/skills/git/SKILL.md`, use git for reading only.
+- **Git is skill-gated** — without the `git` skill in the active adapter, use git for reading only.
 
 ## Initial load
 

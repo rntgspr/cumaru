@@ -1,17 +1,7 @@
 # cmd_uninstall.sh — reverse `cumaru install` for a project.
 #
-# Removes only what `cumaru install` creates, in reverse order:
-#   1. .agents/commands/cumaru/ — the entire dir. The `cumaru` subdir
-#      is the framework namespace; everything inside is ours. Adopter-
-#      authored commands at other paths (or other namespaces) are not
-#      touched.
-#   2. .agents/skills/cumaru-*/ — the `cumaru-` prefix is the
-#      skill namespace marker; same ownership rule.
-#   3. the <!-- BEGIN/END CUMARU-HOOK --> block (or the legacy DOT-LLM-HOOK)
-#      in .agents/AGENTS.md, plus the single blank line install inserted before
-#      it. The file is removed entirely when nothing but the install-created
-#      header remains.
-#   4. the <target> tree (.cumaru/).
+# Removes only what `cumaru install` creates: the schema-selected adapter's
+# Cumaru-owned commands, skills, durable instructions, and the .cumaru/ tree.
 #
 # Destructive: prompts before acting. Pass --yes for non-interactive runs
 # (an agent or CI has no TTY; without --yes and without a TTY it refuses).
@@ -28,15 +18,12 @@ cmd_uninstall() {
         red "unexpected arg: $1"; cmd_uninstall_help; return 2 ;;
     esac
   done
-  local parent agents_dir agents_md
+  local parent
   parent=$(dirname "$target")
-  agents_dir="$parent/$AGENTS_DIR"
-  agents_md="$agents_dir/AGENTS.md"
 
   # --- discover what exists to remove ---
-  local has_target=0 has_agents_hook=0
+  local has_target=0
   [[ -d "$target" ]] && has_target=1
-  [[ -f "$agents_md" ]] && (grep -q "BEGIN CUMARU-HOOK" "$agents_md" || grep -q "BEGIN DOT-LLM-HOOK" "$agents_md") && has_agents_hook=1
 
   # Validate an existing tree before removing any part of the install footprint.
   local target_abs=""
@@ -49,31 +36,37 @@ cmd_uninstall() {
     fi
   fi
 
-  # Framework-owned namespaces under .agents/:
-  #   commands/cumaru/ — the `cumaru` subdir is the framework namespace
-  #   skills/cumaru-*/ — the `cumaru-` prefix marks these as ours
-  local removable_cmds_dir="$agents_dir/commands/cumaru"
-  [[ -d "$removable_cmds_dir" ]] || removable_cmds_dir=""
+  local agent="generic"
+  if [[ $has_target -eq 1 ]]; then
+    agent=$(_agent_current) || {
+      red "✗ invalid agent value in $SCHEMA; refusing to guess uninstall targets"
+      return 1
+    }
+  fi
+  local skills_dir commands_dir instructions
+  skills_dir=$(_agent_skills_dir "$parent" "$agent")
+  commands_dir=$(_agent_commands_dir "$parent" "$agent")
+  instructions=$(_agent_instructions_file "$parent" "$agent")
 
-  local removable_skill_dirs=()
-  local skill_dir
-  for skill_dir in "$agents_dir/skills"/cumaru-*/; do
-    [[ -d "$skill_dir" ]] || continue
-    removable_skill_dirs+=("${skill_dir%/}")
-  done
+  local has_artifacts=0
+  compgen -G "$skills_dir/cumaru-*" >/dev/null && has_artifacts=1
+  [[ -n "$commands_dir" && -d "$commands_dir/cumaru" ]] && has_artifacts=1
+  [[ -n "$instructions" && -f "$instructions" ]] &&
+    grep -qE "BEGIN (CUMARU|DOT-LLM)-HOOK" "$instructions" && has_artifacts=1
+  [[ "$agent" == "opencode" && -f "$parent/opencode.json" ]] &&
+    jq -e '.instructions | index(".cumaru/index.md") != null' "$parent/opencode.json" >/dev/null 2>&1 &&
+    has_artifacts=1
 
-  if [[ $has_target -eq 0 && $has_agents_hook -eq 0 && \
-        -z "$removable_cmds_dir" && ${#removable_skill_dirs[@]} -eq 0 ]]; then
-    say "Nothing to uninstall — no .cumaru tree, no .agents/ install footprint at $parent."
+  if [[ $has_target -eq 0 && $has_artifacts -eq 0 ]]; then
+    say "Nothing to uninstall — no .cumaru tree or active adapter footprint at $parent."
     return 0
   fi
 
   # --- summary ---
   echo "cumaru uninstall will remove:"
   [[ $has_target -eq 1 ]] && echo "  - directory: $target"
-  [[ $has_agents_hook -eq 1 ]] && echo "  - CUMARU-HOOK block in: $agents_md"
-  [[ -n "$removable_cmds_dir" ]] && echo "  - commands: $removable_cmds_dir/"
-  for d in "${removable_skill_dirs[@]+"${removable_skill_dirs[@]}"}"; do echo "  - skill: $d"; done
+  echo "  - Cumaru-owned artifacts for adapter: $agent"
+  _agent_describe "$parent" "$agent"
 
   # --- confirm ---
   if [[ $assume_yes -ne 1 ]]; then
@@ -90,17 +83,10 @@ cmd_uninstall() {
   fi
 
   # --- act ---
-  if [[ -n "$removable_cmds_dir" ]]; then
-    rm -rf "$removable_cmds_dir" && green "  - removed commands: $removable_cmds_dir/"
-  fi
-  for d in "${removable_skill_dirs[@]+"${removable_skill_dirs[@]}"}"; do
-    rm -rf "$d" && green "  - removed skill: $d"
-  done
-  _uninstall_prune_dirs "$agents_dir"
-
-  if [[ $has_agents_hook -eq 1 ]]; then
-    _uninstall_strip_hook "$agents_md"
-  fi
+  _agent_remove_adapter "$parent" "$agent" "" || {
+    red "✗ failed to remove adapter artifacts; .cumaru was preserved"
+    return 1
+  }
 
   if [[ $has_target -eq 1 ]]; then
     rm -rf "$target_abs" && green "  - removed directory: $target"
@@ -109,7 +95,7 @@ cmd_uninstall() {
   green "✓ uninstalled"
 }
 
-# Remove now-empty subdirs under .agents/.
+# Remove now-empty subdirs under a generic .agents/ adapter.
 _uninstall_prune_dirs() {
   local base="$1"
   [[ -d "$base" ]] || return 0
@@ -123,7 +109,7 @@ _uninstall_prune_dirs() {
 }
 
 # Strip the CUMARU-HOOK block (and the blank line install put before it) from
-# .agents/AGENTS.md. Accepts both CUMARU-HOOK and the legacy DOT-LLM-HOOK
+# a Markdown instruction file. Accepts CUMARU-HOOK and legacy DOT-LLM-HOOK
 # marker for backward compatibility. If only install-created boilerplate
 # remains (empty, or just the "# Project instructions" header), remove the
 # file entirely.
@@ -176,20 +162,14 @@ Options:
 
 What it removes (only what `cumaru install` created):
   1. The .cumaru/ tree.
-  2. The .agents/commands/cumaru/ dir — the `cumaru` subdir is the framework
-     namespace; every command inside is ours. Adopter-authored commands at
-     other paths are NEVER touched.
-  3. Every .agents/skills/cumaru-*/ dir — the `cumaru-` prefix is the skill
-     namespace marker. Opt-ins (any skill without the `cumaru-` prefix) and
-     adopter-authored skills are NEVER touched.
-  4. The <!-- BEGIN/END CUMARU-HOOK --> block (or legacy DOT-LLM-HOOK)
-      in .agents/AGENTS.md (and the file itself if only install-created
-      boilerplate remains).
+  2. Cumaru-owned skills and commands from the schema-selected adapter.
+  3. The CUMARU-HOOK block in its native instruction file, or Cumaru's exact
+     entries from opencode.json. Unrelated project content is preserved.
 
 Idempotent: running it again when nothing is installed is a silent no-op.
 
 Examples:
-  cumaru uninstall                     # remove ./.cumaru + .agents/ install footprint
+  cumaru uninstall                     # remove ./.cumaru + active adapter footprint
   cumaru uninstall --yes               # same, no prompt (agent/CI)
 EOF
 }

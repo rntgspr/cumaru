@@ -47,9 +47,9 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 | Attribute | Default | Description |
 |---|---|---|
 | `specification_dir` | `specs` | Which pillar holds the durable specification whose `reference` tables count. Domains ship it preset: `specs` (sdlc), `topology` (iac-basic), `coverage` (qa-basic). |
-| `coverage.source` | `[]` (everything) | Array of fnmatch-style globs narrowing which tracked files count as coverable source (`*` crosses `/`, so `src/**` ≡ `src/*`). Supports both block and inline YAML list forms. `.cumaru/` and `.agents/` are always excluded. |
+| `coverage.source` | `[]` (everything) | Array of fnmatch-style globs narrowing which tracked files count as coverable source (`*` crosses `/`, so `src/**` ≡ `src/*`). Supports both block and inline YAML list forms. `.cumaru/` and native agent adapter files are always excluded. |
 
-Both are adopter-owned values, like `meta.apps.values`. When `coverage.source` is empty/absent, every tracked file (minus `.cumaru/` and `.agents/`) counts as coverable.
+Both are adopter-owned values, like `meta.apps.values`. When `coverage.source` is empty/absent, every tracked file except `.cumaru/`, `.agents/`, `.claude/`, `.opencode/`, and root agent instruction/config files counts as coverable.
 
 ## Buckets
 

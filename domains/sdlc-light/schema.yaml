@@ -30,6 +30,7 @@
 
 version: 6
 domain: sdlc-light
+agent: null # null = generic .agents/ integration; or claude, codex, opencode
 # ------------------------------------------------------------------
 # rules — cross-cutting, not specific to any single pillar.
 # ------------------------------------------------------------------

@@ -1,49 +1,29 @@
-# Canonical agent dialect: `.agents/`
+# Schema-selected agent adapters
 
 ## Decision
 
-Cumaru uses `.agents/` as its only managed agent dialect. The canonical
-instruction file is `.agents/AGENTS.md`.
+Cumaru keeps one active adapter in `.cumaru/schema.yaml`:
 
-The CLI does not manage `CLAUDE.md` or `.claude/`:
+- missing or `agent: null` — generic `.agents/` behavior;
+- `agent: claude` — Claude Code native files;
+- `agent: codex` — Codex native instructions and repository skills;
+- `agent: opencode` — OpenCode config, shared skills, and native commands.
 
-- `cumaru install` creates or extends `.agents/AGENTS.md` only;
-- `cumaru doctor` validates the canonical `CUMARU-HOOK` block in
-  `.agents/AGENTS.md` only;
-- a missing instruction file, missing block, or block drift is warning-only;
-- `cumaru update` reconciles artifacts under `.agents/` only;
-- the `cumaru-update` skill may inspect existing `CLAUDE.md` or `.claude/`
-  compatibility files and offer a separate alignment, but must explain the
-  edits and obtain user confirmation before changing them.
+The CLI keyword `none` maps to YAML null. `cumaru doctor` has no agent option:
+it reads schema state and validates the matching integration.
 
-## No prompt-submit context loader
+The canonical artifact matrix and switching contract live in
+[`docs/agent-adapters.md`](../docs/agent-adapters.md). Do not duplicate it here.
 
-The `context-loader.sh` feature was removed from every domain. Cumaru no longer:
+## Command contract
 
-- ships a `domains/*/hooks/context-loader.sh` file;
-- installs framework hooks under `.agents/hooks/`;
-- creates or edits `.agents/hooks.json`;
-- injects `.cumaru/index.md` or `.cumaru/domain.md` on every prompt;
-- validates prompt-hook wiring in `cumaru doctor`;
-- exposes `cumaru update hooks`;
-- removes adopter hooks during uninstall or migration.
+- `cumaru install [agent <name>]` installs `.cumaru/` plus one adapter.
+- `cumaru update agent <name>` is a dry-run.
+- `cumaru update agent <name> --apply` switches adapters and writes schema last.
+- `cumaru update agent none --apply` restores generic behavior.
+- `cumaru uninstall` removes only Cumaru-owned artifacts for the active adapter.
 
-`.agents/AGENTS.md` and its `@.cumaru/index.md` directive are the sole framework
-bootstrap contract. Existing adopter-owned hooks are left untouched.
+## No prompt-submit loader
 
-## Doctor contract
-
-Version 6 doctor now runs seven checks:
-
-1. Navigation and summaries.
-2. Marker contracts.
-3. Stale work-marker files.
-4. Unrefined RAW blocks.
-5. Retained file references.
-6. External tools.
-7. Agent instruction block.
-
-## Verification
-
-The removal was verified with shell syntax checks, `git diff --check`, and the
-full test suite: six test scripts passing.
+Cumaru does not install prompt-submit hooks. Durable instructions select the
+framework entry points, while skills remain lazily loaded by the agent.

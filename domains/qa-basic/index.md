@@ -67,7 +67,7 @@ This split is the framework's core: traversal is **deterministic in structure** 
 
 ## Language
 
-All content authored under `.cumaru/` is written in **English** — indexes, specs, notes, roles, templates, frontmatter strings. Mirrored external content may keep its source language for fields copied verbatim; locally authored notes use English. The user-facing chat language is set by `.agents/AGENTS.md` or the system prompt, independent of this rule.
+All content authored under `.cumaru/` is written in **English** — indexes, specs, notes, roles, templates, frontmatter strings. Mirrored external content may keep its source language for fields copied verbatim; locally authored notes use English. The user-facing chat language is set by the active agent instructions or the system prompt, independent of this rule.
 
 ## This Domain
 

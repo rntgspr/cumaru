@@ -8,7 +8,7 @@ summary: Bootstrap, grow, or advance a plan in `.cumaru/plans/` — new plan (tr
 
 Argument: `$ARGUMENTS` may be a plan ID (`AAA-1234`, `maintenance-cleanup-helpers`) or empty. If empty, ask the user what they want to do (new plan, add task to existing plan, write handoff, draft delta, archive).
 
-1. **Read the `cumaru-plan` skill** from the installed agent skills directory (`.agents/skills/cumaru-plan/SKILL.md` for Claude or `.agents/skills/cumaru-plan/SKILL.md` for Codex). It carries the recipes — bootstrap (tracker-backed vs slug-based), add-task, write-handoff (Dev role), draft-delta (Dev role), ready-for-archive. Follow its layout and pre-checks.
+1. **Load the installed `cumaru-plan` skill.** It carries the recipes — bootstrap (tracker-backed vs slug-based), add-task, write-handoff (Dev role), draft-delta (Dev role), ready-for-archive. Follow its layout and pre-checks.
 
 2. **Pre-check.** Run `cumaru doctor --quiet` to confirm the tree is healthy enough to operate on. If errors exist that touch `plans/` or `intake/`, surface them and ask whether to fix first.
 

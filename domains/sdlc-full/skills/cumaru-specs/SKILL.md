@@ -31,7 +31,7 @@ specs/
 
 When the user agrees on a new area `<area>` (typically during initial install, or the first time a plan touches a yet-undocumented surface):
 
-1. **Read the project surface.** `.agents/AGENTS.md`, `README`, the directory of the area you're about to document, related entry-points (`index.*`, `main.*`, `app.*`). Goal is breadth, not depth.
+1. **Read the project surface.** The active agent instructions, `README`, the directory of the area you're about to document, and related entry points (`index.*`, `main.*`, `app.*`). Goal is breadth, not depth.
 2. **Confirm with the user** before creating: name, summary, `depends-on:` (other areas whose contract you actually need to read alongside), `apps:` (component keys from `meta.apps.values`).
 3. `cumaru flow specs/<area> create`
 4. `cumaru flow specs/<area>/index.md create`
@@ -119,7 +119,7 @@ This skill provides the recipes to **grow** the spec tree (bootstrap, deepen, co
 
 | User says | You do |
 |---|---|
-| "Bootstrap the specs" / "scaffold the spec areas" | Bootstrap recipe → propose area list from `.agents/AGENTS.md`, README, and code → confirm → create each area |
+| "Bootstrap the specs" / "scaffold the spec areas" | Bootstrap recipe → propose area list from the active agent instructions, README, and code → confirm → create each area |
 | "Deepen the auth spec" / "specs/auth está muito raso" | Deepen recipe on `specs/auth/` → light-or-deep read → write requirements by topic → split/promote as needed |
 | "Split this area into concerns" / "promote `auth/login` to a subarea" | Deepen recipe, step 4 (split) or step 5 (promote) |
 | "Consolidate specs/payments" / "compactar a área de payments" | Consolidate recipe → read deltas → rewrite body → swap `deltas` for `consolidated-at` |

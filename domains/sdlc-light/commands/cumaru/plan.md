@@ -1,4 +1,6 @@
 ---
+version: 1
+description: Create and evolve a light-SDLC implementation plan.
 human_revised: false
 summary: Framework command guidance for `/cumaru:plan` workflow execution.
 ---
@@ -9,7 +11,7 @@ Loads the `cumaru-plan` skill and dispatches by the user's natural-language inpu
 
 ## Workflow
 
-1. Load `.cumaru/skills/cumaru-plan/SKILL.md` and the `roles/lead.md`.
+1. Load the installed `cumaru-plan` skill and `.cumaru/roles/lead.md`.
 2. Load the three shallow indexes — `plans/index.md`, `specs/index.md`, `exploring/index.md`.
 3. Classify the user's request against the **Patterns** table in the skill.
 4. Execute the matching recipe with user confirmation at each step.

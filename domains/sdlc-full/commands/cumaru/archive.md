@@ -8,7 +8,7 @@ summary: Close a plan — move `plans/<KEY>/` into `archive/<KEY>/`, absorb its 
 
 Argument: `$ARGUMENTS` is the plan ID (`AAA-1234` or `maintenance-<slug>`). If empty, ask the user which plan to close — and confirm the plan is genuinely ready (all tasks done, handoffs present, delta-draft written).
 
-1. **Read the `cumaru-archive` skill** from the installed agent skills directory (`.agents/skills/cumaru-archive/SKILL.md` for Claude or `.agents/skills/cumaru-archive/SKILL.md` for Codex). It carries the 3-phase recipe (move + absorb / remove plan tree / record absorption + clean archive), the pre-checks, and the rationale for phasing (Phase 1 is non-destructive; Phase 2 is irreversible).
+1. **Load the installed `cumaru-archive` skill.** It carries the 3-phase recipe (move + absorb / remove plan tree / record absorption + clean archive), the pre-checks, and the rationale for phasing (Phase 1 is non-destructive; Phase 2 is irreversible).
 
 2. **Pre-check.** Run the skill's pre-checks on `plans/$ARGUMENTS/`:
    - `plans/$ARGUMENTS/index.md` exists.

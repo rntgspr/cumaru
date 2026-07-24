@@ -1,4 +1,6 @@
 ---
+version: 1
+description: Capture, promote, or drop a light-SDLC exploration.
 human_revised: false
 summary: Framework command guidance for `/cumaru:explore` workflow execution.
 ---
@@ -9,7 +11,7 @@ Loads the `cumaru-explore` skill and dispatches by the user's natural-language i
 
 ## Workflow
 
-1. Load `.cumaru/skills/cumaru-explore/SKILL.md` and the `roles/lead.md`.
+1. Load the installed `cumaru-explore` skill and `.cumaru/roles/lead.md`.
 2. Load `exploring/index.md`.
 3. Classify the user's request against the **Patterns** table in the skill.
 4. Execute the matching recipe with user confirmation at each step.

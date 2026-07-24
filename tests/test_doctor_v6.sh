@@ -63,9 +63,11 @@ EOF
 
 wire_agents() {
   local project="$1" block
-  mkdir -p "$project/.agents"
+  mkdir -p "$project/.agents/skills" "$project/.agents/commands"
   block=$(bash -c '. "$1"; _cumaru_hook_block ".cumaru/index.md" 1' _ "$REPO_DIR/src/common.sh")
   printf '# Project instructions\n\n%s\n' "$block" > "$project/.agents/AGENTS.md"
+  cp -R "$REPO_DIR/domains/__base/skills/." "$project/.agents/skills/"
+  cp -R "$REPO_DIR/domains/__base/commands/." "$project/.agents/commands/"
 }
 
 make_fixture() {
@@ -120,7 +122,7 @@ assert_eq "" "$RUN_STDERR" "doctor keeps diagnostics in its conventional stdout 
 mv "$healthy/.agents/AGENTS.md" "$healthy/CLAUDE.md"
 run_doctor "$healthy" --quiet
 assert_status 0 "CLAUDE.md is ignored by doctor"
-assert_contains "$RUN_STDOUT" '.agents/AGENTS.md not found' "doctor requires the canonical agent instruction path"
+assert_contains "$RUN_STDOUT" '.agents/AGENTS.md is missing' "doctor requires the canonical agent instruction path"
 mv "$healthy/CLAUDE.md" "$healthy/.agents/AGENTS.md"
 
 # Every non-hidden directory needs an index, including local support dirs.

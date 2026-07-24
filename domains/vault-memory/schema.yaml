@@ -23,6 +23,7 @@
 
 version: 6
 domain: vault-memory
+agent: null # null = generic .agents/ integration; or claude, codex, opencode
 rules:
   markdown:
     required_heading: h1

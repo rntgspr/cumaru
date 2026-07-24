@@ -8,7 +8,7 @@ summary: Capture, evolve, promote, or drop an infrastructure spike in `.cumaru/e
 
 Argument: `$ARGUMENTS` may be a kebab-case slug (`move-to-opentofu`), an existing spike slug, or empty. If empty, ask the user whether they want to **bootstrap** a new spike, **promote** an existing one to a changeset, or **drop** one.
 
-1. **Read the `cumaru-explore` skill** from the installed agent skills directory (`.agents/skills/cumaru-explore/SKILL.md` for Claude or `.agents/skills/cumaru-explore/SKILL.md` for Codex). It carries the bootstrap, status-transition, promote, and drop recipes.
+1. **Load the installed `cumaru-explore` skill.** It carries the bootstrap, status-transition, promote, and drop recipes.
 
 2. **Dispatch by intent.** If `$ARGUMENTS` is:
    - A new slug (no `exploring/<slug>/` yet) → **bootstrap** recipe. Confirm slug shape (pure kebab-case, no `maintenance-` prefix), then create the dir + index.md from `templates/exploration.md`. For infra, prompt for cost / blast radius / reversibility considerations.

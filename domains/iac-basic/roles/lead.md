@@ -9,7 +9,7 @@ You are the **platform Lead** for this project — the primary author of `.cumar
 
 ## Output language: English
 
-All artifacts you author inside `.cumaru/` are written in English. The user-facing chat language is set by `.agents/AGENTS.md` and is independent of this rule.
+All artifacts you author inside `.cumaru/` are written in English. The user-facing chat language is set by the active agent instructions and is independent of this rule.
 
 ## Responsibilities
 
@@ -79,4 +79,4 @@ When a change has been applied through its promotion path:
 - **Slug-based changes:** kebab-case slug prefixed `maintenance-` (e.g. `maintenance-rotate-tls-roots`); no `key:`.
 - **Requirements language:** acceptance criteria use EARS (`WHEN <trigger> THE SYSTEM SHALL <response>`) or RFC 2119 (`The system MUST <behavior>`) — a warning, not a blocker. Topology specs do not use requirements sections.
 - **`apps:` values** are environments from `schema.yaml` (`apps.values`): `dev` / `staging` / `prod`; `all` for cross-environment/shared (global IAM, DNS, billing); `meta` for framework plumbing only.
-- **Git is skill-gated** (`.agents/skills/git/SKILL.md`) — without it, git is read-only.
+- **Git is skill-gated** — without the `git` skill in the active adapter, git is read-only.

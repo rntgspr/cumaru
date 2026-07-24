@@ -16,9 +16,19 @@ cmd_install() {
   local target="$CUMARU_DIR"
   local with_skills=()
   local domain="$DEFAULT_DOMAIN"
+  local agent="generic"
+  local previous_agent=""
+  local CUMARU_AGENT_OVERRIDE=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      agent)
+        [[ -n "${2:-}" ]] || { red "✗ agent requires one of: none, claude, codex, opencode"; return 2; }
+        agent=$(_agent_normalize "$2") || {
+          red "✗ unknown agent: $2 (expected none, claude, codex, or opencode)"
+          return 2
+        }
+        shift 2 ;;
       --domain)
         [[ -n "${2:-}" ]] || { red "✗ --domain requires a name (e.g. sdlc-full, base)"; return 2; }
         domain="$2"; shift 2 ;;
@@ -46,6 +56,13 @@ cmd_install() {
     return 1
   fi
 
+  if [[ -f "$SCHEMA" ]]; then
+    previous_agent=$(_agent_current) || {
+      red "✗ existing $SCHEMA has an invalid agent value"
+      return 1
+    }
+  fi
+
   if [[ -e "$target" ]]; then
     if [[ ! -t 0 ]]; then
       red "✗ target $target already exists (run interactively to confirm overwrite)"
@@ -65,6 +82,10 @@ cmd_install() {
     src="$SKILLS_SRC/${skill}/SKILL.md"
     [[ -f "$src" ]] || { red "✗ skill not found: $skill (looked for $src)"; return 1; }
   done
+  if [[ "$agent" == "opencode" ]] && ! command -v jq >/dev/null 2>&1; then
+    red "✗ jq is required for the opencode adapter"
+    return 1
+  fi
 
   local parent
   parent=$(dirname "$target")
@@ -72,7 +93,7 @@ cmd_install() {
 
   # Copy the chosen domain wholesale, then drop the skills/ and commands/
   # subdirs — those are framework-owned artifacts that live exclusively
-  # under .agents/. The cp -R is kept (atomic, simpler than per-entry
+  # under the selected adapter. The cp -R is kept (atomic, simpler than per-entry
   # filtering); the immediately-after rm -rf is the explicit declaration that
   # none of these subdirs belongs inside the adopter's .cumaru/ tree.
   cp -R "$domain_src" "$target"
@@ -80,15 +101,23 @@ cmd_install() {
   green "✓ installed domain '$domain' to $target"
 
   # Install framework skills (domain-shipped cumaru-* + universal cumaru-* +
-  # opt-ins) into .agents/skills/.
-  _framework_install_skills "$parent" "$domain_src" "0" "${with_skills[@]+"${with_skills[@]}"}"
+  # opt-ins) into the selected adapter's skill directory.
+  CUMARU_AGENT_OVERRIDE="$agent"
+  _framework_install_skills "$parent" "$domain_src" "0" "${with_skills[@]+"${with_skills[@]}"}" || return 1
 
-  # Wire the agent instruction file so the LLM auto-loads
-  # .cumaru/index.md on every session.
-  _install_wire_agent_hook "$parent"
+  # Wire the selected agent's native instruction surface.
+  _agent_wire_instructions "$parent" "$agent" || return 1
 
-  # Install slash commands into .agents/commands/ (skip-if-exists).
-  _framework_copy_commands "$parent" "$domain_src" "0"
+  # Install native slash commands where the selected agent supports them.
+  _framework_copy_commands "$parent" "$domain_src" "0" || return 1
+
+  if [[ -n "$previous_agent" && "$previous_agent" != "$agent" ]]; then
+    _agent_remove_adapter "$parent" "$previous_agent" "$agent" || return 1
+  fi
+
+  # Persist state last so doctor never observes a selected but partial adapter.
+  _agent_set "$agent" || return 1
+  unset CUMARU_AGENT_OVERRIDE
 
   cat <<EOF
 
@@ -100,15 +129,14 @@ Next steps:
   3. Run health checks:
        cumaru doctor
 
-The installed agent hook ensures your client loads
-$target/index.md automatically and refreshes relevant .cumaru/ context on every
-prompt. Open the project in your client and the framework is wired in.
+The '$agent' adapter is active. Open the project in that client to load the
+Cumaru instructions, skills, and supported commands.
 EOF
 }
 
 # --- shared helpers (used by cmd_install and cmd_update) -------------------
 
-# Install framework skills into .agents/skills/.
+# Install framework skills into the active adapter's skill directory.
 # Source: the domain's own skills/ subdir — universals live in __base/skills/
 # and are mirrored verbatim into every domain (drift-checked at install-script
 # time), so the domain dir alone is complete.
@@ -121,7 +149,10 @@ EOF
 _framework_install_skills() {
   local parent="$1" framework_src="$2" replace="$3"; shift 3
   local with_skills=("$@")
-  local skills_dir="$parent/$AGENTS_DIR/skills"
+  local agent="${CUMARU_AGENT_OVERRIDE:-}"
+  [[ -n "$agent" ]] || agent=$(_agent_current) || return 1
+  local skills_dir
+  skills_dir=$(_agent_skills_dir "$parent" "$agent")
   mkdir -p "$skills_dir"
 
   local skill_dir name dest
@@ -148,13 +179,16 @@ _framework_install_skills() {
   done
 }
 
-# Remove cumaru-* skill dirs in .agents/skills/ that no longer exist
+# Remove active-adapter cumaru-* skill dirs that no longer exist
 # in the framework domain source. Opt-ins (non-cumaru-* dirs) are never
 # touched.
 # Args: parent framework_src
 _framework_prune_deprecated_cumaru_skills() {
   local parent="$1" framework_src="$2"
-  local skills_dir="$parent/$AGENTS_DIR/skills"
+  local agent="${CUMARU_AGENT_OVERRIDE:-}"
+  [[ -n "$agent" ]] || agent=$(_agent_current) || return 1
+  local skills_dir
+  skills_dir=$(_agent_skills_dir "$parent" "$agent")
   [[ -d "$skills_dir" ]] || return 0
   local skill_dir name
   for skill_dir in "$skills_dir"/cumaru-*/; do
@@ -179,7 +213,7 @@ _framework_prune_legacy_cumaru_skills() {
 }
 
 # Copy slash commands from $framework_src/commands/ into
-# .agents/commands/. Walks recursively so subdirs (namespaces) are
+# the active adapter's command directory. Walks recursively so namespaces are
 # preserved. Universal commands live in __base/commands/ and are mirrored
 # verbatim into every domain (drift-checked at install-script time), so
 # the domain dir alone is complete.
@@ -197,7 +231,11 @@ _framework_copy_commands() {
   done < <(find "$cmds_src" -type f -name '*.md' -print0)
   [[ ${#cmd_files[@]} -eq 0 ]] && return 0
 
-  local cmds_dir="$parent/$AGENTS_DIR/commands"
+  local agent="${CUMARU_AGENT_OVERRIDE:-}"
+  [[ -n "$agent" ]] || agent=$(_agent_current) || return 1
+  local cmds_dir
+  cmds_dir=$(_agent_commands_dir "$parent" "$agent")
+  [[ -n "$cmds_dir" ]] || return 0
   mkdir -p "$cmds_dir"
 
   local rel dest slash
@@ -205,7 +243,11 @@ _framework_copy_commands() {
     rel="${cmd_file#"$cmds_src"/}"
     dest="$cmds_dir/$rel"
     slash="${rel%.md}"
-    slash="/${slash//\//:}"
+    if [[ "$agent" == "opencode" ]]; then
+      slash="/$slash"
+    else
+      slash="/${slash//\//:}"
+    fi
     if [[ "$replace" == "0" && -f "$dest" ]]; then
       say "  · ${slash} already present (skip)"
     else
@@ -216,12 +258,16 @@ _framework_copy_commands() {
   done
 }
 
-# List cumaru-* commands under .agents/commands/ that no longer
+# List active-adapter commands that no longer
 # exist in the framework domain source. Prints one rel path per line.
 # Args: parent framework_src
 _framework_deprecated_commands() {
   local parent="$1" framework_src="$2"
-  local cmds_dir="$parent/$AGENTS_DIR/commands"
+  local agent="${CUMARU_AGENT_OVERRIDE:-}"
+  [[ -n "$agent" ]] || agent=$(_agent_current) || return 1
+  local cmds_dir
+  cmds_dir=$(_agent_commands_dir "$parent" "$agent")
+  [[ -n "$cmds_dir" ]] || return 0
   local cmds_src="$framework_src/commands"
   [[ -d "$cmds_dir" ]] || return 0
   [[ -d "$cmds_src" ]] || return 0
@@ -246,29 +292,7 @@ _agent_rel_path() {
 # whether it may delete the whole file or must only strip the block.
 _install_wire_agent_hook() {
   local parent="$1"
-  local instructions="$parent/$AGENTS_DIR/AGENTS.md"
-  local rel_index="$CUMARU_DIR/index.md"
-
-  mkdir -p "$(dirname "$instructions")"
-
-  if [[ -f "$instructions" ]]; then
-    if grep -q "BEGIN CUMARU-HOOK" "$instructions"; then
-      say "  · $(_agent_rel_path "$parent" "$instructions") hook already present (skip)"
-      return 0
-    fi
-    {
-      echo ""
-      _cumaru_hook_block "$rel_index" "0"
-    } >> "$instructions"
-    green "  + $(_agent_rel_path "$parent" "$instructions") hook appended"
-  else
-    {
-      echo "# Project instructions"
-      echo ""
-      _cumaru_hook_block "$rel_index" "1"
-    } > "$instructions"
-    green "  + $(_agent_rel_path "$parent" "$instructions") created (with .cumaru/ hook)"
-  fi
+  _agent_wire_markdown_hook "$parent" "generic"
 }
 
 # List available domains (one per line): "<name>\t<one-line summary>".
@@ -330,7 +354,7 @@ cmd_install_help() {
 cumaru install — install a domain into a project's .cumaru/
 
 Usage:
-  cumaru install [--domain <name>] [--with <skill>...]
+  cumaru install [agent <none|claude|codex|opencode>] [--domain <name>] [--with <skill>...]
 
 Options:
   --domain <name>        which domain to install. Default: sdlc-full.
@@ -344,10 +368,10 @@ EOF
                          auto-installed and don't need --with):
 EOF
   _install_list_skills | awk -F'\t' '{ printf "                           %-26s %s\n", $1, $2 }'
-  cat <<EOF
+  cat <<'EOF'
 
-Skills, commands, hooks, and config are installed under .agents/ — a single
-agent-agnostic directory that replaces the old .claude/ and .codex/ split.
+Without `agent`, Cumaru keeps the generic `.agents/` integration and writes
+`agent: null`. A selected agent uses its best native project surfaces.
 
 Auto-installed skills (shipped by every domain; sourced from domains/__base/skills/):
 EOF
@@ -358,6 +382,10 @@ EOF
   cat <<'EOF'
 
 Examples:
+  cumaru install                         generic `.agents/` integration
+  cumaru install agent claude            CLAUDE.md + .claude/
+  cumaru install agent codex             AGENTS.md + .agents/skills/
+  cumaru install agent opencode          opencode.json + .opencode/commands/
   cumaru install                                       # default domain at .cumaru/
   cumaru install --with git                            # default domain + git skill
   cumaru install --domain base                         # minimal kernel only

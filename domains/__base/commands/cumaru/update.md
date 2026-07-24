@@ -7,6 +7,6 @@ summary: Load the universal cumaru-update skill and follow its framework update 
 
 # `/cumaru:update`
 
-Load `.agents/skills/cumaru-update/SKILL.md` and follow its workflow. The skill
+Load the installed `cumaru-update` skill and follow its workflow. The skill
 is the canonical source for version gates, schema reconciliation, user
 confirmation, and verification; do not duplicate or bypass its recipe here.

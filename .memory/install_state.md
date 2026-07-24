@@ -15,12 +15,12 @@ originSessionId: 507d571c-f4de-4425-8d7c-cb5b12395a28
 
 ## Project installation
 
-1. `cumaru install [--domain <name>] [--with <skill>...]` always targets `./.cumaru`; the default domain is `sdlc-full` and `base` resolves to `domains/__base/`.
-2. The selected domain is copied from `domains/`, then its `skills/` and `commands/` source directories are pruned from `.cumaru/` because installed agent artifacts belong under `.agents/`.
-3. Domain-shipped `cumaru-*` skills and slash commands are installed under `.agents/`. Opt-in top-level skills are added only through repeatable `--with` flags.
-4. The installer creates or updates the canonical `CUMARU-HOOK` instruction block in `.agents/AGENTS.md`. Cumaru does not install or manage prompt hooks.
+1. `cumaru install [agent <name>] [--domain <name>] [--with <skill>...]` always targets `./.cumaru`; the default domain is `sdlc-full` and `base` resolves to `domains/__base/`.
+2. The selected domain is copied from `domains/`, then its source-only `skills/` and `commands/` directories are pruned from `.cumaru/`.
+3. Missing or null `agent` state selects the generic `.agents/` adapter. Explicit values are `claude`, `codex`, and `opencode`; the CLI keyword `none` serializes to null.
+4. Domain skills, supported commands, and durable instructions are installed in the native paths declared by `docs/agent-adapters.md`. Opt-in top-level skills follow the selected adapter's skill path.
 5. Fresh installs always create framework v6 trees. Existing v5 adopter trees are not upgraded by reinstalling the CLI; they must run `cumaru migrate v6 --apply`.
-6. The installer does not add `.cumaru/` to `.gitignore`, accept a config file, or run doctor automatically.
+6. The installer writes `agent` last, does not add `.cumaru/` to `.gitignore`, and does not run doctor automatically.
 
 ## Upgrade and integrity
 

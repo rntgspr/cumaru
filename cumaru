@@ -97,6 +97,8 @@ warnings=0
 # common.sh first (provides red/green/say used by every other module).
 # shellcheck source=src/common.sh
 . "$SRC/common.sh"
+# shellcheck source=src/agent_adapter.sh
+. "$SRC/agent_adapter.sh"
 # shellcheck source=src/cmd_help.sh
 . "$SRC/cmd_help.sh"
 # shellcheck source=src/cmd_install.sh

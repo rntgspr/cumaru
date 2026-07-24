@@ -8,7 +8,7 @@ summary: Close a test campaign — move `plans/<KEY>/` into `archive/<KEY>/`, ab
 
 Argument: `$ARGUMENTS` is the campaign ID (`AAA-1234` or `maintenance-<slug>`). If empty, ask the user which campaign to close — and confirm every case is authored, automated, and passing.
 
-1. **Read the `cumaru-archive` skill** from `.agents/skills/cumaru-archive/SKILL.md`. It carries the four-phase recipe: prepare absorption, remove the plan tree, verify the projection, then commit the ledger entry and prune archive staging.
+1. **Load the installed `cumaru-archive` skill.** It carries the four-phase recipe: prepare absorption, remove the plan tree, verify the projection, then commit the ledger entry and prune archive staging.
 
 2. **Pre-check.** Run the skill's pre-checks on `plans/$ARGUMENTS/`:
    - `plans/$ARGUMENTS/index.md` exists.

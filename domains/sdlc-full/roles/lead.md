@@ -9,7 +9,7 @@ You are the **Lead** for this project.
 
 ## Output language: English
 
-All artifacts you author inside `.cumaru/` are written in English. The user-facing chat language is set by the project's `.agents/AGENTS.md` and is independent of this rule.
+All artifacts you author inside `.cumaru/` are written in English. The user-facing chat language is set by the active agent instructions and is independent of this rule.
 
 ## Responsibilities
 

@@ -22,7 +22,7 @@ Version 6 replaces persisted structural index tables with a read-only filesystem
 
 - The context hook injects only `.cumaru/index.md` and `.cumaru/domain.md`.
 - The LLM reads a directory index, runs `cumaru tree`, prunes by `summary:`, and loads only selected candidates.
-- `cumaru doctor` accepts only v6 trees and runs seven checks: navigation indexes/summaries, retired or unknown marker contracts, stale work markers, RAW blocks, retained file references, external tools, and the `.agents/AGENTS.md` instruction block. Pre-v6 trees are directed to `cumaru migrate v6`; the migration adapter does not invoke doctor.
+- `cumaru doctor` accepts only v6 trees and runs seven checks: navigation indexes/summaries, retired or unknown marker contracts, stale work markers, RAW blocks, retained file references, external tools, and the schema-selected agent adapter. Pre-v6 trees are directed to `cumaru migrate v6`; the migration adapter does not invoke doctor.
 - Structural orphan-table validation is gone; filesystem navigation replaces it.
 
 ## Migration and update
@@ -31,7 +31,7 @@ Version 6 replaces persisted structural index tables with a read-only filesystem
 - Migration is dry-run by default, uses `domains/<domain>/migrations/v5-to-v6.tsv`, derives summaries before removing structural tags, normalizes the former namespaced touched-file marker to `touched`, preserves unknown tags and local content, and swaps `.cumaru/` with framework-owned `.agents/` artifacts transactionally.
 - `cumaru update --apply` is steady-state only: it refuses major-version crossings and downgrades.
 - Framework-owned Markdown is rebuilt from the canonical source while marker bodies are captured and restored. Local-only files remain adopter-owned. `--keep-prose` is the explicit local-divergence escape hatch.
-- Skills, hooks, and commands are framework-owned and refreshed deterministically under `.agents/`.
+- Skills, durable instructions, and supported commands are framework-owned and refreshed deterministically in the schema-selected adapter paths.
 
 ## Repository layout and shipped surface
 

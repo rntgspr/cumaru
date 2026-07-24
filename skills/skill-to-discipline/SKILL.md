@@ -18,7 +18,7 @@ A discipline is the third artifact type, between a slogan-directive and a Claude
 |---|---|---|---|
 | Slogan-directive | eager, always-on (dilutes) | `domain.md` prose | no |
 | **Discipline** | **eager index line + body by relevance** | **`disciplines/<name>.md`** | **yes, modular** |
-| Skill | eager description + body by trigger | `.agents/skills/` (harness) | yes |
+| Skill | eager description + body by trigger | selected adapter's skill directory | yes |
 
 A discipline file is declared in `domain.md` and pulled into context by the **loading rule**
 when the task subject matches its `applies-when:` — never always-on. Same eager-index / lazy-body

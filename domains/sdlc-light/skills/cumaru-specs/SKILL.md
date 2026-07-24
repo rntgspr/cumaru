@@ -29,7 +29,7 @@ specs/
 
 ## Recipe: bootstrap a spec area
 
-1. **Read the project surface.** `.agents/AGENTS.md`, `README`, the directory of the area, related entry-points.
+1. **Read the project surface.** The active agent instructions, `README`, the directory of the area, and related entry points.
 2. **Confirm with the user** before creating: name, summary, `depends-on:`, `apps:`.
 3. `cumaru flow specs/<area> create`
 4. `cumaru flow specs/<area>/index.md create`

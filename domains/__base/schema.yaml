@@ -33,6 +33,7 @@
 
 version: 6
 domain: base
+agent: null # null = generic .agents/ integration; or claude, codex, opencode
 # ─────────────────────────────────────────────────────────────────────────
 # rules — cross-cutting, universal.
 # ─────────────────────────────────────────────────────────────────────────

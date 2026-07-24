@@ -8,7 +8,7 @@ summary: Close a changeset — move `plans/<KEY>/` into `archive/<KEY>/`, absorb
 
 Argument: `$ARGUMENTS` is the plan ID (`AAA-1234` or `maintenance-<slug>`). If empty, ask the user which changeset to close — and confirm the change has been **applied through its promotion path** (or the remaining environments are explicitly out of this close).
 
-1. **Read the `cumaru-archive` skill** from `.agents/skills/cumaru-archive/SKILL.md`. It carries the four-phase recipe: prepare absorption, remove the plan tree, verify the projection, then commit the ledger entry and prune archive staging.
+1. **Load the installed `cumaru-archive` skill.** It carries the four-phase recipe: prepare absorption, remove the plan tree, verify the projection, then commit the ledger entry and prune archive staging.
 
 2. **Pre-check.** Run the skill's pre-checks on `plans/$ARGUMENTS/`:
    - `plans/$ARGUMENTS/index.md` exists.

@@ -32,7 +32,7 @@ topology/
 
 When the user agrees on a new area `<area>` (initial install, or the first change to a yet-undocumented stack):
 
-1. **Read the real surface.** The stack's code dir (`*.tf` / module / Helm chart / manifests), its variables/outputs, `.agents/AGENTS.md`, and `README`. Goal is breadth: what it provisions, what it exposes, what it needs.
+1. **Read the real surface.** The stack's code dir (`*.tf` / module / Helm chart / manifests), its variables/outputs, the active agent instructions, and `README`. Goal is breadth: what it provisions, what it exposes, what it needs.
 2. **Confirm with the user** before creating: name, summary, `depends-on:` (the stacks provisioned first whose outputs this consumes), `relates:`, `apps:` (the environments it runs in, from `meta.apps.values`).
 3. `cumaru flow topology/<area> create`
 4. `cumaru flow topology/<area>/index.md create`

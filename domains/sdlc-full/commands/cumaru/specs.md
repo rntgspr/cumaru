@@ -8,10 +8,10 @@ summary: Bootstrap, deepen, or consolidate a `specs/<area>/`. Drives the `cumaru
 
 Argument: `$ARGUMENTS` may be an area name (`auth`, `payments`), a nested path (`auth/login`), or empty. If empty, ask the user whether they want to **bootstrap** new areas (typical at install time, or first time a plan touches an undocumented area), **deepen** an existing area (a plan needs more spec to map against), or **consolidate** one (the area's `deltas:` list has grown long).
 
-1. **Read the `cumaru-specs` skill** from the installed agent skills directory (`.agents/skills/cumaru-specs/SKILL.md` for Claude or `.agents/skills/cumaru-specs/SKILL.md` for Codex). It carries the three recipes: bootstrap, deepen, consolidate. Follow its layout and pre-checks (Lead-only authoring; `deltas:` ↔ `consolidated-at:` state model).
+1. **Load the installed `cumaru-specs` skill.** It carries the three recipes: bootstrap, deepen, consolidate. Follow its layout and pre-checks (Lead-only authoring; `deltas:` ↔ `consolidated-at:` state model).
 
 2. **Dispatch by intent.** If `$ARGUMENTS` is:
-   - A new area name (no `specs/<area>/` yet) → **bootstrap** recipe. Read `.agents/AGENTS.md`, README, and the area's code surface; propose name, summary, `depends-on`, `apps`; confirm before creating.
+   - A new area name (no `specs/<area>/` yet) → **bootstrap** recipe. Read the active agent instructions, README, and the area's code surface; propose name, summary, `depends-on`, `apps`; confirm before creating.
    - An existing area whose body is thin → **deepen** recipe. Read the code by topic; write EARS/RFC 2119 requirements; split into concerns/subareas when warranted.
    - An existing area whose `deltas:` list has ≥5 entries (or the user explicitly asks "consolidate") → **consolidate** recipe. Use `specs/index.md` `cumaru:absorptions` to locate the relevant commits when detail is needed; rewrite the area body as a single coherent spec; swap `deltas:` for `consolidated-at:`.
    - Empty → ask which area + which recipe.

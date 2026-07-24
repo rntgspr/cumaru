@@ -44,7 +44,7 @@ require_text "between 32 and 256 Unicode code points"
 require_text 'no CR, LF, or tab'
 require_text 'Run `cumaru doctor` when complete'
 
-grep -Fq 'Load `.agents/skills/cumaru-summarize/SKILL.md`' "$COMMAND" \
+grep -Fq 'Load the installed `cumaru-summarize` skill' "$COMMAND" \
   || fail "summarize command does not load the canonical skill"
 
 bash -n "$ROOT/tests/test_summarize_artifacts.sh"

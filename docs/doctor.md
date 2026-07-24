@@ -34,7 +34,7 @@ Followed by a summary line: `Summary: X error(s), Y warning(s), Z ok`.
 | 4 | **Unrefined RAW blocks** — any Markdown file containing `<!-- BEGIN RAW`. The marker means source content still needs LLM refinement. | warn |
 | 5 | **Retained file references** — only declared semantic tags (`files`, `touched`, `reference`) are path-resolved. `touched` accepts explicitly removed files; `reference` must target a repository source file. Unknown tags stay opaque. | warn for invalid |
 | 6 | **External tools** — `curl`, `jq`, `yq`, and `git` available on PATH. | warn for missing |
-| 7 | **Agent instruction block** — validates the canonical `CUMARU-HOOK` block in `.agents/AGENTS.md`. | warn for missing/drift |
+| 7 | **Agent adapter** — reads `agent` from schema and validates native instructions, every expected `cumaru-*` skill, and supported commands. | fail for invalid state; warn for missing/drift |
 
 `cumaru tree --deep` is the companion diagnostic for check 1: it keeps walking after defects, reports them on stderr, and returns nonzero at the end.
 
@@ -83,5 +83,5 @@ cumaru doctor --quiet                        # hide pass lines; show warnings + 
 
 - [`cumaru tag`](tag.md) — run `cumaru tree` to inspect the affected directory
 - [`cumaru flow`](flow.md) — file ops to delete a stale `*.delete-me.md` (check 3) or fix a missing file reference (check 5).
-- [`cumaru update`](update.md) — reconcile agent hook drift (check 7) from the framework source.
+- [`cumaru update`](update.md) — reconcile the active adapter or switch it (check 7).
 - `/cumaru:doctor` slash command — orchestrates doctor + remediation walk with user confirmation.

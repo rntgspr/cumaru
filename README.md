@@ -125,6 +125,9 @@ The framework grew out of the web development / software tooling space, so the c
 ```bash
 # Inside the project that will adopt the framework:
 cumaru install                                      # SDLC domain (default)
+cumaru install agent claude                         # Claude-native adapter
+cumaru install agent codex                          # Codex-native adapter
+cumaru install agent opencode                       # OpenCode-native adapter
 cumaru install --domain base                        # minimal kernel — build your own pillars
 cumaru install --domain sdlc-light                  # simplified software delivery domain
 cumaru install --domain iac-basic                   # infrastructure-as-code domain
@@ -136,7 +139,7 @@ cumaru install --with git                           # unlocks mutating git comma
 cumaru install --domain iac-basic --with terraform --with pulumi
 ```
 
-Install copies the domain into `.cumaru/`, then installs operating skills and slash commands into `.agents/`. Every domain ships the universal set (`cumaru-doctor`, `cumaru-update`, `cumaru-refs`, `cumaru-summarize`), its own tuned `cumaru-install`, plus one skill per pillar that needs orchestration (SDLC: `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-archive`). Mechanical primitives `cumaru tag`, `cumaru flow`, and `cumaru coverage` are CLI-only — no skill needed; the recipe skills compose them. Opt-in skills like `git` only ship when explicitly added via `--with` (without `git`, roles stay read-only on the repo: `status`, `log`, `diff`, `blame`, `show`).
+Install copies the domain into `.cumaru/`, then installs one agent adapter. Without `agent`, `schema.yaml` keeps `agent: null` and the generic `.agents/` layout. Claude, Codex, and OpenCode use their native instruction, skill, and command surfaces; see [`docs/agent-adapters.md`](docs/agent-adapters.md). Every domain ships the universal set (`cumaru-doctor`, `cumaru-update`, `cumaru-refs`, `cumaru-summarize`), its own tuned `cumaru-install`, plus one skill per pillar that needs orchestration. Mechanical primitives remain CLI-only. Opt-in skills only ship through `--with`.
 
 The post-install work is **LLM-driven via the installed skills**:
 1. **Components** — the `cumaru-install` skill walks the user through editing `.cumaru/domain.md`'s components table and `meta.apps.values` in `.cumaru/schema.yaml`.
@@ -173,7 +176,10 @@ Skills follow the official Anthropic format (`SKILL.md` with frontmatter). They 
 
 **Mechanical primitives — no skill needed.** `cumaru tag` (read/write `<!-- cumaru:NAME -->` marker blocks; schema-validated), `cumaru flow` (4 verbs: `move`/`copy`/`create`/`remove`, with guardrails), and `cumaru coverage` (read-only spec↔code coverage report over `reference` tables) are documented in `cumaru <cmd> --help`. Every recipe skill above composes calls to them.
 
-**Using with Claude Code or Codex:** `cumaru install` wires everything under `.agents/`. The instruction file is `.agents/AGENTS.md`. `cumaru update --apply` refreshes only `.agents/` artifacts; the update skill may separately offer a user-confirmed alignment for existing `CLAUDE.md` or `.claude/` compatibility files.
+**Agent selection:** `cumaru install agent <name>` installs the native adapter.
+`cumaru update agent <name>` previews a switch; add `--apply` to perform it.
+`cumaru update agent none --apply` restores generic `agent: null` behavior.
+`cumaru doctor` reads the schema and validates the selected adapter automatically.
 
 **Using with claude.ai:** upload `SKILL.md` via the custom skills UI, or automate via the Skills API. claude.ai does not watch the repo — re-upload (or trigger an API call from CI) when a skill changes.
 
@@ -207,13 +213,14 @@ Run `cumaru help` (or `cumaru <cmd> --help`) for full usage.
 |---|---|
 | `doctor` *(default)* | Validate navigation, summaries, retained markers and file references, tools, and agent integration |
 | `domains` | List installable domains discovered from `domains/` |
-| `install` `[--domain <name>] [--with <skill>...]` | Install a domain into a project's `.cumaru/`; default domain: `sdlc-full` |
-| `uninstall` `[--yes]` | Reverse install: remove `.cumaru/` and framework-owned `.agents/` artifacts |
+| `install` `[agent <name>] [--domain <name>] [--with <skill>...]` | Install a domain plus one agent adapter; default domain: `sdlc-full`, default agent: `none` |
+| `uninstall` `[--yes]` | Reverse install: remove `.cumaru/` and the schema-selected adapter's Cumaru-owned artifacts |
 | `intake` `<KEY> [--tracker <name>]` | Fetch a tracker issue and mirror it at the domain schema's intake item path (adapters: jira, linear, clickup) |
 | `tag` `[FILE] [<get\|set> <tag> [<content>]]` | Inspect / get / set `<!-- cumaru:* -->` marker blocks; schema-validated |
 | `coverage` `[--refs\|--gaps\|--rows] [--strict]` | Report which repository source files are referenced by the specification pillar's `reference` tables — covered / uncovered / stale / invalid |
 | `tree` `[<path>] [--deep] [--rows] [--pillars <names>] [--domain <name>]` | List filesystem-backed candidates and their summaries; optionally restrict them to schema pillars or guard the installed domain |
 | `update` `[<path>] [--from <src>] [--keep-prose] [--apply]` | Refresh same-major framework content and agent artifacts while preserving tag bodies; major-version apply is blocked |
+| `update agent` `<name> [--apply]` | Preview or apply a native adapter switch; `none` restores YAML null |
 | `upgrade` | Update the `cumaru` tool itself: re-runs the install script, replaces `~/.cumaru`, and verifies kernel integrity |
 | `flow` `<src> <verb> [<dst>]` | Safe mechanical file ops inside `.cumaru/` (verbs: `move` \| `copy` \| `create` \| `remove`). Recipe skills compose calls to it |
 | `migrate` `[v6] [--from <src>] [--apply]` | Migrate legacy naming or transactionally cross a supported framework major |

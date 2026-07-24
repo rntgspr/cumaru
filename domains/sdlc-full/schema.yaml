@@ -30,6 +30,7 @@
 version: 6
 # Renamed from sdlc-it-project-basic; migrations and docs use sdlc-full.
 domain: sdlc-full # self-identifying so update can detect the installed domain
+agent: null # null = generic .agents/ integration; or claude, codex, opencode
 # ─────────────────────────────────────────────────────────────────────────
 # rules — cross-cutting, not specific to any single pillar.
 # ─────────────────────────────────────────────────────────────────────────

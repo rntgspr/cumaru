@@ -9,7 +9,7 @@ You are the **QA Lead** for this project — the primary author of `.cumaru/`.
 
 ## Output language: English
 
-All artifacts you author inside `.cumaru/` are written in English. The user-facing chat language is set by `.agents/AGENTS.md` and is independent of this rule.
+All artifacts you author inside `.cumaru/` are written in English. The user-facing chat language is set by the active agent instructions and is independent of this rule.
 
 ## Responsibilities
 
@@ -80,4 +80,4 @@ When a campaign's cases are authored, automated, and passing:
 - **Slug-based campaigns:** kebab-case slug prefixed `maintenance-` (e.g. `maintenance-deflake-checkout`); no `key:`.
 - **Requirements**: acceptance criteria use EARS (`WHEN <trigger> THE SYSTEM SHALL <response>`) or RFC 2119 (`The system MUST <behavior>`). **GWT** (test): scenarios use `GIVEN <state> WHEN <action> THEN <outcome>`. Both are warnings, not blockers.
 - **`apps:` values** are test levels from `schema.yaml` (`apps.values`): `unit` / `integration` / `e2e` / `contract` / `performance`; `all` for cross-level/shared (test utilities, fixtures, CI harness); `meta` for framework plumbing only.
-- **Git is skill-gated** (`.agents/skills/git/SKILL.md`) — without it, git is read-only.
+- **Git is skill-gated** — without the `git` skill in the active adapter, git is read-only.

@@ -1,6 +1,8 @@
 # `cumaru install`
 
-Install a domain into a project's `.cumaru/`. Copies the chosen domain wholesale, auto-installs the universal `cumaru-*` skills, optionally layers opt-in skills, wires the agent instruction file, and copies slash commands into `.agents/commands/`.
+Install a domain into a project's `.cumaru/`, then install one schema-selected
+agent adapter. Without an explicit agent, the existing generic `.agents/`
+behavior remains active.
 
 ## Prerequisites
 
@@ -41,25 +43,28 @@ then install Mike Farah `yq` v4 from the
 ## Usage
 
 ```
-cumaru install [--domain <name>] [--with <skill>...]
+cumaru install [agent <none|claude|codex|opencode>] [--domain <name>] [--with <skill>...]
 ```
 
 | Option | Default | Description |
-|---|---|---|---|
+|---|---|---|
+| `agent <name>` | `none` | Select the native agent integration. `none` writes `agent: null`. |
 | `--domain <name>` (or `--domain=<name>`) | `sdlc-full` | Which domain to install. `base` resolves to `domains/__base/`; any other name to `domains/<name>/`. |
 | `--with <skill>` (or `--with=<skill>`) | none | Add an opt-in skill at install time. Repeatable. `cumaru-*` skills don't need `--with` — they ship automatically. |
 
-The install location is always `.cumaru/` at the project root. Skills and commands go under `.agents/`.
+The install location is always `.cumaru/` at the project root. Instructions,
+skills, and supported commands use the paths in
+[`agent-adapters.md`](agent-adapters.md).
 
 ## What it does
 
 1. **Pre-checks** — prompts before replacing an existing `.cumaru/` (refuses non-interactive overwrite) and verifies each requested `--with <skill>` exists at `skills/<skill>/SKILL.md`.
-2. **Copies the chosen domain wholesale, then prunes domain-owned agent subdirs from `.cumaru/`** — `cp -R "domains/<domain>" .cumaru/` followed by `rm -rf .cumaru/{skills,commands}`. Brings the schema, starter indexes, templates, and roles. Skills and slash commands live under `.agents/`; they do NOT belong inside `.cumaru/`.
-3. **Installs domain skills** — for every `cumaru-*` directory under `domains/<domain>/skills/`, copies the dir to `.agents/skills/<name>/` (skip-if-exists for install). Universal skills (`cumaru-doctor`, `cumaru-update`, `cumaru-refs`, `cumaru-summarize`) live in `__base/skills/` and are mirrored verbatim into every domain (drift-checked at install-script time), so sourcing only from the domain is complete. `cumaru-install` ships with every domain too, but is domain-owned (its post-install recipe targets the domain's durable pillar) and exempt from the drift-check.
-4. **Applies opt-in skills** — for each `--with <name>`, copies the top-level `skills/<name>/` dir into `.agents/skills/`.
-5. **Wires agent instructions** — creates or appends a `<!-- BEGIN CUMARU-HOOK --> ... <!-- END CUMARU-HOOK -->` block containing an `@.cumaru/index.md` import directive in `.agents/AGENTS.md`. Idempotent — skips if the marker is already present. A freshly created file uses the `created` marker so uninstall can clean it up entirely.
-6. **Installs slash commands** — recursively copies every `*.md` from `domains/<domain>/commands/` into `.agents/commands/` (skip-if-exists). A file at `domains/<domain>/commands/cumaru/doctor.md` becomes `.agents/commands/cumaru/doctor.md`, exposing the slash command as `/cumaru:doctor`.
-7. **Prints next steps** — hints to edit the components table in `.cumaru/domain.md`, populate `meta.apps.values` in `.cumaru/schema.yaml`, and run `cumaru doctor`.
+2. **Copies the domain and prunes source-only artifacts** — skills and commands do not live inside `.cumaru/`.
+3. **Installs skills** — copies domain `cumaru-*` skills and requested opt-ins into the selected adapter's native skill directory.
+4. **Wires durable instructions** — uses a marked Markdown block for generic, Claude, and Codex; merges exact `instructions` entries into `opencode.json` for OpenCode.
+5. **Installs supported commands** — generic, Claude, and OpenCode receive native command files. Codex uses repository skills and receives no unsupported command directory.
+6. **Persists state last** — writes `agent: null`, `claude`, `codex`, or `opencode` only after the adapter succeeds.
+7. **Prints next steps** — points at project metadata and `cumaru doctor`.
 
 ## Available Domains
 
@@ -125,6 +130,9 @@ Run once per project, at adoption time. To re-install after deleting `.cumaru/`,
 
 ```bash
 cumaru install                                                  # install the SDLC domain at .cumaru/
+cumaru install agent claude                                     # Claude-native project files
+cumaru install agent codex                                      # Codex-native instructions and skills
+cumaru install agent opencode                                   # OpenCode config, skills, and commands
 cumaru install --with git                                       # default domain + git skill
 cumaru install --domain base                                    # minimal kernel
 cumaru install --domain sdlc-full                               # explicit domain

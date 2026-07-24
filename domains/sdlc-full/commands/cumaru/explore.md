@@ -8,7 +8,7 @@ summary: Capture, evolve, promote, or drop an exploration in `.cumaru/exploring/
 
 Argument: `$ARGUMENTS` may be a kebab-case slug (`auth-redesign`), an existing exploration slug, or empty. If empty, ask the user whether they want to **bootstrap** a new exploration, **promote** an existing one to a plan, or **drop** one.
 
-1. **Read the `cumaru-explore` skill** from the installed agent skills directory (`.agents/skills/cumaru-explore/SKILL.md` for Claude or `.agents/skills/cumaru-explore/SKILL.md` for Codex). It carries the bootstrap, status-transition, promote, and drop recipes.
+1. **Load the installed `cumaru-explore` skill.** It carries the bootstrap, status-transition, promote, and drop recipes.
 
 2. **Dispatch by intent.** If `$ARGUMENTS` is:
    - A new slug (no `exploring/<slug>/` yet) → **bootstrap** recipe. Confirm the slug shape (pure kebab-case, no `maintenance-` prefix), then create the dir + index.md from `templates/exploration.md`.

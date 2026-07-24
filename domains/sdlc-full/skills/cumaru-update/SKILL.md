@@ -35,11 +35,9 @@ Do not preserve local prose or frontmatter in framework-owned files. Local-only 
    `cumaru-summarize` to curate summaries leaf-first; preserve valid summaries
    unless the user agrees they are stale. Change only `summary:` — never alter
    the adopter's body, frontmatter fields, tags, paths, or relations.
-7. If `CLAUDE.md` or files under `.claude/` exist, inspect them after the
-   `.agents/` update and offer to align their relevant content with
-   `.agents/AGENTS.md`. Explain the proposed edits and wait for confirmation;
-   these files are adopter-owned compatibility surfaces and the Cumaru CLI
-   must never update them automatically.
+7. Read `agent` from `.cumaru/schema.yaml` and confirm doctor validates its
+   native instructions, skills, and supported commands. To change clients,
+   preview `cumaru update agent <name>` and apply only after confirmation.
 
 ## Targeted repairs
 
@@ -47,6 +45,7 @@ Do not preserve local prose or frontmatter in framework-owned files. Local-only 
 cumaru update skills --apply
 cumaru update commands --apply
 cumaru update schema
+cumaru update agent opencode
 ```
 
 `schema --apply` remains destructive. Preserve adopter extensions such as local pillars, `meta.apps.values`, and domain-specific metadata during a deliberate schema reconciliation.

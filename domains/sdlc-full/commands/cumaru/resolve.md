@@ -39,7 +39,7 @@ summary: Resolve in-flight git conflicts that fall inside `.cumaru/`. Diagnoses 
    - Apply only after the user confirms.
    - For a directory index, run `cumaru tree <directory> --deep` after resolving it; do not rebuild structural inventory tags.
 
-7. **Closure**. After the walk, summarize: what was resolved, what remains in-scope (if the user declined any), and the out-of-scope list. **Do not** run `git add`, `git merge --continue`, `git rebase --continue`, `git cherry-pick --continue`, or any abort. Git is read-only by default in this project. Print the exact commands the user should run themselves. If the project has the `git` skill enabled (`.agents/skills/git/SKILL.md` or `.agents/skills/git/SKILL.md` exists), the user may explicitly authorize the agent to run them in this turn — otherwise hands off.
+7. **Closure**. After the walk, summarize: what was resolved, what remains in-scope (if the user declined any), and the out-of-scope list. **Do not** run `git add`, `git merge --continue`, `git rebase --continue`, `git cherry-pick --continue`, or any abort. Git is read-only by default in this project. Print the exact commands the user should run themselves. If the `git` skill is available through the active agent adapter, the user may explicitly authorize the agent to run them in this turn — otherwise hand off.
 
 Hard rules:
 

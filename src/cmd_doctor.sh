@@ -659,53 +659,78 @@ _doctor_check_external_tools() {
   fi
 }
 
-# Check the CUMARU-HOOK block in the adopter's .agents/AGENTS.md.
-# Warns if the block is missing or its prose diverges from the canonical —
-# the LLM decides whether to accept the drift or reconcile via cumaru update.
+# Validate the schema-selected adapter's native instructions, skills, and
+# supported commands.
 _doctor_check_agent_hook() {
-  local parent
+  local parent agent
   parent="$(dirname "$CUMARU_DIR")"
-
-  local agents_file="$parent/$AGENTS_DIR/AGENTS.md"
-
-  if [[ ! -f "$agents_file" ]]; then
-    _doctor_warn_emit ".agents/AGENTS.md not found — CUMARU-HOOK not present" \
-      "→ Run 'cumaru install' or 'cumaru update --apply' to wire the agent hook."
+  agent=$(_agent_current) || {
+    _doctor_fail "Invalid agent value in schema.yaml" \
+      "→ Expected null, claude, codex, or opencode."
     return
-  fi
+  }
 
-  # Does the hook block exist at all?
-  if ! grep -qF "BEGIN CUMARU-HOOK" "$agents_file"; then
-    _doctor_warn_emit "CUMARU-HOOK not found in $(basename "$agents_file")" \
-      "→ Run 'cumaru update --apply' to create it."
-    return
-  fi
-
-  # Extract existing hook block between BEGIN and END markers.
-  local existing_hook
-  existing_hook=$(awk '
-    /<!-- BEGIN CUMARU-HOOK/ { h=1; print; next }
-    h && /<!-- END CUMARU-HOOK -->/ { print; h=0; next }
-    h { print }
-  ' "$agents_file")
-
-  # Generate the canonical block. rel_index is always .cumaru/index.md. A freshly
-  # created instruction file intentionally uses the "created" marker so
-  # uninstall can decide whether the whole file may be removed.
-  local canonical_hook
-  if grep -qF "<!-- BEGIN CUMARU-HOOK created -->" "$agents_file"; then
-    canonical_hook=$(_cumaru_hook_block "$CUMARU_DIR/index.md" "1")
+  local integration_issues=()
+  if [[ "$agent" == "opencode" ]]; then
+    if [[ ! -f "$parent/opencode.json" ]]; then
+      integration_issues+=("opencode.json is missing")
+    elif ! jq -e '
+      (.instructions | type) == "array" and
+      (.instructions | index(".cumaru/index.md") != null) and
+      (.instructions | index(".cumaru/domain.md") != null)
+    ' "$parent/opencode.json" >/dev/null 2>&1; then
+      integration_issues+=("opencode.json does not load .cumaru/index.md and .cumaru/domain.md")
+    fi
   else
-    canonical_hook=$(_cumaru_hook_block "$CUMARU_DIR/index.md" "0")
+    local instructions existing_hook canonical_hook
+    instructions=$(_agent_instructions_file "$parent" "$agent")
+    if [[ ! -f "$instructions" ]]; then
+      integration_issues+=("${instructions#"$parent"/} is missing")
+    elif ! grep -qF "BEGIN CUMARU-HOOK" "$instructions"; then
+      integration_issues+=("${instructions#"$parent"/} has no CUMARU-HOOK")
+    else
+      existing_hook=$(awk '
+        /<!-- BEGIN CUMARU-HOOK/ { h=1; print; next }
+        h && /<!-- END CUMARU-HOOK -->/ { print; h=0; next }
+        h { print }
+      ' "$instructions")
+      if grep -qF "<!-- BEGIN CUMARU-HOOK created -->" "$instructions"; then
+        canonical_hook=$(_cumaru_hook_block "$CUMARU_DIR/index.md" "1")
+      else
+        canonical_hook=$(_cumaru_hook_block "$CUMARU_DIR/index.md" "0")
+      fi
+      [[ "$existing_hook" == "$canonical_hook" ]] ||
+        integration_issues+=("${instructions#"$parent"/} CUMARU-HOOK differs from canonical")
+    fi
   fi
 
-  if [[ "$existing_hook" != "$canonical_hook" ]]; then
-    local diff_output
-    diff_output=$(diff <(echo "$canonical_hook") <(echo "$existing_hook") 2>/dev/null || true)
-    _doctor_warn_emit "CUMARU-HOOK block in $(basename "$agents_file") differs from canonical" \
-      "$diff_output"
+  local domain source_domain skills_dir commands_dir source_item name
+  domain=$(yq -r '.domain // "base"' "$SCHEMA" 2>/dev/null || true)
+  source_domain="$DOMAINS_DIR/$( [[ "$domain" == "base" ]] && printf '%s' "__base" || printf '%s' "$domain" )"
+  [[ -d "$source_domain" ]] ||
+    integration_issues+=("installed domain '$domain' is unavailable in this Cumaru checkout")
+  skills_dir=$(_agent_skills_dir "$parent" "$agent")
+  for source_item in "$source_domain/skills"/cumaru-*/; do
+    [[ -d "$source_item" ]] || continue
+    name=$(basename "${source_item%/}")
+    [[ -f "$skills_dir/$name/SKILL.md" ]] ||
+      integration_issues+=("missing skill: ${skills_dir#"$parent"/}/$name/SKILL.md")
+  done
+
+  commands_dir=$(_agent_commands_dir "$parent" "$agent")
+  if [[ -n "$commands_dir" && -d "$source_domain/commands" ]]; then
+    while IFS= read -r source_item; do
+      local rel="${source_item#"$source_domain/commands"/}"
+      [[ -f "$commands_dir/$rel" ]] ||
+        integration_issues+=("missing command: ${commands_dir#"$parent"/}/$rel")
+    done < <(find "$source_domain/commands" -type f -name '*.md' | sort)
+  fi
+
+  if [[ ${#integration_issues[@]} -gt 0 ]]; then
+    _doctor_warn_emit "Agent adapter '$agent' is incomplete" \
+      "$(printf '  • %s\n' "${integration_issues[@]}")"$'\n'"→ Run 'cumaru update agent ${agent/generic/none} --apply'."
   else
-    _doctor_pass "CUMARU-HOOK block matches canonical"
+    _doctor_pass "Agent adapter '$agent' matches schema and native artifacts"
   fi
 }
 

@@ -111,6 +111,9 @@ _schema_extract_contract() {
 
       if (/^[ \t]*$/) { print; next }
 
+      # Agent selection is installed runtime state, not source schema drift.
+      if (/^agent:/) { next }
+
       # Detect adopter-owned keys (including commented forms) before the
       # generic comment catch-all, so they are stripped from the contract.
       if (in_meta && /^  (# )?apps:/)              { skip = 1; skip_indent = 2; next }
@@ -216,6 +219,7 @@ cumaru update — update an installed .cumaru/ tree + skills + slash commands
 
 Usage:
   cumaru update [<path>] [--from <path|git-url>] [--keep-prose] [--apply]
+  cumaru update agent <none|claude|codex|opencode> [--from <path>] [--apply]
   cumaru update skills   [--from <path|git-url>] [--apply]
   cumaru update commands [--from <path|git-url>] [--apply]
   cumaru update schema   [--from <path|git-url>] [--apply]
@@ -239,6 +243,8 @@ Arguments:
                  prints a raw `diff -u` for the LLM to adjudicate, listing the
                  adopter-owned regions to preserve. With --apply, OVERWRITES the
                  local schema with the source — destructive on purpose.
+  agent <name>   preview or apply a switch of the native agent integration.
+                 `none` restores the backward-compatible `.agents/` adapter.
 
 Options:
   --from <src>   path to a Cumaru checkout, or a git URL to clone shallowly
@@ -251,10 +257,9 @@ Options:
                   Without it, prints a structured per-file review for the LLM.
 
 Skills and commands (always applied with --apply, never in general dry-run):
-  Skills and slash commands are framework-owned artifacts installed under
-  .agents/. --apply replaces them wholesale from the source checkout. Deprecated commands (locally
-  present, absent from source) are listed but NOT removed — remove them
-  manually after review.
+  Skills and supported slash commands are framework-owned artifacts installed
+  for the schema-selected adapter. --apply replaces them wholesale. Deprecated
+  commands are listed but NOT removed — remove them manually after review.
 
 Domain detection:
   The installed domain is read from the `domain:` field in .cumaru/schema.yaml
@@ -283,78 +288,51 @@ Examples:
   cumaru update commands --apply         replace only slash commands
   cumaru update schema                   diff source schema vs local for LLM review
   cumaru update schema --apply           OVERWRITE local schema (destructive)
+  cumaru update agent opencode            preview native OpenCode integration
+  cumaru update agent opencode --apply    install it and persist agent: opencode
+  cumaru update agent none --apply        restore generic agent: null behavior
 EOF
 }
 
-# Reconcile the hook block in .agents/AGENTS.md. On --apply,
-# replaces a legacy DOT-LLM-HOOK marker with CUMARU-HOOK, or adds it
-# if absent. Idempotent.
+# Reconcile the active adapter's native instruction surface.
 _update_reconcile_agent_hook() {
   local parent="$1" apply="$2"
-  local rel_index="$CUMARU_DIR/index.md"
-  local candidates=( "$parent/$AGENTS_DIR/AGENTS.md" )
-  local any=0
+  local agent instructions
+  agent=$(_agent_current) || {
+    red "✗ invalid agent value in $SCHEMA"
+    return 1
+  }
 
-  for instructions in "${candidates[@]}"; do
-    local name; name=$(basename "$instructions")
-    [[ ! -f "$instructions" ]] && continue
+  if [[ $apply -eq 1 ]]; then
+    _agent_refresh_instructions "$parent" "$agent"
+    return
+  fi
 
-    if grep -q "BEGIN CUMARU-HOOK" "$instructions"; then
-      say "  $name hook: CUMARU-HOOK (ok)"
-      any=1
-      continue
-    fi
-
-    if grep -q "BEGIN DOT-LLM-HOOK" "$instructions"; then
-      if [[ $apply -eq 1 ]]; then
-        _update_replace_legacy_hook "$instructions" "$rel_index"
-        green "  ✓ $name: replaced DOT-LLM-HOOK → CUMARU-HOOK"
-      else
-        yellow "  ⚠ $name: uses legacy DOT-LLM-HOOK (will be updated on --apply)"
-      fi
-      any=1
-      continue
-    fi
-  done
-
-  if [[ $any -eq 0 ]]; then
-    if [[ $apply -eq 1 ]]; then
-      _install_wire_agent_hook "$parent"
+  if [[ "$agent" == "opencode" ]]; then
+    if [[ -f "$parent/opencode.json" ]] &&
+       jq -e '.instructions | index(".cumaru/index.md") != null' "$parent/opencode.json" >/dev/null 2>&1; then
+      say "  OpenCode instructions: configured (ok)"
     else
-      say "  Agent hook: absent in .agents/AGENTS.md (will be created on --apply)"
+      say "  OpenCode instructions: absent (will be configured on --apply)"
     fi
+    return
+  fi
+
+  instructions=$(_agent_instructions_file "$parent" "$agent")
+  if [[ -f "$instructions" ]] && grep -q "BEGIN CUMARU-HOOK" "$instructions"; then
+    say "  ${instructions#"$parent"/} hook: CUMARU-HOOK (ok)"
+  else
+    say "  Agent hook: absent in ${instructions#"$parent"/} (will be created on --apply)"
   fi
 }
 
-# Replace a legacy DOT-LLM-HOOK block in AGENTS.md with the current
-# CUMARU-HOOK block. Uses awk to find and strip the old block, then
-# appends the new block.
-_update_replace_legacy_hook() {
-  local file="$1" rel_index="$2"
-  local tmp; tmp=$(mktemp)
-  awk '
-    { lines[NR] = $0 }
-    END {
-      b = 0; e = 0
-      for (i = 1; i <= NR; i++) {
-        if (lines[i] ~ /BEGIN (CUMARU|DOT-LLM)-HOOK/) b = i
-        if (lines[i] ~ /END (CUMARU|DOT-LLM)-HOOK/)   e = i
-      }
-      if (b == 0 || e == 0) { for (i = 1; i <= NR; i++) print lines[i]; exit }
-      drop = (b > 1 && lines[b-1] ~ /^[[:space:]]*$/) ? b - 1 : 0
-      for (i = 1; i <= NR; i++) {
-        if (i >= b && i <= e) continue
-        if (i == drop)        continue
-        print lines[i]
-      }
-      print ""
-    }
-  ' "$file" > "$tmp"
-  _cumaru_hook_block "$rel_index" "0" >> "$tmp"
-  mv "$tmp" "$file"
-}
-
 cmd_update() {
+  if [[ "${1:-}" == "agent" ]]; then
+    shift
+    cmd_update_agent "$@"
+    return $?
+  fi
+
   local from="" apply=0 keep_prose=0 path_filter=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -479,10 +457,8 @@ cmd_update() {
   local parent
   parent=$(dirname "$CUMARU_DIR")
 
-  # 5) Reconcile the AGENTS.md hook block — first thing because it's the
-  #    agent's entry point to the framework. Accepts both CUMARU-HOOK and
-  #    the legacy DOT-LLM-HOOK marker for backward compat.
-  _update_reconcile_agent_hook "$parent" "$apply"
+  # 5) Reconcile the active adapter's durable instruction surface first.
+  _update_reconcile_agent_hook "$parent" "$apply" || return 1
 
   # 5a-schema) Dedicated schema target: never mechanical-merged.
   # Dry-run prints the raw `diff -u` for the LLM to adjudicate, listing the
@@ -514,7 +490,10 @@ cmd_update() {
       return 0
     fi
     yellow "⚠ Replacing $CUMARU_DIR/schema.yaml with source — local customisations will be lost."
+    local active_agent
+    active_agent=$(_agent_current) || active_agent="generic"
     cp "$source_schema" "$CUMARU_DIR/schema.yaml"
+    _agent_set "$active_agent"
     green "✓ schema.yaml replaced from source."
     return 0
   fi
@@ -523,7 +502,10 @@ cmd_update() {
   if [[ "$path_filter" == "skills" || "$path_filter" == "commands" ]]; then
     if [[ $apply -eq 0 ]]; then
       if [[ "$path_filter" == "skills" ]]; then
-        say "Dry-run — cumaru-* skills that would be installed under $AGENTS_DIR/skills/:"
+        local active_agent active_skills_dir
+        active_agent=$(_agent_current) || return 1
+        active_skills_dir=$(_agent_skills_dir "$parent" "$active_agent")
+        say "Dry-run — cumaru-* skills that would be installed under ${active_skills_dir#"$parent"/}/:"
         find "$source_domain/skills" -mindepth 1 -maxdepth 1 -type d -name 'cumaru-*' 2>/dev/null \
           | while read -r d; do basename "$d"; done | sort -u | while read -r n; do
           say "  · $n"
@@ -532,7 +514,15 @@ cmd_update() {
           yellow "  (will remove legacy $CUMARU_DIR/skills — skills no longer live inside .cumaru/)"
         fi
       else
-        say "Dry-run — slash commands that would be replaced under $AGENTS_DIR/commands/:"
+        local active_agent active_commands_dir
+        active_agent=$(_agent_current) || return 1
+        active_commands_dir=$(_agent_commands_dir "$parent" "$active_agent")
+        if [[ -z "$active_commands_dir" ]]; then
+          say "Dry-run — '$active_agent' uses native skills and has no project command directory."
+          say "Re-run with --apply to confirm the adapter state."
+          return 0
+        fi
+        say "Dry-run — slash commands that would be replaced under ${active_commands_dir#"$parent"/}/:"
         find "$source_domain/commands" -name '*.md' 2>/dev/null | sort | while read -r f; do
           local rel="${f#"$source_domain/commands"/}"
           local slash="${rel%.md}"; slash="/${slash//\//:}"
@@ -551,7 +541,10 @@ cmd_update() {
       _framework_prune_deprecated_cumaru_skills "$parent" "$source_domain"
       # Remove the one-shot migration skill if it exists — it's a transition
       # tool, not a recurring recipe.
-      rm -rf "$AGENTS_DIR/skills/cumaru-migrate" 2>/dev/null || true
+      local active_agent active_skills_dir
+      active_agent=$(_agent_current) || return 1
+      active_skills_dir=$(_agent_skills_dir "$parent" "$active_agent")
+      rm -rf "$active_skills_dir/cumaru-migrate" 2>/dev/null || true
       SKILLS_SRC="$_orig_skills_src"
     else
       say "Slash commands:"
@@ -642,7 +635,7 @@ cmd_update() {
     fi
 
     # Skills: drop any legacy .cumaru/skills/ tree, install cumaru-* directly into
-    # .agents/skills/, prune deprecated.
+    # the active adapter's skill directory, then prune deprecated artifacts.
     say ""
     say "Skills:"
     local _orig_skills_src="$SKILLS_SRC"
@@ -651,7 +644,10 @@ cmd_update() {
     _framework_install_skills "$parent" "$source_domain" "1"
     _framework_prune_deprecated_cumaru_skills "$parent" "$source_domain"
     # Remove the one-shot migration skill if it exists.
-    rm -rf "$AGENTS_DIR/skills/cumaru-migrate" 2>/dev/null || true
+    local active_agent active_skills_dir
+    active_agent=$(_agent_current) || return 1
+    active_skills_dir=$(_agent_skills_dir "$parent" "$active_agent")
+    rm -rf "$active_skills_dir/cumaru-migrate" 2>/dev/null || true
     SKILLS_SRC="$_orig_skills_src"
 
     # Slash commands: replace from the domain source.
@@ -680,7 +676,7 @@ cmd_update() {
       yellow "  Review:  cumaru update schema"
       yellow "  Replace: cumaru update schema --apply   (destructive: loses meta.apps.values)"
     fi
-    say "  Run with --apply to replace skills and slash commands from the source under $AGENTS_DIR/."
+    say "  Run with --apply to replace artifacts for the schema-selected agent."
     return 0
   fi
 
@@ -717,9 +713,111 @@ cmd_update() {
     yellow "  Replace: cumaru update schema --apply   (destructive: loses meta.apps.values)"
     say ""
   fi
-  say "Skills and slash commands will also be replaced from the source on --apply under $AGENTS_DIR/."
+  say "Skills and supported slash commands will also be replaced for the schema-selected agent on --apply."
   say "Re-run with --apply to merge .cumaru/ files and replace skills/commands."
   return 0
+}
+
+# Switch the native agent integration. Dry-run by default; schema is written
+# only after all target artifacts have been installed.
+cmd_update_agent() {
+  local requested="${1:-}" apply=0 from=""
+  local CUMARU_AGENT_OVERRIDE=""
+  [[ -n "$requested" ]] || {
+    red "✗ usage: cumaru update agent <none|claude|codex|opencode> [--apply]"
+    return 2
+  }
+  shift
+
+  local target_agent
+  target_agent=$(_agent_normalize "$requested") || {
+    red "✗ unknown agent: $requested (expected none, claude, codex, or opencode)"
+    return 2
+  }
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --apply) apply=1; shift ;;
+      --from)
+        [[ -n "${2:-}" ]] || { red "✗ --from requires a path"; return 2; }
+        from="$2"; shift 2 ;;
+      -h|--help|help)
+        say "Usage: cumaru update agent <none|claude|codex|opencode> [--from <checkout>] [--apply]"
+        return 0 ;;
+      *) red "unexpected arg: $1"; return 2 ;;
+    esac
+  done
+
+  [[ -f "$SCHEMA" && -f "$CUMARU_DIR/index.md" ]] || {
+    red "✗ $CUMARU_DIR is not installed"
+    return 1
+  }
+
+  local source_root="${from:-$SCRIPT_DIR}"
+  [[ -d "$source_root/domains" ]] || {
+    red "✗ source does not look like a Cumaru checkout: $source_root"
+    return 1
+  }
+
+  local domain source_domain
+  domain=$(yq -r '.domain // "base"' "$SCHEMA" 2>/dev/null || true)
+  source_domain="$source_root/domains/$( [[ "$domain" == "base" ]] && printf '%s' "__base" || printf '%s' "$domain" )"
+  [[ -d "$source_domain" ]] || {
+    red "✗ domain '$domain' not found at $source_domain"
+    return 1
+  }
+  if [[ "$target_agent" == "opencode" ]] && ! command -v jq >/dev/null 2>&1; then
+    red "✗ jq is required for the opencode adapter"
+    return 1
+  fi
+
+  local current_agent parent
+  current_agent=$(_agent_current) || {
+    red "✗ invalid agent value in $SCHEMA"
+    return 1
+  }
+  parent=$(dirname "$CUMARU_DIR")
+
+  say "Agent adapter: $current_agent → $target_agent"
+  _agent_describe "$parent" "$target_agent"
+  if [[ $apply -eq 0 ]]; then
+    say ""
+    say "Dry-run only. Re-run with --apply to switch adapters."
+    return 0
+  fi
+
+  CUMARU_AGENT_OVERRIDE="$target_agent"
+  _agent_refresh_instructions "$parent" "$target_agent" || {
+    unset CUMARU_AGENT_OVERRIDE
+    red "✗ failed to install target instructions; schema was not changed"
+    return 1
+  }
+  _framework_install_skills "$parent" "$source_domain" "1" || {
+    unset CUMARU_AGENT_OVERRIDE
+    red "✗ failed to install target skills; schema was not changed"
+    return 1
+  }
+  _framework_prune_deprecated_cumaru_skills "$parent" "$source_domain"
+  _framework_copy_commands "$parent" "$source_domain" "1" || {
+    unset CUMARU_AGENT_OVERRIDE
+    red "✗ failed to install target commands; schema was not changed"
+    return 1
+  }
+  if [[ "$current_agent" != "$target_agent" ]]; then
+    _agent_remove_adapter "$parent" "$current_agent" "$target_agent" || {
+      unset CUMARU_AGENT_OVERRIDE
+      red "✗ target installed, but the old adapter could not be removed; schema was not changed"
+      return 1
+    }
+  fi
+  _agent_set "$target_agent" || {
+    unset CUMARU_AGENT_OVERRIDE
+    red "✗ target artifacts installed, but schema state could not be written"
+    return 1
+  }
+  unset CUMARU_AGENT_OVERRIDE
+
+  green "✓ agent adapter switched to $target_agent"
 }
 
 _update_report_deprecated_commands() {
@@ -731,7 +829,9 @@ _update_report_deprecated_commands() {
   [[ ${#depr_cmds[@]} -eq 0 ]] && return 0
   yellow ""
   yellow "  Deprecated commands (locally present, absent from source — review and remove manually):"
-  local commands_dir="$parent/$AGENTS_DIR/commands"
+  local active_agent commands_dir
+  active_agent=$(_agent_current) || return 1
+  commands_dir=$(_agent_commands_dir "$parent" "$active_agent")
   local slash cmd_path
   for rel_cmd in "${depr_cmds[@]}"; do
     slash="${rel_cmd%.md}"; slash="/${slash//\//:}"

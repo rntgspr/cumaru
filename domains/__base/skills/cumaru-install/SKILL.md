@@ -2,8 +2,8 @@
 human_revised: false
 version: 1
 name: cumaru-install
-description: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, wire the .agents/ instruction file, and (post-install) bootstrap the spec areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap specs from the codebase", "scaffold the spec areas", "compactar / consolidate area X", "deepen the auth spec", or any request to seed/grow the `specs/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the spec bootstrap that follows is LLM-driven via this skill.
-summary: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, wire the .agents/ instruction file, and (post-install) bootstrap the spec areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap specs from the codebase", "scaffold the spec areas", "compactar / consolidate area X", "deepen the auth spec", or any request to seed/grow the `specs/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the spec bootstrap that follows is LLM-driven via this skill.
+description: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, select an agent adapter, and (post-install) bootstrap the spec areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap specs from the codebase", "scaffold the spec areas", "compactar / consolidate area X", "deepen the auth spec", or any request to seed/grow the `specs/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the spec bootstrap that follows is LLM-driven via this skill.
+summary: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, select an agent adapter, and (post-install) bootstrap the spec areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap specs from the codebase", "scaffold the spec areas", "compactar / consolidate area X", "deepen the auth spec", or any request to seed/grow the `specs/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the spec bootstrap that follows is LLM-driven via this skill.
 ---
 
 # `cumaru install` — adopt the framework + bootstrap specs
@@ -23,10 +23,10 @@ What the script does, in order:
 1. Resolves the chosen domain → `domains/<name>/` (or `domains/__base/` for `base`).
 2. Prompts before replacing an existing `.cumaru/`; rejects non-interactive overwrite.
 3. Copies the domain wholesale into `.cumaru/`.
-4. **Auto-installs every `cumaru-*` skill** from the domain into `.agents/skills/` — these are the operating skills the LLM needs for any work in this tree.
+4. **Auto-installs every `cumaru-*` skill** from the domain into the selected adapter's native skill directory.
 5. Applies `--with <skill>` opt-ins from the top-level `skills/` directory.
-6. Wires `.agents/AGENTS.md` with a `<!-- BEGIN/END CUMARU-HOOK -->` block that `@`-imports `.cumaru/index.md` so every agent session in the project auto-loads the framework entry point. Idempotent (skip-if-marker-present).
-7. Installs slash commands into `.agents/commands/`.
+6. Wires durable instructions through the selected agent adapter.
+7. Installs supported slash commands and writes `agent` in schema.
 
 After step 7, the script prints "Next steps" — that's your cue to start the spec bootstrap below.
 

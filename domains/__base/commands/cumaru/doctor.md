@@ -7,6 +7,6 @@ summary: Load the universal cumaru-doctor skill and follow its diagnostic and re
 
 # `/cumaru:doctor`
 
-Load `.agents/skills/cumaru-doctor/SKILL.md` and follow its workflow. The skill
+Load the installed `cumaru-doctor` skill and follow its workflow. The skill
 is the canonical source for diagnosis, user confirmation, remediation, and
 verification; do not duplicate or bypass its recipe here.

@@ -1,4 +1,6 @@
 ---
+version: 1
+description: Absorb a completed light-SDLC plan into durable specifications.
 human_revised: false
 summary: Framework command guidance for `/cumaru:absorb` workflow execution.
 ---
@@ -9,7 +11,7 @@ Loads the `cumaru-absorb` skill and dispatches by the user's natural-language in
 
 ## Workflow
 
-1. Load `.agents/skills/cumaru-absorb/SKILL.md` and `.cumaru/roles/lead.md`.
+1. Load the installed `cumaru-absorb` skill and `.cumaru/roles/lead.md`.
 2. Read `plans/index.md` and `specs/index.md`, then inspect candidates with `cumaru tree --pillars plans,specs --rows`.
 3. Run the pre-checks (plan exists, delta-draft exists, all tasks done).
 4. Execute Phase 1 (validate + absorb into specs) with user confirmation.

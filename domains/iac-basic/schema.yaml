@@ -29,6 +29,7 @@
 
 version: 6
 domain: iac-basic # self-identifying so update can detect the installed domain
+agent: null # null = generic .agents/ integration; or claude, codex, opencode
 # ─────────────────────────────────────────────────────────────────────────
 # AXIS NOTE — in this domain the universal `apps:` field enumerates the
 # project's ENVIRONMENTS (dev | staging | prod | …), not software components.

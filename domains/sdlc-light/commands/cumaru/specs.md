@@ -1,4 +1,6 @@
 ---
+version: 1
+description: Bootstrap, deepen, split, or consolidate specifications.
 human_revised: false
 summary: Framework command guidance for `/cumaru:specs` workflow execution.
 ---
@@ -9,7 +11,7 @@ Loads the `cumaru-specs` skill and dispatches by the user's natural-language inp
 
 ## Workflow
 
-1. Load `.cumaru/skills/cumaru-specs/SKILL.md` and the `roles/lead.md`.
+1. Load the installed `cumaru-specs` skill and `.cumaru/roles/lead.md`.
 2. Load `specs/index.md`.
 3. Classify the user's request against the **Patterns** table in the skill.
 4. Execute the matching recipe with user confirmation at each step.

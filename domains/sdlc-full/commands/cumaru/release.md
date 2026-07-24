@@ -18,8 +18,9 @@ Arguments: `$ARGUMENTS` should be two refs — `$1` = FROM (previous version), `
 
 2. **Confirm the GitLab target.** The fetch reads `GITLAB_PROJECT` (numeric id or url-encoded path), `GITLAB_TOKEN`, and optional `GITLAB_HOST` from env or `.env`. If `GITLAB_PROJECT`/`GITLAB_TOKEN` are unset, ask for them before running — don't fail silently.
 
-3. **Fetch the range.** Run the bundled fetch (path is under `.agents/skills/` once installed):
-   `bash cumaru-release/scripts/gitlab-compare.sh "<FROM>" "<TO>"`
+3. **Fetch the range.** Load the installed `cumaru-release` skill, resolve its
+   directory through the active agent, and run:
+   `bash <skill-directory>/scripts/gitlab-compare.sh "<FROM>" "<TO>"`
    It prints markdown: commits, authors, files changed, **tracker keys referenced**, and a Range footer. If it errors (non-200, missing env, bad refs), surface the message verbatim and stop.
 
 4. **Narrate into the template.** Follow the `cumaru-release` skill recipe: open `templates/release-report.md` and fill every section IN ORDER — narrate (don't paste) commit titles, group changes by area using `.cumaru/schema.yaml` `meta.apps.values` when they map, write `None` explicitly under Breaking changes if there are none, and fill the Range block from the script footer.
