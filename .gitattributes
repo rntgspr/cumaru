@@ -1,0 +1,12 @@
+# Maintainer-only paths excluded from the global snapshot built by src/install.sh.
+.memory/       export-ignore
+tests/         export-ignore
+.shellspec     export-ignore
+docs/          export-ignore
+.github/       export-ignore
+.claude/       export-ignore
+.codex/        export-ignore
+report/        export-ignore
+scripts/       export-ignore
+.gitignore     export-ignore
+.gitattributes export-ignore

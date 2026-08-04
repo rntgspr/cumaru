@@ -1,0 +1,18 @@
+{
+  "description": "Load repository memory and documentation into every Codex context.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"$(git rev-parse --show-toplevel)/.codex/hooks/load-context.sh\"",
+            "statusMessage": "Loading repository memory and docs",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ]
+  }
+}

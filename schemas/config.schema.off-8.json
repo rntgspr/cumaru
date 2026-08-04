@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixelpunk.works/cumaru/schemas/config.schema.json",
+  "title": "Cumaru configuration schema",
+  "type": "object",
+  "required": ["version", "domain", "rules", "root", "meta"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1, "x-cumaru-ownership": "framework"},
+    "domain": {"$ref": "#/$defs/name", "x-cumaru-ownership": "framework"},
+    "agent": {"description": "Deprecated compatibility field. Cumaru ignores it; doctor reports its presence.", "x-cumaru-ownership": "adopter"},
+    "rules": {"$ref": "#/$defs/rules", "x-cumaru-ownership": "merge-map"},
+    "root": {"$ref": "#/$defs/node", "x-cumaru-ownership": "merge-map"},
+    "meta": {"$ref": "#/$defs/meta", "x-cumaru-ownership": "merge-map"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+    "tagName": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*$"},
+    "frontmatter": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*!?$"},
+      "uniqueItems": true
+    },
+    "tagType": {
+      "oneOf": [
+        {"enum": ["default", "prose", "mixed", "other"]},
+        {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      ]
+    },
+    "tags": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/tagName"},
+      "additionalProperties": {"$ref": "#/$defs/tagType"},
+      "x-cumaru-ownership": "merge-map"
+    },
+    "entities": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/name"},
+      "additionalProperties": {"$ref": "#/$defs/node"},
+      "x-cumaru-ownership": "merge-map"
+    },
+    "node": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "x-cumaru-ownership": "framework"},
+        "frontmatter": {"$ref": "#/$defs/frontmatter", "x-cumaru-ownership": "framework"},
+        "tags": {"$ref": "#/$defs/tags"},
+        "entities": {"$ref": "#/$defs/entities"}
+      },
+      "additionalProperties": false
+    },
+    "fileRule": {
+      "type": "object",
+      "required": ["frontmatter"],
+      "properties": {"frontmatter": {"$ref": "#/$defs/frontmatter"}},
+      "additionalProperties": false
+    },
+    "markdownRule": {
+      "type": "object",
+      "required": ["required_heading", "frontmatter"],
+      "properties": {
+        "required_heading": {"type": "string", "minLength": 1},
+        "frontmatter": {"$ref": "#/$defs/frontmatter"}
+      },
+      "additionalProperties": false
+    },
+    "patternRule": {
+      "type": "object",
+      "required": ["severity", "pattern", "applies_to"],
+      "properties": {
+        "severity": {"enum": ["warning", "error"]},
+        "pattern": {"type": "string", "minLength": 1},
+        "applies_to": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "rules": {
+      "type": "object",
+      "required": ["markdown", "index_md", "pillar_index"],
+      "properties": {
+        "markdown": {"$ref": "#/$defs/markdownRule"},
+        "index_md": {"$ref": "#/$defs/fileRule"},
+        "pillar_index": {"$ref": "#/$defs/fileRule"}
+      },
+      "propertyNames": {"$ref": "#/$defs/name"},
+      "additionalProperties": {"$ref": "#/$defs/patternRule"}
+    },
+    "metaTag": {
+      "type": "object",
+      "required": ["host_file", "type"],
+      "properties": {
+        "host_file": {"type": "string", "minLength": 1},
+        "type": {"$ref": "#/$defs/tagType"}
+      },
+      "additionalProperties": false
+    },
+    "metaTags": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/tagName"},
+      "additionalProperties": {"$ref": "#/$defs/metaTag"},
+      "x-cumaru-ownership": "merge-map"
+    },
+    "apps": {
+      "type": "object",
+      "required": ["values"],
+      "properties": {
+        "values": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "x-cumaru-ownership": "adopter"}
+      },
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "x-cumaru-ownership": "adopter"}
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["framework_version_field", "framework_version_location", "rule"],
+      "properties": {
+        "framework_version_field": {"type": "string", "minLength": 1},
+        "framework_version_location": {"type": "string", "minLength": 1},
+        "rule": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "required": ["apps", "tags", "compatibility"],
+      "properties": {
+        "apps": {"$ref": "#/$defs/apps"},
+        "tags": {"$ref": "#/$defs/metaTags"},
+        "specification_dir": {"$ref": "#/$defs/name", "x-cumaru-ownership": "adopter"},
+        "coverage": {"$ref": "#/$defs/coverage"},
+        "compatibility": {"$ref": "#/$defs/compatibility", "x-cumaru-ownership": "framework"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

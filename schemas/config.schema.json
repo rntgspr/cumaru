@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixelpunk.works/cumaru/schemas/config.schema.json",
+  "title": "Cumaru v9 configuration schema",
+  "description": "The active v9 contract. Version 8 remains in config.schema.off-8.json until domain migration.",
+  "type": "object",
+  "required": ["version", "domain", "rules", "root", "meta"],
+  "properties": {
+    "version": {"const": 9, "x-cumaru-ownership": "framework"},
+    "domain": {"$ref": "#/$defs/name", "x-cumaru-ownership": "framework"},
+    "rules": {"$ref": "#/$defs/rules", "x-cumaru-ownership": "merge-map"},
+    "root": {"$ref": "#/$defs/node", "x-cumaru-ownership": "merge-map"},
+    "meta": {"$ref": "#/$defs/meta", "x-cumaru-ownership": "merge-map"},
+    "workflows": {"$ref": "#/$defs/workflows", "x-cumaru-ownership": "adopter"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+    "fieldName": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+    "tagName": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*$"},
+    "field": {"type": "object", "properties": {"optional": {"type": "boolean"}}, "additionalProperties": false},
+    "frontmatter": {"type": "object", "propertyNames": {"$ref": "#/$defs/fieldName"}, "additionalProperties": {"$ref": "#/$defs/field"}},
+    "tags": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/tagName"}},
+    "node": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "x-cumaru-ownership": "framework"},
+        "optional": {"type": "boolean", "x-cumaru-ownership": "framework"},
+        "framework": {"type": "boolean", "x-cumaru-ownership": "framework"},
+        "frontmatter": {"$ref": "#/$defs/frontmatter", "x-cumaru-ownership": "framework"},
+        "tags": {"$ref": "#/$defs/tags", "x-cumaru-ownership": "framework"}
+      },
+      "additionalProperties": {"$ref": "#/$defs/node"}
+    },
+    "fileRule": {"type": "object", "required": ["frontmatter"], "properties": {"frontmatter": {"$ref": "#/$defs/frontmatter"}}, "additionalProperties": false},
+    "markdownRule": {"type": "object", "required": ["required_heading", "frontmatter"], "properties": {"required_heading": {"type": "string", "minLength": 1}, "frontmatter": {"$ref": "#/$defs/frontmatter"}}, "additionalProperties": false},
+    "patternRule": {"type": "object", "required": ["severity", "pattern", "applies_to"], "properties": {"severity": {"enum": ["warning", "error"]}, "pattern": {"type": "string", "minLength": 1}, "applies_to": {"type": "array", "items": {"type": "string", "minLength": 1}}}, "additionalProperties": false},
+    "rules": {
+      "type": "object", "required": ["markdown", "index_md", "pillar_index"],
+      "properties": {"markdown": {"$ref": "#/$defs/markdownRule"}, "index_md": {"$ref": "#/$defs/fileRule"}, "pillar_index": {"$ref": "#/$defs/fileRule"}},
+      "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"$ref": "#/$defs/patternRule"}
+    },
+    "targets": {"type": "object", "required": ["values"], "properties": {"values": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "x-cumaru-ownership": "adopter"}}, "additionalProperties": false},
+    "workflowStep": {"type": "object", "required": ["skill"], "properties": {"skill": {"$ref": "#/$defs/name"}, "needs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/name"}}}, "additionalProperties": false},
+    "workflow": {"type": "object", "required": ["steps"], "properties": {"steps": {"type": "object", "minProperties": 1, "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"$ref": "#/$defs/workflowStep"}}}, "additionalProperties": false},
+    "workflows": {"type": "object", "propertyNames": {"$ref": "#/$defs/name"}, "additionalProperties": {"$ref": "#/$defs/workflow"}},
+    "meta": {
+      "type": "object", "required": ["targets"],
+      "properties": {
+        "targets": {"$ref": "#/$defs/targets"},
+        "specification_dir": {"$ref": "#/$defs/name", "x-cumaru-ownership": "adopter"},
+        "coverage": {"type": "object", "required": ["source"], "properties": {"source": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}, "additionalProperties": false}
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,5 @@
+domain: test-domain
+root:
+  entities:
+    plans: {}
+    specs: {}

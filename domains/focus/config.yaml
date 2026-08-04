@@ -1,0 +1,28 @@
+version: 9
+domain: focus
+rules:
+  markdown: {required_heading: h1, frontmatter: {human_revised: {}, summary: {}}}
+  index_md: {frontmatter: {targets: {}}}
+  pillar_index: {frontmatter: {targets: {}, summary: {}}}
+root:
+  framework: true
+  frontmatter: {depends-on: {optional: true}}
+  domain.md: {framework: true, tags: [components, root]}
+  disciplines: {framework: true, "*.md": {framework: true}}
+  roles: {framework: true, "*.md": {framework: true}}
+  templates:
+    framework: true
+    outcome.md: {framework: true, tags: [threads]}
+    "*.md": {framework: true}
+  directives:
+    framework: true
+    tags: [directives]
+    "*.md": {frontmatter: {status: {}, priority: {}, parent: {optional: true}}}
+  threads:
+    framework: true
+    "*.md": {frontmatter: {group: {optional: true}}}
+    "archive-*":
+      "*.md": {frontmatter: {group: {optional: true}}}
+  outcomes:
+    framework: true
+meta: {targets: {values: [platform, meta]}}

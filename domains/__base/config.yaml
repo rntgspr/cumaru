@@ -1,0 +1,14 @@
+version: 9
+domain: base
+rules:
+  markdown: {required_heading: h1, frontmatter: {human_revised: {}, summary: {}}}
+  index_md: {frontmatter: {targets: {}}}
+  pillar_index: {frontmatter: {targets: {}, summary: {}}}
+root:
+  framework: true
+  frontmatter: {depends-on: {optional: true}}
+  domain.md: {framework: true, tags: [components, root]}
+  disciplines: {framework: true, "*.md": {framework: true}}
+  roles: {framework: true, "*.md": {framework: true}}
+  templates: {framework: true, "*.md": {framework: true}}
+meta: {targets: {values: [platform, meta]}}
