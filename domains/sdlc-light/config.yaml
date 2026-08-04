@@ -1,0 +1,33 @@
+version: 9
+domain: sdlc-light
+rules:
+  markdown: {required_heading: h1, frontmatter: {human_revised: {}, summary: {}}}
+  index_md: {frontmatter: {targets: {}}}
+  pillar_index: {frontmatter: {targets: {}, summary: {}}}
+root:
+  framework: true
+  frontmatter: {depends-on: {optional: true}}
+  domain.md: {framework: true, tags: [components, root]}
+  disciplines: {framework: true, "*.md": {framework: true}}
+  roles: {framework: true, "*.md": {framework: true}}
+  templates:
+    framework: true
+    handoff.md: {framework: true, tags: [touched]}
+    spec.md: {framework: true, tags: [reference]}
+    "*.md": {framework: true}
+  plans:
+    framework: true
+    "*":
+      frontmatter: {scope: {}, status: {}, summary: {}, targets: {}, key: {optional: true}, type: {optional: true}, epic: {optional: true}, story: {optional: true}, aux: {optional: true}}
+      "t*.md": {frontmatter: {plan: {}, task: {}, depends-on: {}, concerns: {}, files: {}, status: {}, targets: {}, aux: {}}}
+      "handoff-t*.md": {frontmatter: {plan: {}, task: {}, status: {}, date: {}}, tags: [touched]}
+      delta-draft.md: {optional: true, frontmatter: {plan: {}, status: {}, date: {}}}
+  specs:
+    framework: true
+    "*":
+      frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}
+      "*.md": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}}
+  exploring:
+    framework: true
+    "*": {optional: true, frontmatter: {status: {}, summary: {}, targets: {}}}
+meta: {targets: {values: [platform, meta]}, specification_dir: specs, coverage: {source: []}}

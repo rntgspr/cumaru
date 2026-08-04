@@ -1,0 +1,21 @@
+version: 9
+domain: vault-memory
+rules:
+  markdown: {required_heading: h1, frontmatter: {human_revised: {}, summary: {}}}
+  index_md: {frontmatter: {targets: {}}}
+  pillar_index: {frontmatter: {targets: {}, summary: {}}}
+root:
+  framework: true
+  frontmatter: {depends-on: {optional: true}}
+  domain.md: {framework: true, tags: [components, root, relations]}
+  disciplines: {framework: true, "*.md": {framework: true}}
+  roles: {framework: true, "*.md": {framework: true}}
+  templates:
+    framework: true
+    memory.md: {framework: true, tags: [relations]}
+    "*.md": {framework: true}
+  inbox: {framework: true, "*": {frontmatter: {type: {}, captured-at: {}, last_update: {}, summary: {}, targets: {}, topics: {optional: true}, source: {optional: true}, attachments: {optional: true}, relates: {optional: true}}}}
+  drafts: {framework: true, "*": {frontmatter: {last_update: {}, summary: {}, targets: {}, topics: {optional: true}, source: {optional: true}, derived-from: {optional: true}, relates: {optional: true}, supports: {optional: true}, contradicts: {optional: true}, supersedes: {optional: true}}}}
+  memories: {framework: true, "*": {frontmatter: {type: {}, last_update: {}, confidence: {}, summary: {}, targets: {}, topics: {optional: true}, source: {optional: true}, references: {optional: true}, derived-from: {optional: true}, relates: {optional: true}, supports: {optional: true}, contradicts: {optional: true}, supersedes: {optional: true}, superseded-by: {optional: true}, part-of: {optional: true}, similar-to: {optional: true}}}}
+  attachments: {framework: true, "*": {frontmatter: {type: {}, captured-at: {}, last_update: {}, summary: {}, targets: {}, topics: {optional: true}, source: {optional: true}, retained-for: {optional: true}, relates: {optional: true}}}}
+meta: {targets: {values: [personal, work, research, meta]}, specification_dir: memories, coverage: {source: []}}
