@@ -1,0 +1,129 @@
+---
+human_revised: false
+apps: [meta]
+summary: Design-as-code workflow for versioned research, design delivery, and durable implementation-facing experience specifications.
+---
+
+<!-- cumaru:components -->
+| Link | Description |
+|------|-------------|
+_(replace with your actual stack)_
+<!-- /cumaru:components -->
+
+<!-- cumaru:root -->
+_(empty — replace with adopter-specific context, or delete this placeholder)_
+<!-- /cumaru:root -->
+
+# Design as Code domain
+
+Design is a versioned product contract. Research evidence and visual exploration
+are transient; specs holds the durable foundations, components, patterns,
+journeys, screens, content, responsive behavior, and accessibility requirements.
+
+## Design-as-code additions
+
+- intake is a tracker mirror: create a brief only after its tracker ticket exists.
+- research holds transient interviews, audits, experiments, and evidence.
+- concepts holds explicit design directions, sketches, and prototype hypotheses.
+- assets catalogs reusable visual assets, source links, licenses, and usage rules.
+- specs is implementation-facing: Figma and prototypes are evidence, not the only contract.
+
+This file declares the SDLC Light domain's specifics — pillars, roles, entry,
+and domain context — pulled into context as the root `index.md`'s `depends-on`.
+The kernel rules (the node model, the loading rule, conduct, language) live in
+`index.md` and are identical across all domains.
+
+## Pillars (root's children)
+
+```
+.cumaru/
+├── index.md      ← kernel (identical across domains)
+├── config.yaml   ← canonical contract
+├── domain.md     ← this file (this domain's specifics)
+├── plans/        ← everything: tracked items, active plans, completed plans
+├── specs/        ← living spec; areas nest subareas
+├── exploring/    ← pre-plan ideas in incubation (never loaded by default)
+├── roles/        ← agent roles (lead)
+└── templates/    ← entity templates
+```
+
+- **`plans/` — all work items.** One `plans/<PLAN-ID>/` per item: intake,
+  active plan, or completed work. For tracker-backed items the `key:` field
+  records the tracker id. Tasks, handoffs, and the delta-draft live inside.
+  When a plan closes, its delta is absorbed directly into `specs/` — no
+  separate archive pillar.
+- **`specs/` — what is true now.** The living spec. Areas nest subareas to
+  any depth; `depends-on` is the strongest load signal, `relates` is
+  "consider". On plan close the delta is absorbed into the area whose scope
+  actually owns it; `git log` is the only cross-reference back to the plan.
+- **`exploring/` — pre-plan ideas.** Incubators with no commitment;
+  transient. Never loaded by default. Promote to `plans/` when matured.
+
+### Cycle
+
+```
+exploring/ ──promote──→ plans/ ──absorb──→ specs/
+```
+
+Tracker items (when a tracker is used) feed plans via the `key:` field, but
+there is no separate `intake/` pillar — every item lives in `plans/`. Ideas
+incubate in `exploring/`. Once committed, they become a plan in `plans/`. On
+close, the `cumaru-absorb` skill reads the plan, updates specs, and removes both
+the plan dir and the exploring entry that originated it — only `specs/` remains
+as durable record.
+
+## Roles
+
+- **Lead** — the sole role. Unrestricted: reads and writes the entire
+  `.cumaru/` tree and the repository. Owns planning, spec maintenance,
+  exploration, and the absorb flow.
+
+### Shallow indexes per role (entry into the loading rule)
+
+| Role  | Shallow indexes loaded                                       |
+|-------|--------------------------------------------------------------|
+| Lead | `plans/index.md`, `specs/index.md`, `exploring/index.md`     |
+
+### Plan-scoped entry
+
+When a plan is active it declares `scope:` (paths under `specs/`) and
+`aux:`; the scoped spec areas are the **declared entry** — the loading-rule
+traversal starts from those nodes, nothing else.
+
+## Execution disciplines
+
+Framework-shipped conduct for *how* work is done — distinct from the
+pillars, which hold *what* the project is. Every modular file in `disciplines/`
+is loaded at context start; `applies-when:` controls when its rules apply,
+never whether its body is loaded. `disciplines/index.md` defines how
+`strictness:` controls required consideration.
+
+| Discipline | Applies when | File |
+|---|---|---|
+| cumaru-first | repository work can benefit from a relevant Cumaru surface | `disciplines/cumaru-first.md` |
+| code-comments | code or related artifacts are written, edited, reviewed, refactored, or documented where comments may be affected | `disciplines/code-comments.md` |
+| engineering | performing software engineering work or reporting technical results | `disciplines/engineering.md` |
+| verification | about to claim work complete; before commit / PR / handoff | `disciplines/verification.md` |
+| systematic-debugging | a bug / test failure / unexpected behavior — before fixing | `disciplines/systematic-debugging.md` |
+| test-driven-development | implementing a feature or bugfix, before writing code | `disciplines/test-driven-development.md` |
+| receiving-code-review | acting on code-review feedback | `disciplines/receiving-code-review.md` |
+| acceptance-testing | a plan is implemented and about to close — verify acceptance criteria with evidence | `disciplines/acceptance-testing.md` |
+| dry | same knowledge / rule risks living in more than one place | `disciplines/dry.md` |
+| kiss | choosing how to implement, when a simpler option exists | `disciplines/kiss.md` |
+| yagni | tempted to build beyond a present, stated requirement | `disciplines/yagni.md` |
+| solid | designing / refactoring structure — responsibilities, extension, coupling | `disciplines/solid.md` |
+| blast-radius | fixing scope:/files: for a change whose reach the spec graph doesn't already describe | `disciplines/blast-radius.md` |
+
+## Domain context (web/software)
+
+> The framework was first applied to a web/software workflow. This is
+> reference; the kernel itself is not software-specific.
+
+- **vs. OpenSpec** — OpenSpec keeps specs monolithic per capability;
+  `.cumaru/` splits by concern, allows per-component divergence and slug-based
+  plans, and separates pre-plan ideas in `exploring/`.
+- **vs. Kiro / requirements notation** — `.cumaru/` accepts EARS and RFC 2119 as a **warning**, not a
+  blocker; narrative sections stay free prose.
+- **vs. memory bank (Cline / Roo)** — memory bank focuses on session state;
+  `.cumaru/` focuses on durable system state (living spec) + operational plan +
+  pre-plan ideation.
