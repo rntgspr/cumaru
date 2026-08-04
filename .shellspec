@@ -1,0 +1,7 @@
+--shell bash
+--default-path tests/spec
+--helperdir tests/spec
+--require spec_helper
+--reportdir tests/report
+--fail-no-examples
+--no-color

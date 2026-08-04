@@ -1,0 +1,15 @@
+**/.DS_Store
+**/Thumbs.db
+**/desktop.ini
+**/*.bkp.*
+.env
+CLAUDE.md
+AGENTS.md
+.claude
+.agents
+.cumaru
+!tests/**/.cumaru/
+!tests/**/.cumaru/**
+tests/report/
+opencode.json
+.memory/notepad.md

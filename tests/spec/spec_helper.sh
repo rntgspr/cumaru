@@ -1,0 +1,3 @@
+REPO_ROOT=${SHELLSPEC_PROJECT_ROOT:-$(pwd)}
+CLI="$REPO_ROOT/cumaru"
+export REPO_ROOT CLI
