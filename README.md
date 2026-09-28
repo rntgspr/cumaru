@@ -165,6 +165,7 @@ documentation for the complete traversal contract.
 | `cumaru update` | Preview or directly refresh framework content at the installed integer version |
 | `cumaru upgrade` | Replace the CLI checkout and verify distribution kernel integrity; `--check` only compares with the latest GitHub tag |
 | `cumaru migrate` | Print the current read-only, LLM-executed migration instructions |
+| `cumaru bootstrap` | Print the read-only post-install bootstrap steps for the installed domain |
 | `cumaru version` | Print the installed distribution and contract versions, offline |
 | `cumaru help` | Show the complete command catalog |
 | `cumaru help domains` | List installable domains; this is not a `domains` subcommand |
@@ -222,4 +223,5 @@ Read [updates](docs/update.md), [migration](docs/migrate.md), and
 - [`cumaru fs`](docs/fs.md)
 - [`cumaru update`](docs/update.md)
 - [`cumaru migrate`](docs/migrate.md)
+- [`cumaru bootstrap`](docs/bootstrap.md)
 - [`cumaru uninstall`](docs/uninstall.md)

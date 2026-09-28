@@ -32,8 +32,8 @@ its current priority order in this skill.
    rather than silently expanding work or hiding material risks. Do not promote
    a stakeholder suggestion into a user-approved commitment.
 5. For requested local changes, maintain one definition per slug in
-   `.cumaru/directives/`, following its contract for status, priority, scope,
-   concrete points, and evidence. Use `cumaru fs` to create or move files and
+   `.cumaru/directives/`, created from `.cumaru/templates/directive.md` and
+   following the directive contract. Use `cumaru fs` to create or move files and
    preserve existing definitions and source thread identities. Threads retain
    conversations, not duplicate directive definitions; use `cumaru-thread`
    only when new source history needs capture. Clearly distinguish proposals

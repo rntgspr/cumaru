@@ -34,6 +34,7 @@ declares which systems are read and what is currently important.
 - [Directives](directives/index.md): priority scope and direction, one file per directive.
 - [Threads](threads/index.md): source context, identified by stable IDs or descriptive slugs.
 - [Outcomes](outcomes/index.md): results grouped by area, identified by descriptive slugs.
+- [Sources](sources/index.md): read-only access to each data source, one file per source.
 
 ## Flow
 
@@ -44,7 +45,9 @@ Use [cumaru-directives](skills/cumaru-directives/SKILL.md) to generate or refine
 the broad directions and their concrete decision points. Use
 [cumaru-thread](skills/cumaru-thread/SKILL.md) to capture or update a thread, and
 [cumaru-outcome](skills/cumaru-outcome/SKILL.md) to derive, update, or reclassify
-an outcome. These workflows operate under Admin. They authorize local document
+an outcome. Use [cumaru-sources](skills/cumaru-sources/SKILL.md) to read
+every active source, or a named subset, and create or update threads from the
+results under the active directives. These workflows operate under Admin. They authorize local document
 maintenance only, not edits to external services.
 
 Capture context first, then record a result once supported by the thread.
@@ -83,11 +86,11 @@ downstream step stays visible as monitoring, not as personal urgency, and
 returns to the action queue only when evidence explicitly asks the user for a
 correction, response, or intervention. Preserve explicit user holds.
 
-How signals arrive is not part of this domain. Which systems are read, on what
-window, and by which workflow are adopter concerns declared in the `root` tag —
-an adopter may call that surface its input, its channels, or its input channels;
-this domain fixes no name for it. This domain governs what happens to a subject
-once it is written down.
+How signals arrive is declared in [`sources/`](sources/index.md): one file per
+data source states its system, access tool, filters, window, thread mapping,
+and limitations, all read-only. Adopter policy over intake, such as which
+workflow collects and when, stays in the `root` tag. This domain governs what
+happens to a subject once it is written down.
 
 ## Acting on a subject
 

@@ -560,6 +560,8 @@ cmd_update() {
     # checkout and is deliberately never copied into an adopter tree — it is a
     # rolling document replaced on every upgrade, not installed state.
     [[ "$rel" == "migration.md" ]] && continue
+    # bootstrap.md is source-only the same way, delivered by `cumaru bootstrap`.
+    [[ "$rel" == "bootstrap.md" ]] && continue
     # config.yaml is reconciled only by the dedicated config target.
     [[ "$rel" == "config.yaml" ]] && continue
     if [[ -n "$path_filter" ]]; then

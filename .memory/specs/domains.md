@@ -47,8 +47,8 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
 5. Domain-specific pillars, roles, lifecycle, skills, and commands live only
    in that domain. `domain.md` carries domain semantics.
 6. Install validates the complete source before project writes, copies the
-   selected domain, excludes source-only skills/commands/migration prose from
-   `.cumaru/`, then installs native artifacts separately.
+   selected domain, excludes source-only skills/commands/migration and bootstrap
+   prose from `.cumaru/`, then installs native artifacts separately.
 7. An omitted install adapter means generic; explicit targets are `claude`,
    `codex`, and `opencode`. Adapter choice is not persisted in config.
 8. Every `commands/cumaru/<name>.md` requires a regular
@@ -60,6 +60,34 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
    ships release orchestration or Git conflict resolution, and no skill loads a
    project `.env`. Runner guidance keeps Cypress video and Playwright retries
    disabled by default and reports only artifacts actually produced.
+10. `focus` declares signal intake in its `sources` pillar: one lowercase-slug
+    file per data source under `.cumaru/sources/`, created from
+    `templates/source.md`, describing read-only access. Doctor requires each
+    source leaf's `summary` and `status`; the `root` tag keeps adopter intake
+    policy.
+11. `focus` ships `cumaru-sources` with a namesake `/cumaru:sources` command: it
+    reads active sources strictly read-only, creates or updates threads through
+    `cumaru-thread` under the active directives, and reports per source what
+    was read, created, updated, unmatched, and unavailable.
+12. A domain may ship a source-only, prose-only `bootstrap.md` at its root with
+    the ordered post-install steps; `domains/__base/bootstrap.md` holds the
+    universal rules. It is never copied into `.cumaru/`. The read-only
+    `cumaru bootstrap` prints the base body then the installed domain body,
+    frontmatter stripped, and fails with a diagnostic for a missing config or
+    unknown domain. A domain's `cumaru-install` skill points to it instead of
+    restating steps. `focus` ships one naming every pillar and template; other
+    domains follow later.
+13. The `focus` bootstrap runs sources first (proposed from the tools actually
+    available, written only once confirmed, unreachable ones reported as
+    unavailable), then directives (stated by the user or drafted from the
+    confirmed sources as `proposed` and unranked), then outcome areas, then an
+    optional adopter-owned presentation skill in the agent skill directory,
+    named without the `cumaru-` prefix, that reads active threads and builds a
+    derived asset without editing them. Framework `__base` rules allow a
+    domain step to propose; nothing is written unconfirmed.
+14. `focus` ships `templates/directive.md` carrying every field and section
+    the directive contract requires; `directives/index.md` and
+    `cumaru-directives` reference it instead of restating its sections.
 
 ## Inputs and ownership
 
@@ -121,6 +149,7 @@ run or regression-tested without explicit authorization.
 | Script or artifact | Responsibility |
 |---|---|
 | `src/cmd_install.sh` | Project install parsing, domain copy, skills, commands, and help discovery. |
+| `src/cmd_bootstrap.sh` | Read-only delivery of `__base` plus domain `bootstrap.md`. |
 | `src/agent_adapter.sh` | Adapter normalization, paths, instructions, hooks, and cleanup. |
 | `src/schema.sh` | Complete source-domain validation. |
 | `src/install.sh` | Tool installation and distribution drift check. |
@@ -146,7 +175,8 @@ run or regression-tested without explicit authorization.
 | `tests/spec/integration/schema_spec.sh` | Every domain config and semantic constraints. |
 | `tests/spec/integration/agent_adapters_spec.sh` | Domain artifacts across all adapters. |
 | `tests/spec/contracts/documented_contracts_spec.sh` | Domain help and universal mirror contracts. |
-| `tests/spec/cli/doctor_spec.sh` | Installed domain and adapter acceptance. |
+| `tests/spec/cli/doctor_spec.sh` | Installed domain and adapter acceptance, including focus source frontmatter. |
+| `tests/spec/contracts/bootstrap_spec.sh` | Bootstrap delivery, source-only exclusion, and focus coverage. |
 
 ## Verification
 

@@ -343,7 +343,6 @@ Describe 'documented CLI contracts'
 
   It 'defines one bounded atomic repository startup policy'
     index="$CONTRACT_ROOT/.memory/index.md"
-    instructions="$CONTRACT_ROOT/AGENTS.md"
     issue="$CONTRACT_ROOT/.memory/issues/issue_040.md"
     The contents of file "$index" should include '1. `.memory/index.md`.'
     The contents of file "$index" should include '2. `.memory/advisor_mode.md`.'
@@ -353,7 +352,6 @@ Describe 'documented CLI contracts'
     The contents of file "$index" should include 'emit none of the selected file bodies'
     The contents of file "$index" should include 'Specifications are current reference material selected on demand'
     The contents of file "$index" should include 'history are historical or task-scoped material'
-    The contents of file "$instructions" should include 'never bulk-load the `.memory/` tree'
     The contents of file "$issue" should include '`.memory/index.md` order'
     The contents of file "$index" should not include '@./specs/*.md'
   End

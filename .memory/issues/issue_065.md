@@ -21,6 +21,11 @@ not an assumed reduction in test count.
 - A passing textual skill check may be mistaken for proof of agent behavior.
 - Removing tests by count alone could lose regression coverage of CLI data
   preservation, version gates, or adapter installation.
+- No check detects unreplaced template placeholders (for example the
+  `summary: Replace with ...` line in `domains/focus/templates/directive.md`);
+  a leaf copied verbatim still passes `cumaru doctor`.
+- Frontmatter rules express presence only: a focus source with `status: bogus`
+  passes doctor although the contract allows `active` or `paused`.
 
 ## Required invariant
 

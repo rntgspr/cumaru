@@ -93,6 +93,45 @@ Describe 'cumaru doctor'
     printf '%s\n' "$rewritten" > "$file"
   }
 
+  # Install the focus domain and add one source leaf created from its template.
+  focus_source_project() {
+    FOCUS_PROJECT="$DOCTOR_TMP/focus-project"
+    mkdir -p "$FOCUS_PROJECT"
+    cli_in "$FOCUS_PROJECT" install --domain focus >/dev/null || return 1
+    cp "$FOCUS_PROJECT/.cumaru/templates/source.md" "$FOCUS_PROJECT/.cumaru/sources/tracker.md"
+  }
+
+  It 'installs the focus sources pillar and passes with a templated source'
+    focus_source_project
+    When call cli_in "$FOCUS_PROJECT" doctor --quiet
+    The status should be success
+    The output should include 'Summary: 0 error(s)'
+    The path "$FOCUS_PROJECT/.cumaru/sources/index.md" should be file
+  End
+
+  It 'fails a focus source leaf missing status without modifying it'
+    focus_source_project
+    yq -i --front-matter=process 'del(.status)' "$FOCUS_PROJECT/.cumaru/sources/tracker.md"
+    cp "$FOCUS_PROJECT/.cumaru/sources/tracker.md" "$DOCTOR_TMP/tracker.before"
+    When call cli_in "$FOCUS_PROJECT" doctor --quiet
+    The status should be failure
+    The output should include 'sources/tracker.md'
+    The output should include 'status'
+    Assert cmp -s "$DOCTOR_TMP/tracker.before" "$FOCUS_PROJECT/.cumaru/sources/tracker.md"
+  End
+
+  It 'applies global Markdown rules to undeclared files without modifying them'
+    focus_source_project
+    printf '%s\n' '---' 'human_revised: false' '---' '' '# Stray outcome' > "$FOCUS_PROJECT/.cumaru/outcomes/stray.md"
+    printf '%s\n' '# Stray root note' > "$FOCUS_PROJECT/.cumaru/stray.md"
+    cp -R "$FOCUS_PROJECT/.cumaru" "$DOCTOR_TMP/focus.before"
+    When call cli_in "$FOCUS_PROJECT" doctor --quiet
+    The status should be failure
+    The output should include "outcomes/stray.md: missing required frontmatter field 'summary'"
+    The output should include "stray.md: missing required frontmatter field 'human_revised'"
+    The value "$(diff -r "$DOCTOR_TMP/focus.before" "$FOCUS_PROJECT/.cumaru")" should be blank
+  End
+
   It 'exempts an entry index.md from a wildcard leaf tag contract'
     wildcard_pillar_project
     When call cli_in "$WILDCARD_PROJECT" doctor --quiet
@@ -124,7 +163,7 @@ Describe 'cumaru doctor'
   It 'runs all eight checks on a healthy fixture'
     When call cli_in "$DOCTOR_PROJECT" doctor --quiet
     The status should be success
-    The output should include 'Summary: 0 error(s), 3 warning(s), 5 ok'
+    The output should include 'Summary: 0 error(s), 2 warning(s), 6 ok'
     The error should be blank
   End
 
@@ -193,7 +232,7 @@ EOF
     When call cli_in "$DOCTOR_PROJECT" doctor --quiet
     The status should be success
     The output should include 'notes/leaf.md: balanced nested tags are valid but need adopter review'
-    The output should include 'Summary: 0 error(s), 3 warning(s), 5 ok'
+    The output should include 'Summary: 0 error(s), 2 warning(s), 6 ok'
   End
 
   Context 'with malformed semantic tags'
@@ -215,7 +254,7 @@ EOF
       The status should equal 1
       The output should include 'Malformed semantic tags found'
       The output should include "notes/leaf.md $2"
-      The output should include 'Summary: 1 error(s), 2 warning(s), 5 ok'
+      The output should include 'Summary: 1 error(s), 1 warning(s), 6 ok'
       The output should not include 'Marker contracts contain no retired structural inventories'
       The error should be blank
       The value "$(diff -r "$DOCTOR_TMP/cumaru.before" "$DOCTOR_PROJECT/.cumaru")" should be blank
@@ -229,7 +268,7 @@ EOF
 
     When call cli_in "$DOCTOR_PROJECT" doctor --quiet
     The status should be success
-    The output should include 'Summary: 0 error(s), 3 warning(s), 5 ok'
+    The output should include 'Summary: 0 error(s), 2 warning(s), 6 ok'
     The error should be blank
     The value "$(cmp -s "$DOCTOR_TMP/leaf.before.md" "$DOCTOR_PROJECT/.cumaru/notes/leaf.md"; printf '%s' $?)" should equal 0
   End
@@ -290,7 +329,7 @@ EOF
     yq -i ".summary = \"$value\"" "$DOCTOR_PROJECT/.cumaru/notes/leaf.md"
     When call cli_in "$DOCTOR_PROJECT" doctor --quiet
     The status should be success
-    The output should include 'Summary: 0 error(s), 3 warning(s), 5 ok'
+    The output should include 'Summary: 0 error(s), 2 warning(s), 6 ok'
   End
 
   It 'accepts 512 code points'
@@ -298,7 +337,7 @@ EOF
     yq -i ".summary = \"$value\"" "$DOCTOR_PROJECT/.cumaru/notes/leaf.md"
     When call cli_in "$DOCTOR_PROJECT" doctor --quiet
     The status should be success
-    The output should include 'Summary: 0 error(s), 3 warning(s), 5 ok'
+    The output should include 'Summary: 0 error(s), 2 warning(s), 6 ok'
   End
 
   It 'rejects 513 code points'

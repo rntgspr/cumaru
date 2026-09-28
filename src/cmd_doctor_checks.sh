@@ -24,7 +24,7 @@ _doctor_cache_init() {
 # selector precedence, path overrides, glob expansion, containment, and the
 # effective global contract; doctor only inspects each resolved Markdown host.
 _doctor_check_v9_contract() {
-  local output status logical rel ownership frontmatter tags rules file field tag heading
+  local output status logical rel ownership frontmatter tags rules file field tag heading declared global_fields
   local issues=() value
 
   output=$(config_tree_resolve "$CONFIG" "$CUMARU_DIR" 2>&1)
@@ -74,6 +74,26 @@ _doctor_check_v9_contract() {
       fi
     done < <(jq -r '.[]?' <<< "$tags")
   done <<< "$output"
+
+  # Undeclared Markdown receives only the global rules.markdown contract.
+  declared=$(cut -f2 <<< "$output")
+  global_fields=$(yq -o=json '.rules.markdown.frontmatter // {}' "$CONFIG" | jq -r 'to_entries[] | select(.value.optional != true) | .key')
+  heading=$(yq -r '.rules.markdown.required_heading // ""' "$CONFIG")
+  while IFS= read -r -d '' file; do
+    rel="${file#"$CUMARU_DIR"/}"
+    [[ "$rel" == .* || "$rel" == */.* ]] && continue
+    grep -Fxq -- "$rel" <<< "$declared" && continue
+
+    while IFS= read -r field; do
+      [[ -n "$field" ]] || continue
+      FIELD="$field" yq --front-matter=extract -e 'has(strenv(FIELD))' "$file" >/dev/null 2>&1 ||
+        issues+=("$rel: missing required frontmatter field '$field'")
+    done <<< "$global_fields"
+
+    if [[ "$heading" == "h1" ]] && ! grep -qE '^# ' "$file"; then
+      issues+=("$rel: missing required H1 heading")
+    fi
+  done < <(find "$CUMARU_DIR" -type f -name '*.md' -print0 | LC_ALL=C sort -z)
 
   if [[ ${#issues[@]} -eq 0 ]]; then
     _doctor_pass "Configured v9 tree contracts conform"

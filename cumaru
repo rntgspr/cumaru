@@ -17,6 +17,7 @@
 #   coverage [--refs|--gaps|--rows] [--strict]  report spec↔code reference coverage
 #   tree [<directory-or-md>] [--deep] [--rows]  list filesystem-backed navigation candidates
 #   migrate [--from <src>]        print the current migration instructions (read-only)
+#   bootstrap [--from <src>]      print the post-install bootstrap steps (read-only)
 #   help                          print top-level help
 #
 # Note: there is no `reconcile` subcommand — orphan detection is a check
@@ -126,6 +127,8 @@ warnings=0
 . "$SRC/cmd_map.sh"
 # shellcheck source=src/cmd_migrate.sh
 . "$SRC/cmd_migrate.sh"
+# shellcheck source=src/cmd_bootstrap.sh
+. "$SRC/cmd_bootstrap.sh"
 # shellcheck source=src/cmd_version.sh
 . "$SRC/cmd_version.sh"
 
@@ -198,6 +201,11 @@ case "$sub" in
   migrate)
     shift
     cmd_migrate "$@"
+    exit $?
+    ;;
+  bootstrap)
+    shift
+    cmd_bootstrap "$@"
     exit $?
     ;;
   version)

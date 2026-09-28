@@ -77,12 +77,12 @@ cmd_install() {
 
   # Copy the chosen domain wholesale, then drop the source-only artifacts:
   # skills/ and commands/ live exclusively under the selected adapter, and
-  # migration.md is delivered by `cumaru migrate` from the CLI checkout and is
-  # never distributed into an adopter tree. The cp -R is kept (atomic, simpler
+  # migration.md and bootstrap.md are delivered by `cumaru migrate` and
+  # `cumaru bootstrap` from the CLI checkout and are never distributed into an adopter tree. The cp -R is kept (atomic, simpler
   # than per-entry filtering); the immediately-after rm -rf is the explicit
   # declaration that none of these belongs inside the adopter's .cumaru/ tree.
   cp -R "$domain_src" "$target"
-  rm -rf "$target/skills" "$target/commands" "$target/migration.md"
+  rm -rf "$target/skills" "$target/commands" "$target/migration.md" "$target/bootstrap.md"
   green "✓ installed domain '$domain' to $target"
 
   # Install framework skills (domain-shipped cumaru-* + universal cumaru-* +

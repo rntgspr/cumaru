@@ -35,7 +35,8 @@ above, and the pixelpunk address appears only in the README.
 1. Project install always targets `./.cumaru`, defaults to domain `sdlc-full`
    and the generic adapter target, and validates source config before project writes.
 2. Fresh installs are v9, use `.cumaru/config.yaml`, install no `.state/`, and
-   exclude source-only skills, commands, and migration documents from `.cumaru/`.
+   exclude source-only skills, commands, and migration and bootstrap documents
+   from `.cumaru/`.
 3. Global upgrade is deliberately destructive: it downloads and unpacks
    GitHub's tarball of the latest release tag into a temporary directory, then
    replaces `~/.cumaru` with it, verifies kernel integrity, and relinks `~/.local/bin/cumaru`

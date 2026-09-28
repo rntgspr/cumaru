@@ -55,7 +55,8 @@ Subcommands
     version                                 print the installed distribution and contract versions (offline)
     fs <src> <verb> [<dst>]                 safe file ops inside .cumaru/ (verbs: move | copy | create | remove)
 
-  Migration
+  Bootstrap and migration
+    bootstrap [--from <src>]                print the post-install bootstrap steps (read-only; the LLM executes them)
     migrate [--from <src>]                  print the current migration instructions (read-only; the LLM executes them)
 
 help [<topic>]                            this message; `help domains` lists available domains

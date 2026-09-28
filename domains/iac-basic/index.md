@@ -86,6 +86,7 @@ reference route for its full current contract.
 | `cumaru upgrade` | Destructively replace the installed Cumaru tool snapshot by re-running its installer. Never invoke it for discovery. Only `cumaru upgrade --check` is read-only: it compares the installed version with the latest GitHub tag. | `cumaru help` |
 | `cumaru fs` | Create, move, copy, or remove paths inside `.cumaru/` under guardrails. | `cumaru fs --help` |
 | `cumaru migrate` | Print read-only instructions for the required direct migration. | `cumaru migrate --help` |
+| `cumaru bootstrap` | Print read-only post-install bootstrap steps for the installed domain. | `cumaru bootstrap --help` |
 | `cumaru version` | Print the installed distribution version and integer contract version, offline. | `cumaru version --help` |
 | `cumaru help` | Show the top-level command catalog. | `cumaru help` |
 | `cumaru help domains` | List installable domains; this is a help topic, not a `domains` subcommand. | `cumaru help domains` |

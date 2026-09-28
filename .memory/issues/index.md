@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 128.
+from 133.
 
 ## Open issues
 
@@ -17,7 +17,7 @@ from 128.
 | [045](issue_045.md) | medium | Explore grounded intelligent search before defining its public contract |
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
-| [127](issue_127.md) | medium | Add a composite distribution version and an explicit staleness check (implemented; tag `9.0.0` pending) |
+| [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
 
 ## Notes
 

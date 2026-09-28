@@ -25,4 +25,7 @@ root:
       "*.md": {frontmatter: {group: {optional: true}}}
   outcomes:
     framework: true
+  sources:
+    framework: true
+    "*.md": {frontmatter: {status: {}}}
 meta: {targets: {values: [platform, meta]}}

@@ -84,7 +84,7 @@ skills, and supported commands use the paths in
 - **`iac-basic`** — tool-agnostic infrastructure-as-code workflow: durable `topology/` (apply-order DAG) + `runbooks/` pillars alongside the lifecycle pillars (`intake/`, `plans/`, `exploring/`); `targets:` enumerates environments; Lead/Dev roles; ships six domain-specific skills (`cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-topology`, `cumaru-absorb`, `cumaru-arch`).
 - **`qa-basic`** — test-strategy & coverage workflow: durable `coverage/` + `standards/` pillars alongside the lifecycle pillars; `targets:` enumerates test levels; ships five domain-specific skills (`cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-coverage`, `cumaru-absorb`).
 - **`vault-memory`** — personal/team memory-vault workflow: transient `inbox/`, rough `drafts/`, durable graph-shaped `memories/`, and retained `attachments/`; ships four domain-specific skills (`cumaru-capture`, `cumaru-draft`, `cumaru-distill`, `cumaru-link`).
-- **`focus`** — directive-driven triage workflow: `directives/` declare priority scope, `threads/` retain source context with a dated state history and yearly archival, and `outcomes/` group results by adopter-declared area with cumulative value/work/policy views; single Admin role; ships four domain-specific skills (`cumaru-directives`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`). How signals arrive is deliberately left to the adopter's `root` tag.
+- **`focus`** — directive-driven triage workflow: `directives/` declare priority scope, `threads/` retain source context with a dated state history and yearly archival, and `outcomes/` group results by adopter-declared area with cumulative value/work/policy views, and `sources/` describe read-only access to each data source; single Admin role; ships five domain-specific skills (`cumaru-directives`, `cumaru-sources`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`). Intake is declared per source in `sources/`; adopter intake policy stays in the `root` tag.
 - **`base`** — minimal kernel (resolves to `domains/__base/`): no pillars, only the rules + meta sections of the config. Start here to build a custom domain from scratch.
 
 New domains are auto-discovered from disk. Create `domains/<name>/` with a self-contained `config.yaml`, `domain.md`, starter files, and agent artifacts; `install --help` uses the domain's `domain.md` H1 as its one-line summary.
@@ -110,7 +110,7 @@ do not select it; its canonical trigger scenarios remain in the skill contract.
 - `iac-basic` adds `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-topology`, `cumaru-absorb`, `cumaru-arch`.
 - `qa-basic` adds `cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-coverage`, `cumaru-absorb`.
 - `vault-memory` adds `cumaru-capture`, `cumaru-draft`, `cumaru-distill`, `cumaru-link`.
-- `focus` adds `cumaru-directives`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`.
+- `focus` adds `cumaru-directives`, `cumaru-sources`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`.
 
 **Opt-in** (sourced from top-level `skills/`; require `--with <name>`):
 - `git` — unlocks mutating git commands (`commit`, `push`, `reset`, ...) under the framework's skill-gated capability rule.
@@ -137,7 +137,7 @@ domains with a command but no namesake skill are invalid.
 - `iac-basic` ships `/cumaru:absorb`, `/cumaru:explore`, `/cumaru:intake`, `/cumaru:plan`, `/cumaru:topology` (the `cumaru-arch` skill has no command — it triggers on conversation).
 - `qa-basic` ships `/cumaru:absorb`, `/cumaru:explore`, `/cumaru:intake`, `/cumaru:plan`, `/cumaru:coverage`.
 - `vault-memory` ships `/cumaru:capture`, `/cumaru:draft`, `/cumaru:distill`, `/cumaru:link`.
-- `focus` ships `/cumaru:directives`, `/cumaru:thread`, `/cumaru:outcome`, `/cumaru:zoom`.
+- `focus` ships `/cumaru:directives`, `/cumaru:thread`, `/cumaru:outcome`, `/cumaru:zoom`, `/cumaru:sources`.
 
 ## CLI primitives (no skill needed)
 

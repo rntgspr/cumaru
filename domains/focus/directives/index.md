@@ -27,11 +27,12 @@ established rank remain explicitly unranked; their display order does not imply
 importance. An optional `parent` names another directive filename; children do
 not inherit approval. No cycles or missing parents are allowed.
 
-Explain purpose, included and excluded scope, concrete decision points, evidence
-that increases or decreases attention, linked source threads, and dated changes.
-State the benefit the direction pursues and how a contribution to it is
-recognized: that statement is the value scope every outcome serving this
-directive is assessed against, so an outcome never invents a scale of its own.
+Create leaves from `templates/directive.md`; it carries the required fields and
+sections (purpose, scope, value scope, completion evidence, decision points,
+attention evidence, boundaries, related threads, dated changes). State the benefit the direction pursues and
+how a contribution to it is recognized: that statement is the value scope every
+outcome serving this directive is assessed against, so an outcome never invents
+a scale of its own.
 Use `cumaru fs` for structural operations. Keep adopter-specific priority policy
 in the domain root tag, not in this contract.
 

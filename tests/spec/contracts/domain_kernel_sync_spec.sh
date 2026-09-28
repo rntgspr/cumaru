@@ -13,7 +13,7 @@ Describe 'domain kernel synchronization script'
 
   # Exercise every documented help route without invoking destructive upgrade.
   safe_help_routes() {
-    for command in install uninstall doctor tag coverage tree map update fs migrate version; do
+    for command in install uninstall doctor tag coverage tree map update fs migrate bootstrap version; do
       bash "$REPO_ROOT/cumaru" "$command" --help >/dev/null 2>&1 || return 1
     done
     bash "$REPO_ROOT/cumaru" help >/dev/null 2>&1 || return 1
@@ -60,7 +60,7 @@ Describe 'domain kernel synchronization script'
     kernel="$REPO_ROOT/domains/__base/index.md"
     dispatcher=$(sed -n '/^case "$sub" in/,/^esac/p' "$REPO_ROOT/cumaru" |
       sed -nE 's/^  ([a-z][a-z-]*)\)$/\1/p' | LC_ALL=C sort)
-    expected=$(printf '%s\n' coverage doctor fs install map migrate tag tree uninstall update upgrade version)
+    expected=$(printf '%s\n' bootstrap coverage doctor fs install map migrate tag tree uninstall update upgrade version)
 
     The value "$dispatcher" should equal "$expected"
     for command in $dispatcher; do
