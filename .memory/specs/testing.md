@@ -112,6 +112,10 @@ project-local lock/staging/backup/recovery debris.
 
 ## Regression coverage
 
+Native Rust tests and their current scope are recorded in the
+[Rust bootstrap specification](rust.md#regression-coverage). They run separately
+through `cargo test`; the ShellSpec runner continues to exercise the Bash CLI.
+
 | Test | Covered behavior |
 |---|---|
 | [`../../tests/spec/cli/`](../../tests/spec/cli/) | Tree, doctor, fs, and coverage public CLI contracts. |

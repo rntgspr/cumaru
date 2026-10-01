@@ -3,7 +3,12 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand};
 
 mod commands;
+mod config;
+mod markdown;
 mod paths;
+mod text;
+mod tsv;
+mod walk;
 
 /// Cumaru CLI.
 #[derive(Parser)]

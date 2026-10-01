@@ -32,6 +32,7 @@ mandatory framework order.
 ## Specifications
 
 - [Architecture](specs/architecture.md) — kernel, ownership, configuration, lifecycle, and system boundaries.
+- [Rust bootstrap](specs/rust.md) — current Rust CLI, module boundaries, config schemas, native tests, and parity limits.
 - [Navigation](specs/navigation.md) — filesystem projection, summaries, filters, and bounded traversal.
 - [Domains](specs/domains.md) — domain package contract and shipped domain profiles.
 - [Design as Code](specs/design-as-code.md) — six-pillar lifecycle, three roles, canonical briefs, and reviewed design evidence.
