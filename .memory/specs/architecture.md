@@ -108,6 +108,9 @@ Git history before mutation.
 
 ## Implementation map
 
+The separate [Rust bootstrap](rust.md) records the current native CLI surface,
+module boundaries, and implementation limits.
+
 | Script or artifact | Responsibility |
 |---|---|
 | `cumaru` | Module loading and command dispatch. |

@@ -116,6 +116,9 @@ current; the highest suffix is its immediate predecessor.
 
 ## Implementation map
 
+The [Rust bootstrap](rust.md) documents the native `config::load` implementation,
+embedded schema selection, diagnostics, and its current validation boundaries.
+
 | Script or artifact | Responsibility |
 |---|---|
 | [`schemas/config.schema.json`](../../schemas/config.schema.json) | Active declarative global model. |
