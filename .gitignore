@@ -18,3 +18,4 @@ AGENTS.md
 tests/report/
 opencode.json
 .memory/notepad.md
+rust/target/
