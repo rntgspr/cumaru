@@ -1,0 +1,8 @@
+[package]
+name = "cumaru"
+version = "0.9.1"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.7", features = ["derive"] }
+yaml-rust2 = "0.13.0"
