@@ -1,6 +1,6 @@
 ---
 name: rust-bootstrap-specification
-description: "Rust CLI bootstrap, tree traversal, shared paths, and schema-validated configuration loading"
+description: "Rust CLI bootstrap, tree traversal, guarded fs operations, shared paths, and schema-validated configuration loading"
 type: project
 status: implemented
 version: 9
@@ -11,8 +11,8 @@ version: 9
 ## Purpose
 
 Record the implemented Rust CLI under `rust/`. The repository's Bash CLI remains
-the existing distribution; the Rust bootstrap currently implements `version`
-and `tree`, with no claim of complete Bash parity.
+the existing distribution; the Rust bootstrap currently implements `version`,
+`tree`, and `fs`, with no claim of complete Bash parity.
 
 ## Public surface
 
@@ -20,6 +20,8 @@ and `tree`, with no claim of complete Bash parity.
 cargo run --manifest-path rust/Cargo.toml -- version
 cargo run --manifest-path rust/Cargo.toml -- tree [<directory-or-md>...]
     [--deep] [--rows]
+cargo run --manifest-path rust/Cargo.toml -- fs <src> move|copy <dst>
+cargo run --manifest-path rust/Cargo.toml -- fs <path> create|remove
 rust/build.sh
 ```
 
@@ -69,6 +71,32 @@ An invocation without a subcommand prints `Hello Cumaru!`. Package version
 6. Results from all targets are combined, sorted, and deduplicated before
    `emit` prints a Markdown table or TSV. Diagnostics are also deduplicated
    and go to stderr. Markdown file targets resolve to their parent directory.
+7. `fs` ports the Bash primitive in [docs/fs.md](../../docs/fs.md) with the
+   positional order `<src> <verb> [<dst>]`. It uses fs-specific private
+   helpers, not navigation's target validation/resolution: hidden file names
+   are allowed, the root may be reached through a symlinked `.cumaru/`, and
+   parent symlinks are accepted when the canonical result stays strictly
+   inside the root. Direct symlink targets, including broken links, are
+   refused. Missing paths resolve through their nearest existing ancestor; an
+   unresolvable ancestor, such as a broken parent link, is rejected.
+8. All syntax, shape, containment, existence, protection, descendant, and copy
+   source checks run before mutation. Trailing slashes are stripped first.
+   Files end in `.md`; directory segments, including implicit parents, contain
+   no dots. Nested entries of a moved or copied tree are not shape-checked.
+   Create of an existing path is a no-op success that keeps its bytes; file
+   creation uses exclusive creation and never truncates. Move uses `rename`;
+   copy is recursive. `remove` refuses `index.md` and direct-child directories.
+   Success lines go to stdout as `<verb>: <src> -> <dst>`, `create: <path>
+   (file)`, `create: <path>/ (dir)`, or `already exists (no-op): <path>`;
+   diagnostics go to stderr with the `cumaru fs:` prefix. Paths are quoted
+   through `text::shell_quote`.
+9. Intentional differences from Bash: ASCII `->` replaces the arrow and color
+   markers are omitted; FIFOs, sockets, and devices are refused instead of being
+   removed or copied; a directory copy containing any nested symlink or
+   unsupported entry is refused; moving or copying a directory into its own
+   descendant is refused; and every I/O error returns status 1 without a success
+   line. `help` is not a positional alias; use `fs --help`. Unknown verbs and
+   extra arguments are Clap usage errors.
 
 ## Failure contract
 
@@ -79,6 +107,16 @@ An invocation without a subcommand prints `Hello Cumaru!`. Package version
 | Config parsing or embedded-schema runtime failure | `1` | none |
 | Deep traversal defects | `1` after traversal; valid rows may be emitted | none |
 | Clean traversal or version output | `0` | none |
+| `fs` missing `<dst>` for move/copy, `<dst>` given to create/remove, empty path | `2` | none |
+| `fs` guardrail, missing source, existing destination, or unsupported type | `1` | none |
+| `fs` operation succeeds | `0` | exactly one create, move, copy, or remove |
+| `fs` I/O failure during the operation | `1` | implicit parents or a partial copy may remain |
+
+`fs` has no rollback. Parent directories created before a failed move or copy
+remain, and a recursive copy stops at the first error, leaving a partial
+destination. A failed recursive removal may leave some entries removed.
+Validation and mutation are not atomic against concurrent filesystem changes.
+Cross-filesystem moves are not emulated; `rename` failures are reported.
 
 ## Implementation map
 
@@ -87,6 +125,7 @@ An invocation without a subcommand prints `Hello Cumaru!`. Package version
 | `rust/src/main.rs` | CLI arguments and dispatch. |
 | `rust/src/commands/version.rs` | Build-time package version output. |
 | `rust/src/commands/tree.rs` | CLI coordination, tree-specific entry parsing, index/summary rules, diagnostics, and output. |
+| `rust/src/commands/fs.rs` | Guarded create/move/copy/remove inside `.cumaru/`, private fs path resolution and shape checks, and their unit tests. |
 | `rust/src/walk.rs` | Reusable contained traversal, file filters, path callbacks, deduplication, and filesystem diagnostics. |
 | `rust/src/config.rs` | `CUMARU_DIR`, `CONFIG_FILE`, `load`, private `validate`, and private `yaml_to_json`. |
 | `rust/src/paths.rs` | `normalize_target`, `is_symlink`, `has_symlink_component`, `canonical_inside`, and `file_name`. |
@@ -117,7 +156,7 @@ pass; tree smokes run without an adopter config.
 
 ## Current boundaries
 
-Rust `tree` does not expose `--domain` or `--pillars`; other Bash commands are
+Rust `tree` does not expose `--domain` or `--pillars`; Bash commands other than `fs` are
 not implemented. The config loader is retained for future consumers and
 currently produces dead-code warnings because no CLI command calls it.
 The loader applies the declarative JSON Schema, not the additional semantic
@@ -136,6 +175,19 @@ design is deferred.
 Diagnostic escaping is shared through `text::shell_quote`.
 After extraction, `cargo test --locked` passed all six native tests and
 `git diff --check` passed. The unused configuration-loader warnings remain.
+
+Fs verification on 2026-10-02: `cargo test --locked` passed 13 native tests,
+including seven `fs` unit tests on disposable fixtures for create, implicit
+parents, existing-path byte preservation, file/tree move and copy, protected
+removals, arity/syntax/shape classification, the fs symlink policy (escaping
+parent, direct and broken links, broken parent, in-root alias), descendant
+transfers, nested-symlink copy refusal, and an I/O failure without success.
+Rejections assert an unchanged fixture snapshot. `cargo build --locked` and
+`cargo fmt --check` passed. Disposable CLI smokes over a copy of
+`tests/fixtures/fs` exercised every verb, the ShellSpec failure messages and
+statuses, missing `.cumaru/`, help, a FIFO refusal, and confirmed that nothing
+was written outside the project. No Rust integration tests were added, and the
+ShellSpec fs scenarios still target the Bash CLI.
 
 Native CLI integration tests are deferred by maintainer decision; existing Bash
 scenarios remain available for a later port. A heading projection is the next

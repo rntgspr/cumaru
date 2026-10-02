@@ -26,6 +26,9 @@ enum Command {
 
     /// List filesystem candidates and their summaries.
     Tree(commands::tree::TreeArgs),
+
+    /// Move, copy, create, or remove one path inside .cumaru/ with guardrails.
+    Fs(commands::fs::FsArgs),
 }
 
 /// Entry point for the Rust Cumaru CLI; parses argv, runs the selected subcommand, and returns its exit code.
@@ -38,6 +41,7 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Some(Command::Tree(args)) => commands::tree::run(args),
+        Some(Command::Fs(args)) => commands::fs::run(args),
         None => {
             println!("Hello Cumaru!");
             ExitCode::SUCCESS
