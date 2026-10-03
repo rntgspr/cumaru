@@ -1,0 +1,11 @@
+   Compiling cumaru-context-feasibility v0.1.0 (/Users/gaspar/workspace/cumaru/.memory/plans/context/experiment)
+    Finished `release` profile [optimized] target(s) in 2.82s
+     Running unittests src/main.rs (.memory/plans/context/experiment/target/release/deps/cumaru_context_feasibility-e7d8bc028534867b)
+
+running 3 tests
+test tests::empty_document_has_one_empty_fragment ... ok
+test tests::heading_cuts_keep_late_sections ... ok
+test tests::fragments_cover_long_documents ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

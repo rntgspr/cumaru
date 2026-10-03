@@ -1,0 +1,13 @@
+   Compiling cumaru-encoder-comparison v0.1.0 (/Users/gaspar/workspace/cumaru/.memory/plans/context/comparison/experiment)
+    Finished `release` profile [optimized] target(s) in 0.60s
+     Running unittests src/main.rs (.memory/plans/context/comparison/experiment/target/release/deps/cumaru_encoder_comparison-1d2d41349dd30d28)
+
+running 5 tests
+test relevance::tests::input_validation ... ok
+test tests::fragments_preserve_signals_and_suffix ... ok
+test relevance::tests::code_and_links_remain_features ... ok
+test relevance::tests::candidate_independence_and_repetition ... ok
+test relevance::tests::late_content_and_budget ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

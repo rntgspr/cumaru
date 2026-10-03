@@ -1,0 +1,4 @@
+initialization_ms: 0.039
+scoring_ms: 0.039
+fragments: 8
+peak_rss_native_units: 2408448

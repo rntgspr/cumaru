@@ -1,0 +1,5 @@
+input: input_ids
+input: attention_mask
+input: token_type_ids
+initialization_ms: 24.021
+peak_rss_native_units: 93356032

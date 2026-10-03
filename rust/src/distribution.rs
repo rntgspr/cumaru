@@ -17,7 +17,7 @@ pub(crate) struct DomainSource {
 }
 
 /// Fetches a public resource with bounded cURL execution, classifying missing source files explicitly.
-fn download(url: &str) -> Result<Vec<u8>, String> {
+pub(crate) fn download(url: &str) -> Result<Vec<u8>, String> {
     let output = Command::new("curl")
         .args([
             "-fsSL",

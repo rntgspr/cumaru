@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 137.
+from 138.
 
 ## Open issues
 
@@ -15,6 +15,7 @@ from 137.
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
+| [137](issue_137.md) | high | Review cumaru-first as a compact manual for all native commands and optional models; Claude implements |
 
 ## Notes
 

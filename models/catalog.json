@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "name": "bge-micro-v2",
+      "profile": "bert-mean-v1",
+      "repository": "TaylorAI/bge-micro-v2",
+      "revision": "3edf6d7de0faa426b09780416fe61009f26ae589",
+      "license": "MIT",
+      "source": "https://huggingface.co/TaylorAI/bge-micro-v2",
+      "max_tokens": 512,
+      "artifacts": [
+        {"file": "model.safetensors", "bytes": 34785664, "sha256": "792472b64c3ca1c725e55f6a9d2a58143d4ce6b3ffde05bf55bc8427cb3733c8"},
+        {"file": "tokenizer.json", "bytes": 711661, "sha256": "cb374d6bc042c22455946f4e09a89d29882a199fdaf8fb25be00dc8b8857a448"},
+        {"file": "config.json", "bytes": 745, "sha256": "86d7047bf568a9263c7020fb4950741b19b1df3de3539385d83d9e3df1e56c5b"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+   Compiling cumaru-encoder-comparison v0.1.0 (/Users/gaspar/workspace/cumaru/.memory/plans/context/comparison/experiment)
+    Finished `release` profile [optimized] target(s) in 0.58s
+     Running unittests src/main.rs (.memory/plans/context/comparison/experiment/target/release/deps/cumaru_encoder_comparison-1d2d41349dd30d28)
+
+running 8 tests
+test bm25::tests::adding_candidates_changes_pair_scores ... ok
+test bm25::tests::exact_matches_and_empty_inputs ... ok
+test relevance::tests::input_validation ... ok
+test tests::fragments_preserve_signals_and_suffix ... ok
+test relevance::tests::code_and_links_remain_features ... ok
+test bm25::tests::length_normalization_and_frequency_saturation ... ok
+test relevance::tests::candidate_independence_and_repetition ... ok
+test relevance::tests::late_content_and_budget ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
