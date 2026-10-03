@@ -44,12 +44,14 @@ cumaru coverage --strict    # exit 1 on any gap — CI gate
 ```
 
 Source files come from `git ls-files`, narrowed by the `meta.coverage.source`
-glob array in `config.yaml` (`*` crosses `/`; empty = every tracked file;
-`.cumaru/` and `.agents/` always excluded).
+glob array in `config.yaml` (`*` crosses `/`; empty = every tracked file).
+`.cumaru/`, `.agents/`, `.claude/`, `.opencode/`, `AGENTS.md`, `CLAUDE.md`, and
+`opencode.json[c]` are always excluded. Coverage is offline but requires a Git
+work tree.
 
 ## Reconciliation recipe
 
-Bash is **mechanical** (`cumaru coverage` discovers and reports); **the LLM
+The CLI is **mechanical** (`cumaru coverage` discovers and reports); **the LLM
 (you) adjudicates** each finding:
 
 | Finding | How to reconcile |

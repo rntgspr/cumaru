@@ -47,7 +47,7 @@ consumer because they expire without changing the file's durable meaning.
 Every summary must be:
 
 - a non-empty YAML string, not null, boolean, number, array, or object
-- exactly one line, trimmed at both ends, with no CR, LF, or tab
+- exactly one line, trimmed at both ends, without C0 control or DEL characters
 - between 32 and 512 Unicode code points, inclusive
 - a durable statement of the file's purpose or meaning
 

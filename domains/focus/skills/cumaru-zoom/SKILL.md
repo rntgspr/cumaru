@@ -10,7 +10,7 @@ summary: Select an existing thread by identifier or semantic subject and load it
 Use this skill to select and discuss an existing thread. It does not run a
 daily source scan and does not create or modify a thread.
 
-Read `.cumaru/domain.md` and the [thread contract](../../threads/index.md). Honor the session's active
+Read `.cumaru/domain.md` and the `.cumaru/threads/index.md`. Honor the session's active
 role; selecting context does not require switching roles or grant write access.
 
 ## Resolve the subject

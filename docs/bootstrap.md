@@ -6,13 +6,13 @@ answer.
 
 ## Usage
 
-```
-cumaru bootstrap [--from <source>]
+```text
+cumaru bootstrap
 ```
 
-| Flag | Description |
-|---|---|
-| `--from <source>` | Cumaru checkout providing `domains/<installed-domain>/`. Defaults to the active CLI checkout. |
+The command takes no arguments. It resolves HEAD of `main` and reads both
+documents from that one commit; there is no `--from`, local checkout, or
+snapshot source.
 
 ## The model
 
@@ -23,8 +23,9 @@ domains/<domain>/bootstrap.md    optional; the domain's ordered steps
 
 The command resolves the installed domain from `.cumaru/config.yaml`, strips
 frontmatter, and prints the base body followed by the domain body. A domain
-without `bootstrap.md` prints only the base body plus a note. An unknown domain
-or a missing configuration fails with a diagnostic and no writes.
+without `bootstrap.md` prints only the base body plus a note. An unknown domain,
+a missing or symlinked configuration, or a network failure exits `1` with a
+diagnostic on stderr, empty stdout, and no writes.
 
 Like `migration.md`, the document is source-only: `cumaru install` and
 `cumaru update` never copy it into `.cumaru/`. Do not confuse it with

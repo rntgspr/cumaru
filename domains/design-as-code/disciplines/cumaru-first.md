@@ -32,7 +32,7 @@ Cumaru mandatory for unrelated work.
 ## Red flags
 
 - Inspecting or editing source code through Cumaru instead of normal source, search, edit, and test tools.
-- Mutating `.cumaru/` structure by hand, or using `flow` to edit prose or tag bodies.
+- Mutating `.cumaru/` structure by hand, or using `cumaru fs` to edit prose or tag bodies.
 - Running a Cumaru command only because it exists, without a relevant framework surface.
 - Bypassing dry-run, role boundaries, command guardrails, blockers, or required user confirmation.
 - Treating `cumaru update ... --clear` as a preview; it is an immediate mutation.

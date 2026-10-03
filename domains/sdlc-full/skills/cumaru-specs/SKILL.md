@@ -48,7 +48,8 @@ When a new area `<area>` is within the authorized task (typically during initial
    - `## Decisions` — non-obvious design choices visible in the code, or `(none surfaced)`.
    - `## Files` — list each `<concern>.md` and `<subarea>/` with a one-line role.
 7. **Optional discovery log.** For larger areas the light/deep pass procedure benefits from a persistent log: copy `templates/bootstrap.md` to `specs/<area>/bootstrap.md` and fill the `## Discovery (light pass <ISO>)` section as you read. Leave it on disk — future deep passes append below.
-8. run `cumaru tree specs --rows`  — default shape: `| [<area>](<area>/index.md) | <one-line description fusing summary, targets, depends-on, relates> |`.
+8. Run `cumaru tree specs --rows`; each row is `<area>/<TAB><summary>`.
+   Read selected frontmatter for targets and semantic relations.
 9. `cumaru doctor` — navigation and summary checks clean.
 
 **What NOT to do:**

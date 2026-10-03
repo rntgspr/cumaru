@@ -69,4 +69,4 @@ is removed after its campaign is absorbed.
 | "Promote checkout-flaky-network to a campaign" | Promote recipe → decide key → hand off to `cumaru-plan` → remove/carry the charter |
 | "Drop the a11y charter" | Confirm → `cumaru fs exploring/a11y-keyboard-nav remove` → run `cumaru tree` |
 
-Use `cumaru tag get/set` (CLI) for `exploring/index.md`; pair with `cumaru-plan` (promote), `cumaru-intake` (log a found bug), and `cumaru-doctor`.
+Use `cumaru tree exploring --rows` for filesystem navigation; pair with `cumaru-plan` (promote), `cumaru-intake` (log a found bug), and `cumaru-doctor`.

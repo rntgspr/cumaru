@@ -19,7 +19,7 @@ Turns the `topology/` pillar's **declared** `depends-on` / `relates` edges into 
 ## Data sources (cheapest first)
 
 1. **`cumaru tree topology --rows`** — project every current topology area from the filesystem. For edges, drill into each area's frontmatter `depends-on:` (apply order) and `relates:` (cross-links).
-2. **Drill into `topology/<area>/index.md`** only when the user wants more than the skeleton — the frontmatter `depends-on`/`relates`/`targets` (authoritative over the table if they ever differ) and the `## Interface` section (inputs/outputs) to label *what* flows on an edge.
+2. **Read `topology/<area>/index.md` frontmatter** for edges and targets; TSV carries only paths and summaries. Read `## Interface` only when the user wants inputs and outputs labeling what flows on each edge.
 3. **`runbooks/<slug>/index.md` `relates:`** — only when asked to overlay operations ("show which runbooks touch which stacks").
 
 ## Steps

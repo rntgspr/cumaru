@@ -71,7 +71,8 @@ the rename to `fs`, not a remaining command implementation.
 
 The canonical native details live in this file. Capability specifications link
 here when their Bash source contracts differ; those links do not rewrite the
-retained Bash module contracts or legacy public docs.
+retained Bash module contracts. Public command guides under `docs/` describe
+the native contract.
 
 ## Invariants
 
@@ -403,6 +404,10 @@ symlinks, and the removed `--pillars` option. The four schema unit tests still
 pass; tree smokes run without an adopter config.
 
 ## Current boundaries
+
+The [shipped recipe contract](skill-cli-contracts.md) records the completed
+skills/README review against native arguments and ownership, including its
+deterministic verification and semantic limits.
 
 Rust `tree` and `map` do not expose `--domain` or `--pillars`. All active Bash
 command names have native implementations, with the differences recorded here.

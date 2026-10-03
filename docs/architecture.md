@@ -16,8 +16,8 @@ An empty `depends-on:` or `relates:` field means no semantic edge was declared; 
 4. Load only selected files and inspect their `reference` tags for affected source files and consumers.
 5. Report relevant consumers, durable updates outside the active scope, and uncovered gaps.
 
-Use `cumaru map <path>` when a selected area needs a quick level-two heading
-map before its full Markdown bodies are loaded.
+Use `cumaru map <path>` when a selected area needs a quick literal H1-H6
+heading map before its full Markdown bodies are loaded.
 
 This is iterative search with an explicit stopping condition: stop when newly surfaced candidates add no relevant concern. It does not authorize a bulk read of the pillar.
 
@@ -26,8 +26,8 @@ This is iterative search with an explicit stopping condition: stop when newly su
 Four artifact sets are **byte-identical** in `__base` and in every domain:
 
 1. **`index.md`** — the framework kernel: node model, loading rule, conduct, language. Carries no domain content.
-2. **`skills/cumaru-doctor/`, `skills/cumaru-update/`, `skills/cumaru-refs/`, `skills/cumaru-summarize/`, `skills/cumaru-role/`** — universal multi-step orchestration; same SKILL.md across all domains. (`skills/cumaru-install/` is deliberately **domain-owned**: its post-install recipe hands off to the domain's durable-pillar skill — `cumaru-specs` / `cumaru-topology` / `cumaru-coverage` — so each domain ships its own tuned copy and the drift-check skips it.)
-3. **`commands/cumaru/doctor.md`, `commands/cumaru/update.md`, `commands/cumaru/refs.md`, `commands/cumaru/summarize.md`, `commands/cumaru/role.md`** — universal launchers with no domain-specific recipe content.
+2. **`skills/cumaru-doctor/`, `skills/cumaru-flow/`, `skills/cumaru-update/`, `skills/cumaru-refs/`, `skills/cumaru-summarize/`, `skills/cumaru-role/`** — universal multi-step orchestration; same SKILL.md across all domains. (`skills/cumaru-install/` is deliberately **domain-owned**: its post-install recipe hands off to the domain's durable-pillar skill — `cumaru-specs` / `cumaru-topology` / `cumaru-coverage` — so each domain ships its own tuned copy and the drift-check skips it.)
+3. **`commands/cumaru/doctor.md`, `commands/cumaru/flow.md`, `commands/cumaru/update.md`, `commands/cumaru/refs.md`, `commands/cumaru/summarize.md`, `commands/cumaru/role.md`** — universal launchers with no domain-specific recipe content.
 4. **Universal `disciplines/*.md` files** — eagerly delivered execution rules, excluding the domain-owned `disciplines/index.md`. `code-comments.md` is not universal: it ships only in the code-oriented domains (`sdlc-full`, `sdlc-light`, `iac-basic`, `qa-basic`).
 
 All four are authored once in `domains/__base/` and propagated verbatim into every `domains/<domain>/`. Domain-specific content (its pillars, roles, additional skills, additional slash commands, and discipline index) lives only in the domain.
@@ -38,7 +38,7 @@ recipe of its own. Domain validation rejects a missing namesake skill before
 adapter artifacts are written.
 
 - The kernel `index.md` carries a blockquote header at the top stating that the file is framework-owned and must not be edited. The whole file (loading rule, conduct, language, etc.) is plain prose — outside any `<!-- cumaru:NAME -->` tag — so `cumaru update` carries it from source. Adopter-owned blocks (`components`, `root`) live in `domain.md`, where the tag-body preservation rule protects them.
-- A drift-check enforces that every domain's universal artifacts match `__base`'s. It runs in the **install script** (`cumaru upgrade` re-runs it): a snapshot where any domain diverges is refused. It is deliberately NOT a `cumaru doctor` check — doctor audits the **adopter's** tree, which never contains `__base` to compare against. See "Reuse" below.
+- A drift-check enforces that every domain's universal artifacts match `__base`'s. It runs as `scripts/sync-domain-kernel.sh --check` in CI, so a divergent domain never reaches `main`; the native installer downloads only the selected domain and cannot compare it with `__base`. It is deliberately NOT a `cumaru doctor` check — doctor audits the **adopter's** tree, which never contains `__base` to compare against. See "Reuse" below.
 
 ### Tag preservation boundary
 
@@ -64,10 +64,10 @@ or moved body is reported for adjudication rather than discarded.
 Everything domain-specific — the pillars, the roles, the entry-point refinement, the domain context — lives in **`domain.md`**, declared as a `depends-on` of the root `index.md`. This dogfoods the loading rule: loading `index.md` surfaces `domain.md` as a candidate and pulls it in. Every domain (including `__base`) ships this file so the dependency never dangles.
 
 Every domain `config.yaml` and adopter `.cumaru/config.yaml` follows the single
-project-wide Draft 2020-12 model at `schemas/config.schema.json`. Cumaru's
-`jq` runtime validator enforces its operational structural subset plus semantic
-cross-field checks before install, doctor, and update. Known objects are closed;
-recursive `root.entities` remains the structural extension point. Domain configs
+project-wide Draft 2020-12 model at `schemas/config.schema.json`. The native
+binary embeds that schema and validates it before install, doctor, update, and
+tag; doctor also validates workflow dependency graphs. Known objects are closed;
+the direct `root` selector tree remains the structural extension point. Domain configs
 provide initial values; adopter configs preserve every valid local value while
 unknown properties are rejected or removed during reconciliation. No hidden
 baseline state is installed.
@@ -97,4 +97,4 @@ Every domain (except `__base`) includes a flow diagram under `## Flow` or `## Li
 
 ## Reuse mechanism
 
-Propagation is a **verbatim copy** of every universal file under `__base/{index.md, skills/, commands/, disciplines/}` into each domain, plus a **deterministic drift-check** (`cmp` per file in the install script) that aborts the install when any domain's universal artifact diverges from `__base`. The `cumaru-install` skill and `disciplines/index.md` are exempt (domain-owned). Maintainers edit `__base`, preview with `scripts/sync-domain-kernel.sh` (or explicit `--check`), then run `scripts/sync-domain-kernel.sh --apply`. (A build-time include was considered and set aside as more machinery for a marginal gain.)
+Propagation is a **verbatim copy** of every universal file under `__base/{index.md, skills/, commands/, disciplines/}` into each domain, plus a **deterministic drift-check** (`scripts/sync-domain-kernel.sh --check`, run in CI) that fails when any domain's universal artifact diverges from `__base`. The `cumaru-install` skill and `disciplines/index.md` are exempt (domain-owned). Maintainers edit `__base`, preview with `scripts/sync-domain-kernel.sh` (or explicit `--check`), then run `scripts/sync-domain-kernel.sh --apply`. (A build-time include was considered and set aside as more machinery for a marginal gain.)

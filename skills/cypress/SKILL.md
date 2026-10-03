@@ -2,7 +2,7 @@
 human_revised: false
 version: 1
 name: cypress
-description: Use this skill whenever the work involves Cypress — writing or reading `*.cy.ts` e2e/component tests, running the suite, debugging via the command log or screenshots, stubbing network with cy.intercept, or handling retry-ability. Opt-in companion to the qa-basic domain (`cumaru install --with cypress`); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on `*.cy.*` files, `cypress` commands, "write an e2e for X", "why is this e2e flaky", "stub this request".
+description: Use this skill whenever the work involves Cypress — writing or reading `*.cy.ts` e2e/component tests, running the suite, debugging via the command log or screenshots, stubbing network with cy.intercept, or handling retry-ability. Opt-in companion to the qa-basic domain (`cumaru update skills <agent> --with cypress --apply` after adoption); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on `*.cy.*` files, `cypress` commands, "write an e2e for X", "why is this e2e flaky", "stub this request".
 ---
 
 # Cypress

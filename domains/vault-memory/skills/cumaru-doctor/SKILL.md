@@ -6,12 +6,16 @@ description: Diagnose a `.cumaru/` tree with `cumaru doctor`, navigate reported 
 summary: Diagnose a `.cumaru/` tree with `cumaru doctor`, navigate reported locations with `cumaru tree`, and propose only safe, explicit fixes.
 ---
 
-# `cumaru-doctor` — validate and diagnose a V8 tree
+# `cumaru-doctor` — validate and diagnose a v9 tree
 
-Run `cumaru doctor` first. Its preflight validates config and version agreement;
-its nine checks cover navigation and summaries, tag structure, work and RAW
-markers, retained file references, external tools, discovered instruction sets,
-retired adapter config, and configuration drift. Skills, commands, hooks,
+Run `cumaru doctor` first; it is offline and read-only. Its preflight validates
+config, version, and workflow graphs; an older config version routes to
+`cumaru migrate`. Its checks cover configured tree contracts, navigation and
+summaries, tag balance and nesting, stale work and RAW markers, retained file
+references, external tools, discovered instruction sets, and configuration drift
+against the defaults embedded in the binary. Errors exit `1`; warnings alone exit
+`0`. Drift here is not main-HEAD freshness: use `cumaru version` or
+`cumaru update config` for that. Skills, commands, hooks,
 workflow completion, acceptance, and prose quality require separate review.
 
 ## Triage
@@ -40,5 +44,5 @@ workflow completion, acceptance, and prose quality require separate review.
   `components`, and `root`.
 - Never delete local files, tag bodies, or unknown tags to silence a result
   without explicit user approval.
-- If schema and config version disagree, stop and use the matching major
-  migration; do not use steady-state update to cross the boundary.
+- If doctor reports an older config version, stop and follow `cumaru migrate`;
+  do not use steady-state update to cross the boundary.

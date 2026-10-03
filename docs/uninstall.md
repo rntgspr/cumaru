@@ -1,34 +1,51 @@
 # `cumaru uninstall`
 
 Reverse of [`cumaru install`](install.md). Discovers every supported adapter,
-removes its Cumaru-owned files while preserving adopter directories, then removes `.cumaru/`. Refuses
-non-interactive execution unless `--yes` is passed.
+removes its Cumaru-owned files while preserving adopter content, then removes
+the whole `.cumaru/` tree, including adopter knowledge. Refuses non-interactive
+execution unless `--yes` is passed. It needs no network, Git, or config schema
+and never changes the global CLI installation.
 
 ## Usage
 
-```
-cumaru uninstall [--yes]
+```text
+cumaru uninstall [-y|--yes]
 ```
 
 | Flag | Description |
-|---|---|---|
-| `-y`, `--yes` | Skip the confirmation prompt. Required for non-TTY runs (CI, scripts, agents). |
+|---|---|
+| `-y`, `--yes` | Skip the confirmation prompt. Required outside a TTY (CI, scripts, agents). |
 
 ## What it does
 
-1. **Pre-checks**:
-   - If `.cumaru/` exists, it must look like an install (`index.md` + `config.yaml` at its root). Also verifies the path resolves inside the filesystem (refuses `/`, `$HOME`, or non-absolute targets).
-   - If `--yes` is not set and stdin is not a TTY, refuses with a hint to pass `--yes`.
-2. **Discovery** — scans every supported native artifact path without reading agent state from config.
-3. **Confirmation** (TTY without `--yes`):
-   - Prints the target path + what will be removed.
-   - Reads `y/N` from stdin; aborts on anything else.
-4. **Removes framework commands** — deletes only Cumaru command files from the adapter's `commands/cumaru/` namespace.
-5. **Removes framework skills** — deletes every file below `cumaru-*` skill directories, including the shared `.agents/skills/` surface used by Generic, Codex, and OpenCode. Opt-ins and adopter skills remain.
-6. **Strips durable instructions** — removes the marked hook from the native Markdown file, or Cumaru's exact entries from `opencode.json.instructions`. Other content remains.
-7. **Removes the session hook** — deletes only the `SessionStart` entry whose command is Cumaru's from `.claude/settings.json` or `.codex/hooks.json`. Adopter permissions, other hook events, and other `SessionStart` entries are preserved; the file itself is deleted only when nothing else remains in it.
-8. **Leaves adapter directories in place** — empty managed namespace directories may remain; uninstall does not broaden removal to adopter-owned directories.
-9. **Removes the install tree** — `rm -rf .cumaru/`.
+1. **Pre-checks** — when `.cumaru/` exists, it must be a real directory with
+   regular `index.md` and `config.yaml` markers; root or parent symlinks and
+   unsafe, special, or linked nested entries are refused. A malformed config is
+   still removable. Every file is snapshotted before confirmation. An absent
+   `.cumaru/` still permits cleanup of a partial adapter footprint.
+2. **Discovery and preflight** — plans every adapter merge and owned namespace
+   before any write, without reading agent state from config.
+3. **Confirmation** — with an actual footprint and no `--yes`, a TTY is
+   required. The removal scope is displayed and only `y` or `yes`
+   (case-insensitive) proceeds; anything else exits `1` without writes. With no
+   footprint it prints `Nothing to uninstall.` and succeeds.
+4. **Removes framework commands and skills** — files under `cumaru-*` skill
+   directories (including hidden resources) and the `commands/cumaru/`
+   namespaces, in `.agents/` (Generic, Codex, OpenCode), `.claude/`, and
+   `.opencode/`. Opt-ins and adopter skills or commands remain.
+5. **Strips durable instructions** — removes the marked block from the native
+   Markdown file, or Cumaru's exact entries from `opencode.json.instructions`.
+   A Markdown file is deleted only when install created it and nothing else
+   remains.
+6. **Removes the session hook** — deletes only Cumaru's `SessionStart` entry
+   from `.claude/settings.json` or `.codex/hooks.json`. Other keys, events, and
+   entries are preserved; a changed JSON file is deleted only when empty.
+7. **Removes the install tree** — rechecks the snapshot, then deletes the
+   entire `.cumaru/` directory. Adapter directories and empty namespaces may
+   remain.
+
+There is no transaction, Git recovery gate, backup, or rollback. Detected
+concurrent edits block removal. Repeating a successful uninstall is a no-op.
 
 ## When to use
 
@@ -48,4 +65,4 @@ cumaru uninstall --yes                 # non-interactive (CI / agents)
 ## Related
 
 - [`cumaru install`](install.md) — installs the inverse.
-- [`cumaru update`](update.md) — for upgrading an existing install, not removing it.
+- [`cumaru update`](update.md) — for refreshing an existing install, not removing it.

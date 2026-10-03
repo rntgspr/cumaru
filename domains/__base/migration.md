@@ -28,11 +28,11 @@ command below accepts `--help`, and `cumaru help` lists the full surface.
 **Three guardrails that will block you if you do not expect them.** They are
 deliberate, not bugs — work with them:
 
-1. **`cumaru tag` is config-validated.** `cumaru tag get <file> absorptions` works
-   only while your `config.yaml` still declares that tag. **This is why the ledger
-   audit runs before configuration reconciliation:** once the config edit lands,
-   the tool refuses the tag and you lose your only structured reader for it.
-   Audit first, edit the config after.
+1. **Ordinary tag audits/get/set require a supported, schema-valid config and
+   a declared host/tag.** A declaration alone does not make an older or invalid
+   config readable. Use config-free `cumaru tag all --body` for inventory and
+   read the exact Markdown host directly when the ordinary command is blocked.
+   Preserve and adjudicate legacy bodies before changing declarations.
 2. **`cumaru tag set` replaces a body; it cannot delete a block.** Removing the
    `<!-- cumaru:NAME --> … <!-- /cumaru:NAME -->` markers themselves is a plain
    file edit.
@@ -43,6 +43,11 @@ deliberate, not bugs — work with them:
 Prefer `cumaru tree` over `find` and `cumaru tag` over hand-parsing markers: they
 enforce the contracts this migration is trying to reach. Fall back to plain shell
 only where a guardrail blocks you, as flagged above.
+
+The native CLI does not require `yq`. Optional YAML-editing examples below
+require Mike Farah `yq` v4; if unavailable, use targeted editor changes instead.
+Do not install another tool or rewrite complete frontmatter merely to follow
+an example.
 
 **Prefer your own file-editing tools over shell one-liners.** You can read and edit
 files directly; a `sed` pipeline buys nothing and breaks in ways that are easy to
@@ -149,7 +154,7 @@ the source that proves it still exists.
    cannot rename one.
 2. Remove `meta.tags."files:touched"` from `.cumaru/config.yaml` if declared:
    `yq -i 'del(.meta.tags."files:touched")' .cumaru/config.yaml`.
-3. Confirm the renamed blocks still resolve: `cumaru tag all --rows | grep touched`.
+3. Confirm the renamed blocks still resolve: `cumaru tag all | grep touched`.
 **Verify** — `grep -rn 'files:touched' .cumaru` returns nothing.
 
 ## 5. Summary contract widened to 32–512
@@ -169,7 +174,8 @@ change: use the `cumaru-summarize` skill.
 **Applies when** — the durable pillar's `index.md` still contains a
 `<!-- cumaru:absorptions -->` block. The pillar is `specs/` in the SDLC domains,
 `topology/` in `iac-basic`, and `coverage/` in `qa-basic`.
-**Detect** — `cumaru tag <pillar>/index.md` and `grep -n 'cumaru:absorptions'`.
+**Detect** — inspect `cumaru tag all --body` and the exact pillar index for
+`cumaru:absorptions`; ordinary file audits may be blocked by legacy config.
 
 The ledger duplicated what the pillar already asserts, and drifted: on the
 adopter that prompted this change it had grown to 94% of `specs/index.md`, a
@@ -199,11 +205,10 @@ For each row:
    point — step 7 removes it) to find where the row *should* have landed.
 
 **Commands for this step.** Read the ledger with
-`cumaru tag get <pillar>/index.md absorptions` — it works because your config
-still declares the tag, and it is why this step precedes step 9. While working
-through a long ledger you may shrink it in place with
-`cumaru tag set <pillar>/index.md absorptions` (body on stdin), so a partial audit
-is durable across sessions. This ledger audit is preservation work, not cleanup.
+`cumaru tag all --body`, then read the exact host. Use ordinary `get`/`set`
+only when the installed config passes native validation and declares the tag;
+otherwise make targeted host edits, preserving delimiters and every unreviewed
+row. This ledger audit is preservation work, not cleanup.
 To place a claim, edit the owning area directly; to
 create a missing area, use `cumaru fs <pillar>/<area> create` plus
 `cumaru fs <pillar>/<area>/index.md create` and then author the frontmatter.
@@ -303,11 +308,14 @@ grep -n 'absorptions\|deltas\|consolidated-at' .cumaru/config.yaml
    and the installed content to establish the actual starting version. STOP if
    the evidence is ambiguous; do not write an intermediate version to open an
    update gate.
-2. Run `cumaru update config --from <cumaru-checkout>` while the installed
-   versions still describe the actual starting state. Inspect the complete
-   candidate diff without writing it.
-3. Give the report, including its schema and source-default paths, to the agent.
-   The agent must reconcile `config.yaml` deliberately. Source values fill only
+2. `cumaru update config` refuses a source/local version mismatch, so read the
+   source contract directly. Resolve one commit with
+   `git ls-remote https://github.com/rntgspr/cumaru refs/heads/main`, then read
+   `domains/<domain>/config.yaml` (`__base` for `base`) and
+   `schemas/config.schema.json` from
+   `https://raw.githubusercontent.com/rntgspr/cumaru/<sha>/`. Write neither
+   into the project. If either read fails, STOP; never invent a target version.
+3. Reconcile `config.yaml` deliberately against those two documents. Source values fill only
    missing keys. Valid local values, custom entities, tags, and rules remain;
    model-incompatible properties, including `x-*`, are listed for removal.
 4. A permitted property carrying an invalid local value is a blocker. STOP and
@@ -325,15 +333,17 @@ grep -n 'absorptions\|deltas\|consolidated-at' .cumaru/config.yaml
    workflows are optional and must refer only to installed domain skills.
 6. Write the reconciled v9 configuration to a temporary candidate, leaving
    `.cumaru/config.yaml` untouched. Set only the candidate's `version: 9` and
-   validate that candidate against the v9 contract:
+   validate that candidate with the native schema in a disposable copy:
    ```bash
-   candidate=/path/to/temporary-reconciled-v9-config.yaml
-   yq -i '.version = 9' "$candidate"
-   yq -o=json '.' "$candidate" | jq -r -f <cumaru-checkout>/schemas/schema-validate-v9.jq
-   rm -f "$candidate"
+   scratch=$(mktemp -d)
+   cp -R .cumaru "$scratch/.cumaru"
+   cp /path/to/temporary-reconciled-v9-config.yaml "$scratch/.cumaru/config.yaml"
+   (cd "$scratch" && cumaru doctor --quiet)
+   rm -rf "$scratch"
    ```
-   Resolve ambiguous paths or ownership deliberately; STOP and ask rather than
-   guessing. The validator must emit nothing and exit successfully. This
+   An `invalid .cumaru/config.yaml` diagnostic is a schema blocker. Missing
+   entries or other tree diagnostics identify conversions still pending. Resolve
+   ambiguous paths or ownership deliberately; STOP and ask rather than guessing. This
    temporary validation selects the v9 contract before the installed config is
    changed.
 7. Complete every base and domain conversion first. Apply the validated
@@ -341,7 +351,7 @@ grep -n 'absorptions\|deltas\|consolidated-at' .cumaru/config.yaml
    starting version. Write the sole version field last: set
    `.cumaru/config.yaml` to `version: 9`. Do not add or reconcile a root
    `framework-version` field.
-8. Run read-only `cumaru update --from <cumaru-checkout>` and inspect the
+8. Run read-only `cumaru update` and inspect the
    preview. Apply only after the preserved config, tag bodies, and local-only
    paths are still present in the preview.
 **Blockers** — unresolved config choices, a candidate that does not validate, an
@@ -355,7 +365,7 @@ succeeds; no mutating update has run.
 **Applies when** — `.cumaru/migrations/` exists.
 **Detect** — `test -d .cumaru/migrations`
 **Do** — migration instructions are no longer distributed into the adopter tree.
-They live in the CLI checkout and are delivered by `cumaru migrate`. Remove
+They are read from main HEAD and delivered by `cumaru migrate`. Remove
 `.cumaru/migrations/` entirely, including its `index.md` and any `.tsv`:
 
 ```bash
@@ -402,12 +412,12 @@ explicitly accepted.
 
 **Applies when** — step 11 established either a clean Git recovery checkpoint or
 the warned non-Git boundary.
-**Detect** — run read-only `cumaru update --from <cumaru-checkout>` and review the
+**Detect** — run read-only `cumaru update` and review the
 complete framework Markdown plan.
 General update does not refresh agent artifacts; those remain an explicit,
 separate operation.
 **Do**
-1. Run `cumaru update --from <cumaru-checkout> --apply`. This refreshes
+1. Run `cumaru update --apply`. This refreshes
    framework-owned `.cumaru/` files only; it does **not** refresh skills,
    commands, instructions, hooks, or any other agent artifact.
 2. Run `cumaru doctor --quiet`. The apply command already invokes this gate, but
@@ -415,9 +425,8 @@ separate operation.
 3. If agent artifacts must be refreshed, review the framework diff. Inside Git,
    STOP and ask the user to authorize a second commit, then require a clean
    worktree. Outside Git, retain the accepted no-recovery boundary. Run
-   `cumaru update agent <agent> --apply` only afterward. This command uses the active CLI
-   checkout; if it differs from `<cumaru-checkout>`, invoke that checkout's
-   `cumaru` executable instead. If the active agent is ambiguous, ask.
+   `cumaru update agent <agent> --apply` only afterward. If the active agent is
+   ambiguous, ask.
 **Blockers** — a dirty Git worktree, failed doctor, missing applicable recovery
 authorization, or ambiguous adapter.
 **Verify** — a second general update preview reports no framework Markdown
@@ -431,7 +440,7 @@ changes. When an adapter refresh applied, its second preview is also stable.
 2. `cumaru tree . --deep` — expect no navigation or summary defects.
 3. `cumaru coverage` if the project uses `reference` tables — unchanged by this
    migration, so any regression here means something else was touched.
-4. Verify `cumaru update config --from <cumaru-checkout>` and the general update
+4. Verify `cumaru update config` and the general update
    preview are stable. Re-running this completed procedure must make no change.
 5. From now on an absorption commit **message** is load-bearing: it must name
    every KEY it absorbs, because it is the grep key that replaced the ledger.

@@ -99,7 +99,7 @@ cumaru update skills claude --clear
 cumaru update agent --clear
 ```
 
-Install and refresh forms preview without `--apply`. Clear forms mutate
+Update refresh forms preview without `--apply`; project install has no preview. Clear forms mutate
 immediately without `--apply`: name an agent for scoped removal or omit it to
 clear that artifact surface across every supported adapter. In a Git work tree,
 every clear requires a clean committed baseline. Outside Git, Cumaru warns and

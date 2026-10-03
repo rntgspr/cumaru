@@ -118,4 +118,4 @@ When all tasks are `done` and the plan is ready to close:
 | "Draft the delta for AAA-1234" | Delta-draft recipe → verify all tasks done → create delta-draft.md |
 | "Absorb this plan" / "AAA-1234 is ready" | Verify state → hand off to `cumaru-absorb` |
 
-Use `cumaru tag get/set` (CLI, no skill) for `plans/index.md` table round-trip; pair with `cumaru-absorb` for plan close, `cumaru-specs` for the areas in `scope:`, and `cumaru-doctor` to verify between steps.
+Use `cumaru tree plans --rows` for filesystem navigation; pair with `cumaru-absorb` for plan close, `cumaru-specs` for the areas in `scope:`, and `cumaru-doctor` to verify between steps.

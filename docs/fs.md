@@ -2,7 +2,7 @@
 
 Safe file ops inside `.cumaru/`. **Four verbs, four guardrails, no content awareness.** The mechanical primitive composed by recipe skills (`cumaru-absorb`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`) — no skill of its own; semantics fit in this doc plus `cumaru fs --help`.
 
-`cumaru flow` was renamed to `cumaru fs`; it now exits with a migration diagnostic and never runs a workflow.
+`cumaru flow` was renamed to `cumaru fs`; the native CLI has no `flow` subcommand.
 
 ## Usage — four verbs
 
@@ -22,7 +22,9 @@ cumaru fs <path> remove             delete a file/dir
 3. **`remove` refuses files literally named `index.md`** — they're system-critical for the entity's existence. To remove an entity, remove its **dir** (which transitively removes its `index.md`).
 4. **`remove` refuses pillar root dirs** — any direct child of `.cumaru/` (e.g. `.cumaru/plans`) can't be removed.
 
-`move` and `copy` refuse if the destination already exists (no silent overwrites). Parent dirs are created automatically (`mkdir -p`).
+`move` and `copy` refuse if the destination already exists (no silent overwrites). Parent dirs are created automatically (`mkdir -p`). `create` of an existing path is a no-op success that keeps its bytes. FIFOs, sockets, and devices are refused; a directory copy containing a nested symlink or unsupported entry is refused; moving or copying a directory into its own descendant is refused.
+
+Every check runs before mutation. Success lines go to stdout (`<verb>: <src> -> <dst>`, `create: <path> (file)`, `create: <path>/ (dir)`, or `already exists (no-op): <path>`); diagnostics go to stderr with the `cumaru fs:` prefix. There is no rollback: a failed recursive copy or removal may leave partial results.
 
 ## Examples
 
@@ -57,14 +59,14 @@ cumaru fs plans/AAA-1234 copy plans/AAA-1234.v2        # ✗ refused — dotted 
 
 - `0` — success.
 - `1` — guardrail violation, source missing, destination exists, or write failure.
-- `2` — usage error (unknown verb, missing args).
+- `2` — usage error (unknown verb, missing `<dst>` for move/copy, or `<dst>` given to create/remove).
 
 ## Why a primitive (no skill)
 
-Skills exist when there's multi-step orchestration that doesn't fit in `--help`. Filesystem operations are atomic. The recipes that use `cumaru fs` (absorb a plan, bootstrap a spec area, promote an exploration) live in domain-specific skills (`cumaru-absorb`, `cumaru-specs`, `cumaru-explore`) — those skills compose filesystem calls into the actual workflow.
+Skills exist when there's multi-step orchestration that doesn't fit in `--help`. Filesystem operations are guarded primitives with no multi-file atomicity or rollback. The recipes that use `cumaru fs` (absorb a plan, bootstrap a spec area, promote an exploration) live in domain-specific skills (`cumaru-absorb`, `cumaru-specs`, `cumaru-explore`) — those skills compose filesystem calls into the actual workflow.
 
 ## Related
 
 - [`cumaru tag`](tag.md) — the other CLI primitive (tag content). Recipe skills compose both.
-- [`cumaru doctor`](doctor.md) — navigation and summary validation + file refs check verify the result of flow operations.
+- [`cumaru doctor`](doctor.md) — navigation and summary validation + file refs check verify the result of fs operations.
 - `cumaru-absorb`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs` skills — recipes that compose `cumaru fs` into workflows.

@@ -144,7 +144,7 @@ This skill does NOT perform the absorption itself — that's `cumaru-absorb`'s j
 - **Absorption** — `cumaru-absorb` (move + absorb + remove).
 - **Spec authoring** — `cumaru-specs` (bootstrap area, deepen, consolidate). The plan declares `scope:` paths; the spec skill creates/maintains the area files.
 - **Intake / explore / issue** — `cumaru-intake` (tracker mirror), `cumaru-explore` (pre-plan ideation), `cumaru-issue` (locally authored work item).
-- **Slash command exposure** — `/cumaru:plan` dispatches this skill; natural-language requests trigger it too.
+- **Slash command exposure** — on Generic and OpenCode, the `/cumaru:plan` launcher dispatches this skill; Claude and Codex invoke the skill directly. Natural-language requests trigger it too.
 
 ## Patterns
 
@@ -157,4 +157,4 @@ This skill does NOT perform the absorption itself — that's `cumaru-absorb`'s j
 | "Draft the delta for AAA-1234" | Delta-draft recipe (Dev) → verify all tasks done → create delta-draft.md |
 | "Absorption this plan" / "AAA-1234 is ready" | Verify state → hand off to `cumaru-absorb` |
 
-Use `cumaru tag get/set` (CLI, no skill) for `plans/index.md` table round-trip; pair with `cumaru-absorb` for plan close, `cumaru-specs` for the areas in `scope:`, and `cumaru-doctor` to verify between steps.
+Use `cumaru tree plans --rows` for filesystem navigation; pair with `cumaru-absorb` for plan close, `cumaru-specs` for the areas in `scope:`, and `cumaru-doctor` to verify between steps.

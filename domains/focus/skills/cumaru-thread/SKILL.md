@@ -7,7 +7,7 @@ description: Capture or update a Cumaru thread with a stable ID or descriptive s
 
 # Capture a thread
 
-Use `.cumaru/domain.md` and the [thread contract](../../threads/index.md) as
+Use `.cumaru/domain.md` and the `.cumaru/threads/index.md` as
 canonical instructions. Activate the declared Admin role through `cumaru-role
 admin` when no role is active; if another role is active, honor its boundaries
 before changing roles.

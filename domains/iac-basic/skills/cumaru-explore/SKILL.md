@@ -62,4 +62,4 @@ removed after its changeset is absorbed.
 | "Promote multi-region-dr to a change" | Promote recipe → decide key → hand off to `cumaru-plan` → remove/carry the spike |
 | "Drop the opentofu idea" | Confirm → `cumaru fs exploring/move-to-opentofu remove` → run `cumaru tree` |
 
-Use `cumaru tag get/set` (CLI) for `exploring/index.md`; pair with `cumaru-plan` (promote) and `cumaru-doctor`.
+Use `cumaru tree exploring --rows` for filesystem navigation; pair with `cumaru-plan` (promote) and `cumaru-doctor`.

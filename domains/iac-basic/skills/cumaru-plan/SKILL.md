@@ -105,4 +105,4 @@ Verify `delta-draft.md` exists (`status: draft`), every step done + handoff pres
 | "Draft the delta for AAA-1234" | Delta-draft recipe (Dev) → verify steps done → propose topology changes |
 | "Absorption this change" | Verify state → hand off to `cumaru-absorb` |
 
-Use `cumaru tag get/set` (CLI) for `plans/index.md`; pair with `cumaru-absorb`, `cumaru-topology`, `cumaru-doctor`.
+Use `cumaru tree plans --rows` for filesystem navigation; pair with `cumaru-absorb`, `cumaru-topology`, `cumaru-doctor`.

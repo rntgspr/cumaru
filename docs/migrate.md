@@ -6,13 +6,13 @@ executed by the LLM, which also dispatches every deterministic step.
 
 ## Usage
 
-```
-cumaru migrate [--from <source>]
+```text
+cumaru migrate
 ```
 
-| Flag | Description |
-|---|---|
-| `--from <source>` | Cumaru checkout providing `domains/<installed-domain>/`. Defaults to the active CLI checkout. |
+The command takes no arguments. It resolves HEAD of `main` and reads both
+documents from that one commit; there is no `--from`, local checkout, or
+snapshot source. A domain absent from `main` receives the base document only.
 
 ## The model
 
@@ -27,11 +27,12 @@ domains/<domain>/migration.md    optional; extends base with domain nuance
 only for legacy input, `.cumaru/schema.yaml`. It supports installed `.cumaru/`
 trees only. It reads the base document plus the domain's extension when one
 exists, strips frontmatter, and inserts the extension at the base preservation
-checkpoint before conversion and canonical refresh.
+checkpoint before conversion and canonical refresh. A domain
+extension carries only domain nuance and never restates base sections.
 
-Three properties follow from this shape:
+These properties follow from this shape:
 
-- **Never installed.** The document is resolved from the CLI checkout at runtime
+- **Never installed.** The document is read from `main` at runtime
   and is deliberately excluded from `cumaru install` and `cumaru update`. An
   adopter tree never contains a copy that could go stale.
 - **Not cumulative.** There is exactly one current migration, replaced wholesale
@@ -42,7 +43,7 @@ Three properties follow from this shape:
   no-op. That replaces the version guard the old mechanical adapter carried.
 - **Direct N→v9 convergence.** The procedure handles every supported earlier
   layout directly and does not require chained historical migrations or an
-  intermediate source checkout, update, commit, or version write. Configuration
+  intermediate update, commit, or version write. Configuration
   normalization is deterministic: rename legacy-only, delete the legacy file
   when both names exist, keep current-only, and block when neither exists. It
   preserves config values, tag bodies, and local-only files; validates a
@@ -58,7 +59,7 @@ Three properties follow from this shape:
 Migration transforms durable adopter content: which claims survive from a
    retired marker block, which pillar area owns each one, which config keys must be
 preserved. Those are adjudications, not substitutions. This follows the
-framework's standing split — the script reports, the LLM decides — and applies
+framework's standing split — the CLI reports, the LLM decides — and applies
 even to the deterministic steps, which the LLM dispatches itself.
 
 The consequence is stated plainly rather than hidden: **there is no transactional
@@ -100,15 +101,14 @@ targets:
 
 ```bash
 cumaru migrate                       # print the instructions for this project
-cumaru migrate --from /path/to/cumaru # resolve from an explicit checkout
 cumaru migrate --help                # works outside a project
 ```
 
 ## Exit codes
 
 - `0` — instructions printed.
-- `1` — no installed current or legacy configuration, or no base migration document in the source.
-- `2` — usage error, including `--apply`.
+- `1` — missing, symlinked, or unparsable configuration; unsafe domain name; missing base document or extension checkpoint; network or UTF-8 failure. Stdout stays empty.
+- `2` — usage error, including `--apply`, `--from`, or extra arguments.
 
 ## Related
 

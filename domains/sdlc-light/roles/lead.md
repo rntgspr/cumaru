@@ -38,7 +38,7 @@ repository safety, or Git skill gates.
 
 ## Initial load
 
-When planning or orienting, read the relevant directory indexes and run `cumaru tree --pillars plans,specs --rows` for the current filesystem projection. Explore `exploring/` only when looking for prior thoughts.
+When planning or orienting, read the relevant directory indexes and run `cumaru tree plans specs --rows` for the current filesystem projection. Explore `exploring/` only when looking for prior thoughts.
 
 When working **inside an active plan**, apply the standard plan-driven Loading rule: read `plans/<PLAN-ID>/index.md` plus the paths declared in `scope:` (resolved under `specs/<area>/`) and any `aux:` at the plan or task level.
 

@@ -2,7 +2,7 @@
 human_revised: false
 version: 1
 name: pulumi
-description: Use this skill whenever the work involves Pulumi — writing or reading Pulumi programs (TypeScript/Python/Go/…), running preview/up/destroy, managing stacks and state, reading stack outputs, or reviewing a preview for blast radius. Opt-in companion to the iac-basic domain (`cumaru install --with pulumi`); the tool mechanics are general, the integration notes assume the `.cumaru/` IaC pillars (topology/, plans/) when present. Trigger on Pulumi programs (`Pulumi.yaml`, `index.ts`/`__main__.py`), `pulumi` commands, "preview this change", "what will up do", "read this stack's outputs".
+description: Use this skill whenever the work involves Pulumi — writing or reading Pulumi programs (TypeScript/Python/Go/…), running preview/up/destroy, managing stacks and state, reading stack outputs, or reviewing a preview for blast radius. Opt-in companion to the iac-basic domain (`cumaru update skills <agent> --with pulumi --apply` after adoption); the tool mechanics are general, the integration notes assume the `.cumaru/` IaC pillars (topology/, plans/) when present. Trigger on Pulumi programs (`Pulumi.yaml`, `index.ts`/`__main__.py`), `pulumi` commands, "preview this change", "what will up do", "read this stack's outputs".
 ---
 
 # Pulumi

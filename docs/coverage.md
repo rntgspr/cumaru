@@ -4,7 +4,7 @@ Report which repository source files are referenced by the durable
 specification pillar — and which are not. Read-only: builds the source list
 from `git ls-files`, reads `<!-- cumaru:reference -->` tables from spec files,
 and prints the diff. Closing the gaps is the `cumaru-refs` skill's job
-(`/cumaru:refs` orchestrates it).
+(the `/cumaru:refs` launcher on Generic and OpenCode).
 
 ## The model
 
@@ -37,7 +37,7 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 | Mode / flag | Description |
 |---|---|
 | *(default)* | Full report: refs, covered, uncovered, stale, invalid, foreign, summary. |
-| `--refs` | List every reference row, grouped by spec file (same view `cumaru tag all` gives indexes). |
+| `--refs` | List every reference row, grouped by spec file. |
 | `--gaps` | Only uncovered source files, one per line — pipeable. |
 | `--rows` | Machine-readable TSV: `bucket<TAB>path<TAB>spec_host<TAB>detail` (buckets: covered, uncovered, stale, invalid, foreign). |
 | `--strict` | Exit 1 when any uncovered/stale/invalid entry exists — CI gate. |
@@ -49,6 +49,9 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 | `specification_dir` | `specs` | Which pillar holds the durable specification whose `reference` tables count. Domains ship it preset: `specs` (sdlc), `topology` (iac-basic), `coverage` (qa-basic). |
 | `coverage.source` | `[]` (everything) | Array of fnmatch-style globs narrowing which tracked files count as coverable source (`*` crosses `/`, so `src/**` ≡ `src/*`). Supports both block and inline YAML list forms. `.cumaru/` and native agent adapter files are always excluded. |
 
+The `.codex/` directory is currently not excluded; tracked files there remain
+coverable unless filtered by `meta.coverage.source`.
+
 Both are adopter-owned values, like `meta.targets.values`. When `coverage.source` is empty/absent, every tracked file except `.cumaru/`, `.agents/`, `.claude/`, `.opencode/`, and root agent instruction/config files counts as coverable.
 
 ## Buckets
@@ -57,8 +60,8 @@ Both are adopter-owned values, like `meta.targets.values`. When `coverage.source
 |---|---|---|
 | `covered` | Source file with ≥1 reference row. | — |
 | `uncovered` | Source file with no reference row. | — |
-| `stale` | Row points at a file that no longer exists. | `cumaru doctor` check 5 (missing) |
-| `invalid` | Row breaks the source-file rule (`.cumaru/` path, directory, absolute path, URL, anchor). | `cumaru doctor` check 5 (invalid) |
+| `stale` | Row points at a file that no longer exists. | `cumaru doctor` check 7 (missing) |
+| `invalid` | Row breaks the source-file rule (`.cumaru/` path, directory, absolute path, URL, anchor). | `cumaru doctor` check 7 (invalid) |
 | `foreign` | Row target exists but is outside the source scope (untracked or filtered by `coverage.source`). Informational. | — |
 
 Rows with `template` placeholders (`<...>`) or empty bodies are skipped —
@@ -67,20 +70,26 @@ specification pillar are ignored (counted in a notice line).
 
 ## Requirements
 
-A **git work tree** — the source list is `git ls-files` (tracked files only; `core.quotepath=off` so non-ASCII paths are kept literal), so `.gitignore` is respected for free. Read-only; nothing is written.
+A **git work tree** — the source list is `git ls-files` (tracked files only; `core.quotepath=off` so non-ASCII paths are kept literal), so `.gitignore` is respected for free. Read-only; nothing is written. Offline; no network access.
+
+## Exit codes
+
+- `0` — report printed, including foreign-only gaps.
+- `1` — missing tree, config, or pillar; invalid config or glob; non-Git project (empty stdout); malformed host or traversal defect (after the report); or `--strict` with uncovered, stale, or invalid entries.
+- `2` — multiple modes or an unknown argument.
 
 ## Examples
 
 ```bash
 cumaru coverage                     # full report
 cumaru coverage --refs              # what does each spec reference?
-cumaru coverage --gaps | head       # the to-do list, pipeable
+cumaru coverage --gaps | wc -l      # count the to-do list
 cumaru coverage --strict            # CI gate: exit 1 on any gap
 cumaru coverage --rows | awk -F'\t' '$1 == "stale"'
 ```
 
 ## Related
 
-- `cumaru-refs` skill / `/cumaru:refs` command — the reconciliation recipe: adjudicate uncovered files, write rows via `cumaru tag set`, fix stale/invalid rows.
+- `cumaru-refs` skill (`/cumaru:refs` launcher on Generic and OpenCode) — the reconciliation recipe: adjudicate uncovered files, write rows via `cumaru tag set`, fix stale/invalid rows.
 - [`cumaru tag`](tag.md) — reads/writes the `reference` blocks (`cumaru tag <spec-file> get|set reference`).
-- [`cumaru doctor`](doctor.md) — check 5 validates every reference row's target on disk and surfaces shape mismatches for custom table tags.
+- [`cumaru doctor`](doctor.md) — check 7 validates every declared reference row's target with the same source-file rule.
