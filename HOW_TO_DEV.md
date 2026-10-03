@@ -129,6 +129,9 @@ local builds and routine test CI do not publish them. The
 It checks that the tag matches `rust/Cargo.toml`, tests/builds all four targets,
 smokes each executable, and publishes the complete asset set plus `SHA256SUMS`
 only after every target succeeds. Linux binaries must have no ELF interpreter.
+The workflow can also rebuild an existing tag through `workflow_dispatch`.
+The Linux ARM64 asset requires FP16 CPU instructions because the locked Candle
+GEMM dependency contains FP16 assembly. Its build enables `+fp16` explicitly.
 
 Supported installer targets are macOS ARM64/x86_64 and Linux ARM64/x86_64 musl.
 Routine native CI runs on Ubuntu 24.04. Actual build/runtime evidence for each

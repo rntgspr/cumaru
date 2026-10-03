@@ -3,6 +3,15 @@ name: Release
 on:
   push:
     tags: ['[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing numeric release tag to build
+        required: true
+        type: string
+
+env:
+  RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
 
 permissions:
   contents: read
@@ -25,6 +34,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ env.RELEASE_VERSION }}
       - name: Prepare toolchain
         env:
           TARGET: ${{ matrix.target }}
@@ -37,12 +48,16 @@ jobs:
             sudo apt-get install -y musl-tools
             echo 'RUSTFLAGS=-C linker=musl-gcc' >> "$GITHUB_ENV"
             echo 'CC=musl-gcc' >> "$GITHUB_ENV"
+            if [[ "$TARGET" == aarch64-* ]]; then
+              # gemm-f16's ARM assembly requires FP16 instruction support.
+              echo 'RUSTFLAGS=-C linker=musl-gcc -C target-feature=+fp16' >> "$GITHUB_ENV"
+            fi
           fi
       - name: Validate release and source
         run: |
           version="$(sed -n 's/^version = "\(.*\)"$/\1/p' rust/Cargo.toml | head -n 1)"
-          [[ "$GITHUB_REF_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          test "$GITHUB_REF_NAME" = "$version"
+          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$RELEASE_VERSION" = "$version"
           scripts/sync-domain-kernel.sh --check
           cargo fmt --manifest-path rust/Cargo.toml --check
       - name: Test and build target
@@ -56,7 +71,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           binary="rust/target/$TARGET/release/cumaru"
-          test "$("$binary" --version)" = "cumaru $GITHUB_REF_NAME"
+          test "$("$binary" --version)" = "cumaru $RELEASE_VERSION"
           "$binary" help >/dev/null
           if [[ "$TARGET" == *linux-musl ]]; then
             readelf -l "$binary" > /tmp/cumaru-program-headers
@@ -91,5 +106,5 @@ jobs:
             test -s "cumaru-$target"
           done
           sha256sum cumaru-* > SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" cumaru-* SHA256SUMS --verify-tag --draft --title "Cumaru $GITHUB_REF_NAME" --generate-notes
-          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+          gh release create "$RELEASE_VERSION" cumaru-* SHA256SUMS --verify-tag --draft --title "Cumaru $RELEASE_VERSION" --generate-notes
+          gh release edit "$RELEASE_VERSION" --draft=false --latest

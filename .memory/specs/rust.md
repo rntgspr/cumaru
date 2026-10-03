@@ -936,6 +936,9 @@ tag against package identity, and smoke version/help. Linux binaries must have
 no ELF interpreter. Only a successful complete matrix publishes the four assets
 and `SHA256SUMS` through a draft release. Checkout and artifact actions declare
 Node.js 24. Actual publication evidence is recorded after the workflow completes.
+Manual dispatch can rebuild an existing numeric tag using the current workflow.
+Linux ARM64 builds enable `+fp16` for the locked GEMM assembly and require a CPU
+with FP16 instruction support; this asset is not an ARMv8.0 baseline binary.
 
 `rust/build.sh` resolves its own manifest path, builds with `--release --locked`
 from any working directory, and preserves incremental artifacts. The native
