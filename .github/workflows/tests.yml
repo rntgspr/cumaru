@@ -11,8 +11,8 @@ concurrency:
 
 jobs:
   rust:
-    name: Native Rust on macOS
-    runs-on: macos-14
+    name: Native Rust on Ubuntu
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -32,3 +32,10 @@ jobs:
 
       - name: Build release binary
         run: bash rust/build.sh
+
+      - name: Smoke release binary
+        run: |
+          expected="cumaru $(sed -n 's/^version = "\(.*\)"$/\1/p' rust/Cargo.toml | head -n 1)"
+          actual="$(./rust/target/release/cumaru --version)"
+          test "$actual" = "$expected" || { echo "expected $expected, got $actual"; exit 1; }
+          ./rust/target/release/cumaru help >/dev/null

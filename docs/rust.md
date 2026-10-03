@@ -65,6 +65,8 @@ cargo fmt --manifest-path rust/Cargo.toml --check
 bash rust/build.sh
 ```
 
-CI checks native tests, formatting, and release compilation. The Bash job was
+Routine CI runs on Ubuntu 24.04: native tests, formatting, release compilation,
+and a release-binary version/help smoke. It does not verify macOS runtime
+behavior or build Apple release assets. The Bash job was
 removed with its CLI entry point. Retained ShellSpec scenarios do not establish
 native parity and require a deliberate port before reuse.

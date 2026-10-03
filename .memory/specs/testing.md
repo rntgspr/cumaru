@@ -1,6 +1,6 @@
 ---
 name: testing-specification
-description: "Current contract for isolated ShellSpec regression, macOS CI, and manual real-project benches."
+description: "Current contract for retained ShellSpec reference, Ubuntu native CI, and manual real-project benches."
 type: project
 status: implemented
 version: 9
@@ -15,9 +15,11 @@ transactions with isolated ShellSpec examples. A separate manual bench validates
 real-project adoption flows that are inappropriate for fixture-only execution.
 
 The supported native CLI is checked by cargo unit tests, formatting, and release
-build in its own macOS CI job. ShellSpec scenarios are retained as port reference;
-their Bash entry point and CI job have been removed, so they cannot run unchanged.
-the canonical native scope remains in the [Rust specification](rust.md#regression-coverage).
+build in its own Ubuntu 24.04 CI job, followed by a release-binary version and help
+smoke. Linux success does not establish macOS runtime compatibility or produce
+Apple release assets; that validation stays separate and undelivered. ShellSpec
+scenarios are retained as port reference; their Bash entry point and CI job have
+been removed, so they cannot run unchanged. The canonical native scope remains in the [Rust specification](rust.md#regression-coverage).
 
 ## Public surface
 
@@ -41,7 +43,8 @@ shellspec --random examples
    no example may depend on state left by another.
 3. Fixtures under `tests/fixtures/` are framework-neutral and are not regenerated
    by test execution.
-4. CI runs the TAP suite on macOS 14, preserving Bash 3.2 compatibility.
+4. The retired Bash CI ran the TAP suite on macOS 14 for Bash 3.2 compatibility;
+   no current CI job runs it.
 5. Tests invoke no LLM or provider API; adapter names exercise local files only.
 
 ## Inputs and ownership
@@ -52,7 +55,7 @@ shellspec --random examples
 | `tests/fixtures/` | framework | Stable reusable inputs; tests copy rather than mutate canonical fixtures. |
 | `tests/report/` | generated | Ignored ShellSpec output. |
 | Real bench project | maintainer | Git history remains read-only; install artifacts may be reset during the cycle. |
-| `.github/workflows/tests.yml` | framework | macOS dependency installation and TAP execution. |
+| `.github/workflows/tests.yml` | framework | Ubuntu 24.04 native Rust formatting, unit tests, locked release build, and binary smoke. |
 
 ## Execution
 
@@ -110,7 +113,7 @@ project-local lock/staging/backup/recovery debris.
 | [`../../.shellspec`](../../.shellspec) | ShellSpec repository configuration. |
 | [`../../tests/spec/spec_helper.sh`](../../tests/spec/spec_helper.sh) | Shared suite initialization. |
 | [`../../tests/spec/`](../../tests/spec/) | CLI, contract, integration, and transaction examples. |
-| [`../../.github/workflows/tests.yml`](../../.github/workflows/tests.yml) | macOS 14 CI, dependencies, concurrency, and TAP run. |
+| [`../../.github/workflows/tests.yml`](../../.github/workflows/tests.yml) | Ubuntu 24.04 native Rust CI, triggers, concurrency, and binary smoke. |
 
 ## Principal methods
 
@@ -126,7 +129,7 @@ Native Rust tests and their current scope are recorded in the
 [Rust CLI specification](rust.md#regression-coverage). They run separately
 through `cargo test`; retained ShellSpec scenarios target the removed Bash CLI
 and require a deliberate port before they can execute again.
-The current native suite has 64 unit tests. Disposable offline CLI smokes cover
+The current native suite has 70 unit tests. Disposable offline CLI smokes cover
 command behavior and preservation without adding a committed Rust integration
 suite. The native verification record is canonical in `rust.md`; ShellSpec success
 does not establish native parity or production release availability.
