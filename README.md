@@ -170,7 +170,7 @@ documentation for the complete traversal contract.
 | `cumaru upgrade` | Replace the native binary; `--check` only compares build identity with the latest GitHub tag |
 | `cumaru migrate` | Print the current read-only, LLM-executed migration instructions |
 | `cumaru bootstrap` | Print the read-only post-install bootstrap steps for the installed domain |
-| `cumaru version` | Print the build-time binary version, offline |
+| `cumaru version` | Print the build-time binary version, plus the installed domain and config version inside an adopter; offline |
 | `cumaru help` | Show the complete command catalog |
 | `cumaru help domains` | List installable domains; this is not a `domains` subcommand |
 

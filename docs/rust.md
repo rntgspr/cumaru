@@ -36,6 +36,11 @@ Optional skills belong to `update skills <agent> --with <name>`, not install.
 Source-consuming commands do not support `--from` or local snapshot sources.
 Doctor and bare invocation are offline; `help domains` explicitly uses Git/cURL.
 
+`cumaru version` prints the CLI version and, inside an adopter, the installed
+`domain:` and `config:` version read from `.cumaru/config.yaml`. These are
+independent identities: upgrading the binary does not migrate the config.
+`--version` prints only the package identity.
+
 ## Distribution and transition
 
 The binary installer remains a Bash script at `rust/install.sh`; Bash also

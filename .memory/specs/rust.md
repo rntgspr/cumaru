@@ -51,6 +51,7 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh
 
 An invocation without a subcommand runs `doctor`. Package version
 `0.9.1` is baked into the binary; it is separate from adopter config version 9.
+`version` reports both identities inside an adopter; see [Native version](#native-version).
 
 ## Port status
 
@@ -65,7 +66,7 @@ the rename to `fs`, not a remaining command implementation.
 | `coverage`, `doctor` | Offline reports; shared reference resolution; bare invocation runs doctor. |
 | `install`, `update`, `bootstrap`, `migrate`, `help domains` | Latest plain GitHub release, commit-pinned reads, no local snapshot or `--from`. |
 | `uninstall` | All stateless adapters; owned native cleanup; confirmed removal of the complete project tree. |
-| `version`, `upgrade` | Build identity and binary-only global installation as `cumaru`. |
+| `version`, `upgrade` | Build identity plus offline installed domain/config report; binary-only global installation as `cumaru`. |
 | `help` | Offline local CLI help; explicit domain discovery uses the network. |
 
 The canonical native details live in this file. Capability specifications link
@@ -277,7 +278,8 @@ retained Bash module contracts or legacy public docs.
 | Invalid config, target, index, summary, or safety boundary | `1` | none |
 | Config parsing or embedded-schema runtime failure | `1` | none |
 | Deep traversal defects | `1` after traversal; valid rows may be emitted | none |
-| Clean traversal or version output | `0` | none |
+| Clean traversal or version output, with or without an adopter | `0` | none |
+| `version` present adopter with linked/non-directory root, missing/linked config, or malformed/multi-document/mistyped metadata | `1`, CLI version still on stdout | none |
 | Release check reports behind or up to date | `0` | none |
 | Release listing or comparison failure | `1` | none |
 | Bare upgrade succeeds | `0` | global binary and invoking user's version JSON replaced |
@@ -339,7 +341,7 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 | Artifact | Responsibility |
 |---|---|
 | `rust/src/main.rs` | CLI arguments and dispatch. |
-| `rust/src/commands/version.rs` | Build-time package version output. |
+| `rust/src/commands/version.rs` | Build-time package version plus installed domain/config metadata read, and their unit tests. |
 | `rust/src/commands/help.rs` | Local Clap help and read-only pinned-release domain discovery, title rendering, and their unit tests. |
 | `rust/src/commands/upgrade.rs` | Upgrade arguments, coordination, release comparison, and result presentation. |
 | `rust/src/release.rs` | Shared build-time `VERSION`, plain numeric release parsing/selection, and their unit tests. |
@@ -828,6 +830,34 @@ smokes confirmed both declined and accepted prompts on scratch installs. Locked
 debug/release builds, formatting, and diff checks passed; update regression
 smokes passed after shared artifact extraction. No Rust integration tests, real
 adopter removals, global uninstall, or Git mutations were performed.
+
+## Native version
+
+`version` is offline and read-only. It always prints `version:  <cli>` first,
+the build-time package version. When the fixed `.cumaru/` path is absent, that
+is the whole output and the status is 0. When it is present, the root must be a
+regular directory and `config.yaml` a regular, non-symlink file holding exactly
+one YAML document with a non-empty `domain` string without control characters
+and an integer `version`. The command then adds `domain:   <name>` and
+`config:   <integer>`, printing the installed values verbatim.
+
+The read does not validate the current schema, so an older installed contract
+still reports its actual integer; nothing is migrated or inferred. CLI and
+config versions are independent: neither is derived from the other, and no
+Markdown domain-version field exists. A present but unsafe or malformed adopter
+keeps the CLI line on stdout, writes a `cumaru version:` diagnostic to stderr,
+invents no config version, and returns 1. `--version` remains Clap's package
+identity `cumaru <cli>`, used by binary installer verification, and never
+parses an adopter. Every shipped domain config starts at version 9, matching
+`domains/__base/config.yaml`; a native test enforces that alignment and each
+config's domain name.
+
+Verification on 2026-10-02: 70 native tests passed, including six version tests
+for absence, the shipped base identity, older metadata, malformed/mistyped
+metadata, unsafe layouts with unchanged files, and shipped-config alignment.
+Release CLI smokes in disposable directories reported the CLI-only form, focus
+config 9, legacy config 7, and status 1 for mistyped version and missing config;
+`--version` printed `cumaru 0.9.1` and the copied config stayed byte-identical.
 
 ## Native help
 
