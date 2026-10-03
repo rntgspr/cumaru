@@ -51,7 +51,12 @@ adapter instructions and SessionStart hook
    hooks while maintaining one canonical Cumaru bootstrap sequence.
 8. The universal strictness `10/10` `cumaru-first` discipline is the priority
    application gate when repository work has a relevant Cumaru surface; it
-   does not bind unrelated work or create a separate delivery path.
+   does not bind unrelated work or create a separate delivery path. It is
+   also the compact agent manual for all 16 native command families: bounded
+   discovery through `tree`, `context`, and `map`; explicit, user-approved
+   `model push` downloads; and the mutation distinctions of install, update,
+   uninstall, and upgrade. It points to `cumaru help <command>` for flags
+   instead of duplicating command documentation, and grants no new authority.
 9. Discipline guidance is bounded by task ownership and observed evidence.
    Existing authorization covers routine in-scope judgments; unresolved scope
    or ownership, destructive cleanup, and genuinely new authority still stop

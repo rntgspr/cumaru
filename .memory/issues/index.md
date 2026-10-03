@@ -15,7 +15,6 @@ from 138.
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
-| [137](issue_137.md) | high | Review cumaru-first as a compact manual for all native commands and optional models; Claude implements |
 
 ## Notes
 
