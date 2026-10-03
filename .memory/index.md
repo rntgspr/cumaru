@@ -62,6 +62,7 @@ mandatory framework order.
 
 ## Other Memory
 
+- [Developer guide](../HOW_TO_DEV.md) — source checkout, architecture, local build, and verification.
 - [Plans](plans/index.md) — active implementation plans, loaded on demand.
 - [Advisor mode](advisor_mode.md) — collaboration behavior.
 - [Spec template](_spec_template.md) — canonical specification structure.

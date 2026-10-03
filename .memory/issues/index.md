@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 138.
+from 139.
 
 ## Open issues
 
@@ -15,6 +15,7 @@ from 138.
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
+| [138](issue_138.md) | medium | Update checkout to Node.js 24 and remove the CI deprecation warning |
 
 ## Notes
 

@@ -8,16 +8,9 @@ former entry point. No wrapper silently redirects Bash scenarios to Rust.
 
 ## Build and run
 
-```bash
-bash rust/build.sh
-./rust/target/release/cumaru --version
-./rust/target/release/cumaru help
-```
-
-The build script works from any directory and preserves incremental artifacts.
-For local development, link this checkout's release binary from `~/.local/bin/cumaru`
-and include `~/.local/bin` in PATH. Every successful local release build then
-updates the executable used by the terminal; source edits alone do not rebuild it.
+Build, checkout setup, development PATH links, and verification commands live in
+[HOW_TO_DEV.md](../HOW_TO_DEV.md). The [README](../README.md#install-the-cli)
+describes precompiled CLI installation and project onboarding.
 
 ## Command contracts
 
@@ -73,11 +66,7 @@ and cleanup so they can be replaced without duplicating Cumaru-owned entries.
 
 ## Verification
 
-```bash
-cargo test --manifest-path rust/Cargo.toml --locked
-cargo fmt --manifest-path rust/Cargo.toml --check
-bash rust/build.sh
-```
+Follow [development verification](../HOW_TO_DEV.md#verify-changes).
 
 Routine CI runs on Ubuntu 24.04: native tests, formatting, release compilation,
 and a release-binary version/help smoke. It does not verify macOS runtime

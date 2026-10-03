@@ -8,5 +8,6 @@ docs/          export-ignore
 .codex/        export-ignore
 report/        export-ignore
 scripts/       export-ignore
+HOW_TO_DEV.md  export-ignore
 .gitignore     export-ignore
 .gitattributes export-ignore

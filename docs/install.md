@@ -17,7 +17,8 @@ GitHub. Navigation and config/Markdown parsing need no runtime `jq`, `yq`, or
   recovery check.
 - Bash runs the binary installer and installed session hooks.
 
-See the [native CLI guide](rust.md) for building or installing the binary.
+See the [README](../README.md#install-the-cli) for compiled CLI installation.
+Contributor setup and build instructions live in [HOW_TO_DEV.md](../HOW_TO_DEV.md).
 
 ## Usage
 

@@ -13,10 +13,9 @@
 
 Cumaru is a structured context-driven framework for AI-assisted work.
 
-The supported CLI is the native Rust executable `cumaru`. The root Bash
-entry point has been removed; `src/*.sh` CLI modules and ShellSpec scenarios
-remain deprecated reference material for a later test port. The Bash-based download installer and agent hooks
-remain part of native distribution; they are not the legacy CLI.
+Use the compiled `cumaru` CLI to install a project knowledge layer, discover
+relevant content, and run the framework's commands. No Rust toolchain or Python
+installation is required to use the binary.
 
 It gives a text-based project a durable, navigable knowledge layer: the
 filesystem is the structural source of truth, concise summaries make selective
@@ -47,29 +46,27 @@ Cumaru makes that discovery explicit:
 This is not a giant prompt and not a flat collection of notes. It is an
 operational memory system that stays close to the project it describes.
 
-## The model
+## Install the CLI
 
-The `.cumaru/` directory is the project's knowledge layer:
+Use the precompiled binary for your platform. The download installer selects
+macOS or Linux and ARM64 or x86_64, installs `cumaru` in `/usr/local/bin`, and
+may request sudo for that destination.
 
-```text
-.cumaru/
-├── index.md      framework kernel and loading rule
-├── domain.md     domain workflow and project-specific context
-├── config.yaml   domain contract
-├── roles/        agent role definitions
-├── templates/    entity templates
-└── <pillar>/     domain-defined areas of knowledge and work
-    ├── index.md
-    └── …
+**Release binaries are not published yet.** The following installer requires
+platform assets on [GitHub Releases](https://github.com/rntgspr/cumaru/releases).
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
+cumaru --version
+cumaru help
 ```
 
-`config.yaml` defines the domain contract: pillars, frontmatter, semantic tags,
-and entity shapes. The filesystem defines the current structure. `cumaru tree`
-bridges both by listing shallow candidates and their summaries.
+The installer needs Bash, cURL, and Git. Source-reading commands use cURL;
+coverage and release checks use Git. Ordinary Markdown navigation and ranking
+need no runtime jq, yq, rg, Python, server, or GPU.
 
-Semantic tags remain adopter-owned. They describe relationships such as
-code references, touched files, components, and other domain facts; they never
-duplicate the directory inventory.
+Contributing or running a checkout locally? See [HOW_TO_DEV.md](HOW_TO_DEV.md)
+for repository setup, architecture, compilation, and verification.
 
 ## Domains
 
@@ -92,39 +89,9 @@ identity, arrangement, mix decisions, and references; transient areas for
 sketches, experiments, and session notes. Cumaru supplies the navigation and
 lifecycle model, not a fixed vocabulary.
 
-## Install
+## Start a project
 
-Build the native CLI from this checkout with a Rust toolchain:
-
-```bash
-bash rust/build.sh
-./rust/target/release/cumaru --version
-```
-
-For local development, link that binary into a directory on PATH, for example
-`ln -s "$PWD/rust/target/release/cumaru" ~/.local/bin/cumaru`. Each release
-build then updates the linked executable; this is separate from the release
-installer below.
-
-cURL reads domain/config sources from main HEAD. Binary release checks need Git;
-coverage also needs a Git work tree.
-Navigation and config/Markdown parsing need no runtime jq, yq, or rg. Bash is
-used by the binary installer and installed session hooks.
-
-Once platform binaries are attached to releases, the native download installer
-publishes `/usr/local/bin/cumaru` and records the version in
-`~/.config/cumaru.json`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
-```
-
-No release publishes platform binaries yet, so this installer cannot complete
-until assets are attached. The old hosted installer installs the deprecated Bash
-snapshot. Native upgrade replaces only the binary and user
-version record; it does not replace `~/.cumaru` or project knowledge.
-
-Inside a project:
+Inside your project directory, choose a domain and agent adapter:
 
 ```bash
 cumaru install                                      # default: base
@@ -138,28 +105,30 @@ cumaru install --domain base                         # build a custom domain
 cumaru update skills codex --with git --apply         # add an opt-in after adoption
 ```
 
-See the [native CLI guide](docs/rust.md). Command guides describe the native
-binary; `cumaru <command> --help` is the authoritative usage.
+Install creates `.cumaru/` and the selected agent artifacts. Run `cumaru doctor`
+to check the installation and `cumaru bootstrap` for the domain's post-install
+steps. An existing installation is refreshed with `cumaru update`, not reinstalled.
 
-## How an agent navigates a project
+## Find relevant knowledge
 
-```text
-index.md → domain.md → disciplines/index.md → remaining disciplines → cumaru tree .
-                         ↓
-                select relevant summaries
-                         ↓
-              read selected files or directories
-                         ↓
-          repeat only where the task requires it
+```bash
+cumaru tree
+cumaru context "how are refresh tokens rotated?"
+cumaru map
 ```
 
-This keeps structure deterministic while relevance remains a judgment call. An
-empty semantic relation does not prove isolation: for cross-cutting work, the
-agent expands relevant branches, inspects selected code-reference tags, and
-stops when new candidates add no relevant concern.
+`context` returns file paths and scores without generating text. It works with
+the lightweight scorer immediately; an optional encoder can improve semantic
+matching. Install a supported model explicitly:
 
-Read the [architecture](docs/architecture.md) and [`cumaru tree`](docs/tree.md)
-documentation for the complete traversal contract.
+```bash
+cumaru model list
+cumaru model push bge-micro-v2
+```
+
+Models live under `~/.cumaru/<name>/`, outside the binary and project knowledge.
+After download, queries work offline. See [context](docs/context.md) and
+[model management](docs/model.md) for limits and score interpretation.
 
 ## Core commands
 
@@ -235,12 +204,15 @@ Read [updates](docs/update.md), [migration](docs/migrate.md), and
 
 ## Documentation
 
+- [Development setup and architecture](HOW_TO_DEV.md)
 - [Native Rust CLI](docs/rust.md)
 - [Architecture](docs/architecture.md)
 - [Install](docs/install.md)
 - [Agent adapters](docs/agent-adapters.md)
 - [`cumaru tree`](docs/tree.md)
 - [`cumaru map`](docs/map.md)
+- [`cumaru context`](docs/context.md)
+- [`cumaru model`](docs/model.md)
 - [`cumaru doctor`](docs/doctor.md)
 - [`cumaru coverage`](docs/coverage.md)
 - [`cumaru tag`](docs/tag.md)

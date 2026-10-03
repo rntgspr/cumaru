@@ -52,7 +52,7 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh
 ```
 
 An invocation without a subcommand runs `doctor`. Package version
-`0.9.1` is baked into the binary; it is separate from adopter config version 9.
+`0.10.0` is baked into the binary; it is separate from adopter config version 9.
 `version` reports both identities inside an adopter; see [Native version](#native-version).
 
 ## Port status
@@ -930,6 +930,13 @@ and remaining feature/distribution boundaries above still apply.
 
 ## Verification
 
+Numeric tag pushes invoke `.github/workflows/release.yml`. Four native runner
+jobs test and build macOS ARM64/x86_64 and Linux ARM64/x86_64 musl, verify the
+tag against package identity, and smoke version/help. Linux binaries must have
+no ELF interpreter. Only a successful complete matrix publishes the four assets
+and `SHA256SUMS` through a draft release. Checkout and artifact actions declare
+Node.js 24. Actual publication evidence is recorded after the workflow completes.
+
 `rust/build.sh` resolves its own manifest path, builds with `--release --locked`
 from any working directory, and preserves incremental artifacts. The native
 binary remains at `rust/target/release/cumaru`; the root Bash `./cumaru` entry
@@ -941,7 +948,8 @@ produce Apple release assets; that validation remains separate and undelivered.
 The former Bash regression job has been removed. The doctor no-warning unit test
 expects `git` and `curl` on PATH, as GitHub's Ubuntu runner provides.
 No old global binary, alias, PATH entry, or snapshot is removed by this transition.
-The public [native guide](../../docs/rust.md) describes build and distribution.
+The [developer guide](../../HOW_TO_DEV.md) owns checkout/build instructions;
+the public [native guide](../../docs/rust.md) describes command and distribution boundaries.
 
 Naming/deprecation verification on 2026-10-02: all 64 native tests passed,
 including replacement and removal of delivered `cuma` hooks. Release compilation

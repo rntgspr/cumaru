@@ -73,6 +73,11 @@ installation, adapters, TSV/heading output, opaque tags, update ownership, offli
 doctor, removal, and binary distribution. Optional YAML editor examples in the
 rolling migration require Mike Farah yq v4; the native CLI does not.
 
+Reader-facing onboarding now starts with compiled CLI installation and usage in
+README. Source checkout, architecture overview, compilation, development PATH
+links, and verification are owned by [HOW_TO_DEV.md](../../HOW_TO_DEV.md);
+the native guide links there rather than duplicating build recipes.
+
 ## Verification
 
 - All 71 native unit tests passed with default parallel execution; formatting,
