@@ -8,9 +8,9 @@ description: Scan all active Cumaru sources, or a named subset, and create or up
 # Scan sources into threads
 
 Read `.cumaru/domain.md` from the repository root, the
-[source contract](../../sources/index.md), the
-[directive contract](../../directives/index.md), and the
-[thread contract](../../threads/index.md). Use the default Admin role. The
+`.cumaru/sources/index.md`, the
+`.cumaru/directives/index.md`, and the
+`.cumaru/threads/index.md`. Use the default Admin role. The
 domain is canonical for directive authority, ranking, and queue evaluation;
 `cumaru-thread` is canonical for capture. Do not restate either here.
 

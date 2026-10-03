@@ -100,4 +100,4 @@ Unlike behavioral specs, a topology area does **not** carry `## Requirements (EA
 | "Split this stack per account" / "promote networking/peering to a subarea" | Deepen recipe step 4 (split) or 5 (promote) |
 | "Consolidate topology/networking" | Consolidate recipe → read the body → recover history from git if needed → rewrite as current state |
 
-Use `cumaru tag get/set` (CLI) for the `topology/index.md` round-trip; pair with `cumaru-plan` (`scope:`), `cumaru-absorb` (absorb), `cumaru-arch` (draw), and `cumaru-doctor`.
+Use `cumaru tree topology --rows` for filesystem navigation; pair with `cumaru-plan` (`scope:`), `cumaru-absorb` (absorb), `cumaru-arch` (draw), and `cumaru-doctor`.

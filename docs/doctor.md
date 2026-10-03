@@ -1,60 +1,75 @@
 # `cumaru doctor`
 
-Run health checks on a `.cumaru/` tree end-to-end. The default `cumaru` command — running `cumaru` with no args is equivalent to `cumaru doctor`. Complete configuration validation is a preflight: invalid config state stops before the nine health checks.
+Run health checks on a `.cumaru/` tree end-to-end, offline and without writes.
+It is the default command: running `cumaru` with no arguments is equivalent to
+`cumaru doctor`. Configuration validation is a preflight: invalid config state
+stops before the health checks run.
 
-For version 8 trees, `doctor` is **pillar-agnostic** and navigation-first. It reads the filesystem, summary frontmatter, config-declared semantic tags, and agent integration without hardcoded pillar names.
+Doctor is **pillar-agnostic** and navigation-first. It reads the filesystem,
+frontmatter, config-declared semantic tags, and agent instructions without
+hardcoded pillar names.
 
 ## Usage
 
-```
+```text
 cumaru doctor [--quiet]
 ```
 
 | Flag | Description |
 |---|---|
-| `--quiet` | Suppresses `[✓]` pass lines. Warnings, errors, and the summary still print. |
+| `--quiet` | Suppresses `[ok]` pass lines. Warnings, errors, and the summary still print. |
+
+## Preflight
+
+The preflight stops with status `1` on stderr, before any check, when:
+
+- The config version is below 9; doctor directs you to
+  [`cumaru migrate`](migrate.md).
+- The `.cumaru/` root or `config.yaml` is a symlink, or the config is malformed
+  or invalid against the embedded schema.
+- A declared entry is unsafe or missing, or wildcard contracts conflict.
+- A configured workflow has invalid dependencies, a cycle, or a step whose skill
+  is not installed in a supported adapter's skill directory.
 
 ## Output
 
-Each top-level check emits exactly one line:
+Each check emits one line, followed by its diagnostics:
 
-- `[✓]` pass
-- `[⚠]` soft issue (warning; never fails the run)
-- `[✗]` hard issue (error; exits 1)
+- `[ok]` pass
+- `[warn]` soft issue (never fails the run)
+- `[error]` hard issue (exits 1)
 
-Followed by a summary line: `Summary: X error(s), Y warning(s), Z ok`.
+A summary line follows: `Summary: X error(s), Y warning(s), Z ok`. It counts
+checks, not individual defects.
 
-## The 9 v8 checks
+## The 10 checks
 
 | # | Check | On issue |
 |---|---|---|
-| 1 | **Navigation, summaries, and discipline metadata** — requires a real `index.md` in every non-hidden directory, validates every Markdown `summary:`, and requires each discipline except its index to declare `strictness: 0/10` through `10/10`. Missing strictness is reported as invalid and treated as `0/10`. | **fail** |
-| 2 | **Tag contracts** — missing closers, crossing delimiters, and other balanced-parser failures produce an error with the host path and structural diagnostic. Balanced undeclared tags remain preserved opaque bodies; valid nesting remains queryable and warns with the host path. Retired tags such as `absorptions` remain visible for migration adjudication. | **fail** for malformed structure; warn for unknown or nested tags |
-| 3 | **Stale work-marker files** — any `*.delete-me.md` lingering anywhere under `.cumaru/`. | warn |
-| 4 | **Unrefined RAW blocks** — any Markdown file containing `<!-- BEGIN RAW`. The marker means source content still needs LLM refinement. | warn |
-| 5 | **Retained file references** — only declared semantic tags (`files`, `touched`, `reference`) are path-resolved. `touched` accepts explicitly removed files; `reference` must target a repository source file. Unknown tags stay opaque. | warn for invalid |
-| 6 | **External tools** — `curl`, `git`, `rg`, `jq`, and `yq` available on PATH. | warn for missing |
-| 7 | **Agent instructions** — reports green when at least one complete Claude, Codex, or OpenCode instruction set is installed. Skills, commands, and hooks are outside doctor's scope. | warn when none is complete |
-| 8 | **Retired adapter config** — reports a legacy top-level `agent` field. The value is ignored and never selects artifact routing. | warn for agent review |
-| 9 | **Configuration drift** — compares the validated config with the current global schema and selected domain defaults, then gives the agent the source paths needed for deliberate reconciliation. | warn for agent review |
+| 1 | **Configured v9 tree contracts** — required frontmatter fields, declared `targets` vocabulary, the configured H1 heading, and required tags for each host, resolved through the config's selectors and path overrides. | **error** |
+| 2 | **Navigation, summaries, and discipline metadata** — closed single-mapping frontmatter, a real `index.md` in every non-hidden directory, a valid `summary:` on every Markdown file, and `strictness: 0/10` through `10/10` on every discipline except its index. Symlinks and unsafe entries are blocking. | **error** |
+| 3 | **Balanced semantic tags** — missing closers, crossing delimiters, and unmatched closers, with the host path and diagnostic. | **error** |
+| 4 | **Unknown and nested tags** — balanced undeclared tags remain preserved opaque bodies; valid nesting remains queryable. | warn |
+| 5 | **Stale work markers** — any `*.delete-me.md` under `.cumaru/`. | warn |
+| 6 | **Unrefined RAW blocks** — any Markdown file containing `<!-- BEGIN RAW`. | warn |
+| 7 | **Retained file references** — only declared `files`, `touched`, and `reference` tags are path-resolved. `touched` accepts explicitly removed files; `reference` follows the [coverage](coverage.md) source-file rule. | warn |
+| 8 | **External tools** — `git` and `curl` on PATH, checked without running them. | warn |
+| 9 | **Agent instructions** — at least one complete Generic, Claude, Codex, or OpenCode instruction set with the installed discipline bodies. Skills, commands, and hooks are outside this check. | warn |
+| 10 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the defaults embedded in this binary. Formatting, order, and additive local entries are ignored. | warn |
 
-`cumaru tree --deep` is the companion diagnostic for check 1: it keeps walking after defects, reports them on stderr, and returns nonzero at the end.
+Check 10 makes no claim about freshness against `main`: new source defaults
+require a newer binary. Use `cumaru version` or `cumaru update config` for the
+main-HEAD comparison.
 
-## Version gate
-
-Doctor validates only framework v8 trees. A fresh installation already uses
-v8. When an existing tree declares an older config version, doctor stops and
-directs the user to [`cumaru migrate`](migrate.md), which prints the migration
-instructions for the LLM to execute.
+`cumaru tree --deep` is the companion diagnostic for check 2: it keeps walking
+after defects, reports them on stderr, and returns nonzero at the end.
 
 ## What doctor does NOT check (LLM's job)
 
 - **Workflow integrity** (tasks done without handoff, unfinished delta drafts at close-out). Audited as part of recipe execution in the domain's `cumaru-absorb` skill.
-- **Cross-file semantic links** (every `scope:` path resolves, every `depends-on:` references a real entity). Not enforced by `cumaru doctor`.
-- **Every document satisfying every schema-declared content rule** — preflight
-  validates the schema itself and its cross-field contract; the nine checks do
-  not enforce every declared frontmatter field or prose pattern on every file.
+- **Cross-file semantic links** (every `scope:` path resolves, every `depends-on:` references a real entity).
 - **Schema intent vs. file content** — e.g. requirements quality and prose accuracy. These are author judgment, not validation.
+- **Remote freshness** — doctor never reads the network.
 
 Malformed semantic tags make doctor exit `1` and block lifecycle cleanup. A
 successful result establishes structural health, not completed implementation
@@ -63,16 +78,16 @@ or satisfied acceptance criteria; domain recipes require that evidence separatel
 ## Exit codes
 
 - `0` — no errors (warnings allowed).
-- `1` — at least one error.
+- `1` — preflight failure or at least one error.
 - `2` — usage error (unknown flag).
 
 ## When to use
 
-- Right after `cumaru install` (sanity check the starter copied cleanly).
-- After editing schema or any `.cumaru/` file.
-- Before/after a structural change (plan absorption, update).
+- Right after `cumaru install`.
+- After editing config or any `.cumaru/` file.
+- Before/after a structural change (plan absorption, update). `update --apply`
+  and `--clear` already run it in quiet mode after publication.
 - As a CI check on adopter projects.
-- When something feels off and you want a holistic snapshot.
 
 ## Examples
 
@@ -83,8 +98,9 @@ cumaru doctor --quiet                        # hide pass lines; show warnings + 
 
 ## Related
 
-- [`cumaru tag`](tag.md) — run `cumaru tree` to inspect the affected directory
-- [`cumaru fs`](fs.md) — file ops to delete a stale `*.delete-me.md` (check 3) or fix a missing file reference (check 5).
-- [`cumaru update`](update.md) — install or clear explicit agent artifacts (check 7).
-- `/cumaru:doctor` slash command — forwards its arguments to the canonical
-  `cumaru-doctor` skill, which orchestrates diagnosis and remediation.
+- [`cumaru tree`](tree.md) — inspect the affected directory (check 2).
+- [`cumaru tag`](tag.md) — inspect or repair semantic tag bodies (checks 1, 3, 4).
+- [`cumaru fs`](fs.md) — file ops to delete a stale `*.delete-me.md` (check 5) or fix a missing file reference (check 7).
+- [`cumaru update`](update.md) — install or clear explicit agent artifacts (check 9) and report config reconciliation (check 10).
+- `cumaru-doctor` skill — orchestrates diagnosis and remediation; Generic and
+  OpenCode also expose it through the `/cumaru:doctor` launcher.

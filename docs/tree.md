@@ -1,45 +1,29 @@
 # `cumaru tree`
 
-List the filesystem-backed candidates below a `.cumaru/` directory and read
-their one-line selection summaries. The command is read-only and never follows
-symlinks.
+List the filesystem-backed candidates below one or more `.cumaru/` directories
+and read their one-line selection summaries. The command is read-only, offline,
+needs no configuration, and never follows symlinks.
 
 ## Usage
 
 ```text
-cumaru tree [<directory-or-md>] [--deep] [--rows]
-            [--pillars <name[,name...]>] [--domain <name>]
+cumaru tree [<directory-or-md>...] [--deep] [--rows|--markdown]
 ```
 
-Paths are relative to `.cumaru/`. Omit the target to inspect the root. A
-Markdown file target is normalized to its parent, so `cumaru tree
-specs/auth.md` lists the same directory as `cumaru tree specs/`.
+Paths are relative to `.cumaru/`. Omit every target to inspect the root. Pass
+several targets as separate arguments, such as `cumaru tree plans specs`;
+commas are literal path characters, not separators. A Markdown file target is
+normalized to its parent, so `cumaru tree specs/auth.md` lists the same
+directory as `cumaru tree specs/`. Overlapping targets are visited once.
 
 Absolute paths, `..` segments, hidden target paths, missing targets, and
 non-Markdown file targets are rejected. Hidden means any path segment whose
-basename starts with `.`.
-
-## Schema Filters
-
-`--pillars <name[,name...]>` restricts root navigation to pillars declared in
-the installed `.cumaru/config.yaml`. With an explicit target, that target must
-be inside one of the selected pillars. Unknown names, empty comma entries, and
-targets outside the selection fail without emitting candidate rows.
-
-`--domain <name>` is a guard: it requires the installed config's `domain:` to
-match the requested name. It does not load or switch to another domain source.
-Both filters compose with `--deep` and `--rows`; omitting them preserves the
-unfiltered behavior.
-
-```bash
-cumaru tree --pillars plans,specs --rows
-cumaru tree specs --pillars specs --deep
-cumaru tree --domain sdlc-full --pillars plans --rows
-```
+basename starts with `.`. Navigation is independent of domain and config
+declarations; there are no pillar or domain filters.
 
 ## Shallow Navigation
 
-Shallow mode is the default. The target directory must have a regular
+Shallow mode is the default. Each target directory must have a regular
 `index.md`. The command lists:
 
 - Direct non-hidden Markdown files other than `index.md`.
@@ -54,7 +38,7 @@ Every path is relative to `.cumaru/`.
 `--deep` recursively inspects every non-hidden Markdown descendant. It keeps
 walking through directories with missing indexes and files with invalid
 summaries, emits every valid candidate, reports every defect on stderr, and
-returns nonzero after the walk.
+returns `1` after the walk.
 
 Every non-hidden directory, including the target, is checked for `index.md`.
 An `index.md` represents its directory and is never emitted as a separate
@@ -70,6 +54,7 @@ evidence that a concern is isolated.
 cumaru tree specs/
 cumaru tree specs/auth/
 cumaru tree specs/auth/ --deep
+cumaru tree plans specs --rows
 ```
 
 Start shallow, select candidates whose summaries match the task, and recurse
@@ -85,7 +70,13 @@ bulk-loading Markdown bodies.
 
 ## Output
 
-The default is a deterministic Markdown table:
+The default is stable TSV with no header (`--rows` selects it explicitly):
+
+```text
+specs/auth/<TAB>Authentication behavior and session lifecycle contracts.
+```
+
+`--markdown` emits an escaped table instead and conflicts with `--rows`:
 
 ```text
 | Path | Summary |
@@ -93,42 +84,26 @@ The default is a deterministic Markdown table:
 | specs/auth/ | Authentication behavior and session lifecycle contracts. |
 ```
 
-Pipes and backslashes are escaped in Markdown output. `--rows` emits stable
-TSV with no header:
-
-```text
-specs/auth/<TAB>Authentication behavior and session lifecycle contracts.
-```
-
-Sorting uses `LC_ALL=C`. Diagnostics are written only to stderr, so `--rows`
-can be piped safely. Candidate paths containing control characters are rejected.
+Rows from all targets are combined, sorted by byte order, and deduplicated.
+Diagnostics go only to stderr, so TSV can be piped safely.
 
 ## Summary Contract
 
-Each candidate summary is read only from YAML frontmatter with
-mikefarah/yq's `--front-matter=extract` mode. Markdown bodies are not loaded.
-`summary` must be:
-
-- A YAML string.
-- Trimmed.
-- Free of carriage returns, line feeds, and tabs.
-- Between 32 and 512 Unicode code points, inclusive.
-
-Missing, non-mikefarah, or incompatible `yq` is a hard runtime error.
+Each candidate summary is read only from YAML frontmatter; reading stops at the
+closing fence and Markdown bodies are not loaded. `summary` must be a trimmed
+string of 32 to 512 Unicode code points without C0 control or DEL characters.
 
 ## Symlink Safety
 
-The `.cumaru/` root, explicit target, every target component, and every
-discovered descendant must be real filesystem entries, not symlinks. Broken,
-cyclic, in-tree, and escaping symlinks are all rejected before frontmatter is
-read. Every candidate is canonicalized and checked for containment inside
-`.cumaru/` before its summary is loaded.
+The `.cumaru/` root, explicit targets, and every discovered descendant must be
+real filesystem entries. Symlinks and canonical escapes are rejected before
+frontmatter is read.
 
 ## Exit Codes
 
 - `0` - success.
-- `1` - runtime, safety, or tree validation error.
+- `1` - runtime, safety, or tree validation error; with `--deep`, valid rows
+  may still be emitted first.
 - `2` - usage error.
 
-`cumaru tree --help` works outside a project and does not require `.cumaru/` or
-`yq`.
+`cumaru tree --help` works outside a project.

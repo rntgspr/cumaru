@@ -2,7 +2,7 @@
 human_revised: false
 version: 1
 name: playwright
-description: Use this skill whenever the work involves Playwright — writing or reading `*.spec.ts` e2e/browser tests, running the suite, debugging with the trace viewer, handling auto-waiting and web-first assertions, or testing across browsers. Opt-in companion to the qa-basic domain (`cumaru install --with playwright`); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on Playwright specs, `playwright test` commands, "write an e2e for X", "why is this e2e flaky", "open the trace".
+description: Use this skill whenever the work involves Playwright — writing or reading `*.spec.ts` e2e/browser tests, running the suite, debugging with the trace viewer, handling auto-waiting and web-first assertions, or testing across browsers. Opt-in companion to the qa-basic domain (`cumaru update skills <agent> --with playwright --apply` after adoption); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on Playwright specs, `playwright test` commands, "write an e2e for X", "why is this e2e flaky", "open the trace".
 ---
 
 # Playwright

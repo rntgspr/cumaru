@@ -27,7 +27,7 @@ templates, and the `cumaru-directives`, `cumaru-sources`, `cumaru-thread`,
 ## Bootstrap
 
 Run `cumaru bootstrap` and follow the printed steps in order. It prints the
-universal rules and the focus steps from the CLI checkout; the document is
+universal rules and the focus steps from main HEAD, pinned to one commit; the document is
 never installed into `.cumaru/`.
 
 ## What this skill does NOT do

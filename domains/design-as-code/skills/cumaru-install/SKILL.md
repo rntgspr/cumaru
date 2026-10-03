@@ -15,11 +15,12 @@ cumaru install --domain design-as-code
 cumaru install agent codex --domain design-as-code
 ```
 
-The CLI validates and copies the selected domain, installs its skills and
-supported commands, and wires the requested adapter's instructions. Adapter
+The CLI materializes the files selected by the domain config from main HEAD,
+installs its skills, and wires the requested adapter's instructions; only
+Generic and OpenCode also receive command launchers. Adapter
 selection is stateless; install does not write an `agent` field to config.
-The CLI refuses an existing tree. Use `cumaru update` for refresh or opt-in
-skills; see `cumaru install --help` for fresh-install adapters and options.
+The CLI refuses an existing tree. Use `cumaru update` for refresh and
+`cumaru update skills <agent> --with <skill>` for opt-in skills; see `cumaru install --help` for fresh-install adapters and options.
 
 ## Configure project context
 

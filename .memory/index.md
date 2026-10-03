@@ -48,6 +48,7 @@ mandatory framework order.
 - [Install and upgrade](specs/install-upgrade.md) — project installation and destructive global upgrade.
 - [Coverage](specs/coverage.md) — source-reference coverage modes, buckets, and strict gate.
 - [Testing](specs/testing.md) — ShellSpec suite, CI, isolation, manual bench, and upgrade exception.
+- [Skill CLI contracts](specs/skill-cli-contracts.md) — native compatibility review, shipped recipe inventory, and verification boundaries.
 
 ## Operational Disciplines
 

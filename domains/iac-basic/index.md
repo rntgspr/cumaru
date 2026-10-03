@@ -69,25 +69,25 @@ This split is the framework's core: traversal is **deterministic in structure** 
 ## The `cumaru` CLI
 
 The CLI reads and mutates this tree. `tree` performs the expansion step above;
-`flow` is the only sanctioned way to change what exists inside `.cumaru/`.
+`fs` is the only sanctioned way to change what exists inside `.cumaru/`.
 This table covers every dispatcher entry and supported help topic. Use the safe
 reference route for its full current contract.
 
 | Entry | Purpose | Safe reference route |
 |---|---|---|
-| `cumaru install` | Install one domain, an agent adapter, and optional skills into a project. | `cumaru install --help` |
+| `cumaru install` | Install one domain from main HEAD and one explicit agent adapter into a project; opt-in skills are added later with `cumaru update skills <agent> --with <skill>`. | `cumaru install --help` |
 | `cumaru uninstall` | Remove installed project and shared adapter artifacts under explicit confirmation. | `cumaru uninstall --help` |
-| `cumaru doctor` | Validate the installed tree, schema, references, tools, and adapter state. It is also the default command. | `cumaru doctor --help` |
+| `cumaru doctor` | Validate the installed config, tree, tags, references, tools, agent instructions, and config drift, offline. It is also the default command. | `cumaru doctor --help` |
 | `cumaru tag` | List, audit, read, or replace schema-declared semantic marker bodies. | `cumaru tag --help` |
 | `cumaru coverage` | Report durable-specification references and uncovered repository source. | `cumaru coverage --help` |
 | `cumaru tree` | List filesystem candidates and summaries without loading their bodies. | `cumaru tree --help` |
-| `cumaru map` | List level-two headings with source lines under a scope or exact Markdown file. | `cumaru map --help` |
+| `cumaru map` | List literal H1-H6 headings, with their `#` markers and source lines, under a directory or exact Markdown file. | `cumaru map --help` |
 | `cumaru update` | Preview or apply framework-owned content and adapter artifact updates. | `cumaru update --help` |
-| `cumaru upgrade` | Destructively replace the installed Cumaru tool snapshot by re-running its installer. Never invoke it for discovery. Only `cumaru upgrade --check` is read-only: it compares the installed version with the latest GitHub tag. | `cumaru help` |
+| `cumaru upgrade` | Replace the global `cumaru` binary with the latest release. Never invoke it for discovery or as part of a project update. Only `cumaru upgrade --check` is read-only: it compares the CLI build version with the latest release tag. | `cumaru upgrade --help` |
 | `cumaru fs` | Create, move, copy, or remove paths inside `.cumaru/` under guardrails. | `cumaru fs --help` |
 | `cumaru migrate` | Print read-only instructions for the required direct migration. | `cumaru migrate --help` |
 | `cumaru bootstrap` | Print read-only post-install bootstrap steps for the installed domain. | `cumaru bootstrap --help` |
-| `cumaru version` | Print the installed distribution version and integer contract version, offline. | `cumaru version --help` |
+| `cumaru version` | Print the CLI build version; inside a project, also the installed domain and config integer plus the latest config, status, and drift at main HEAD. Read-only. | `cumaru version --help` |
 | `cumaru help` | Show the top-level command catalog. | `cumaru help` |
 | `cumaru help domains` | List installable domains; this is a help topic, not a `domains` subcommand. | `cumaru help domains` |
 
@@ -112,7 +112,7 @@ cumaru fs <pillar>/<entity>/note.md   move     <pillar>/<other>/note.md
 cumaru fs <pillar>/<entity>           remove   # the whole entity
 ```
 
-`--deep` is for auditing, never for loading. `flow` refuses to remove an `index.md` or a pillar root; remove the entity's directory instead. After creating any Markdown file, give it a valid `summary:` — until then it is invisible to navigation and `cumaru doctor` fails.
+`--deep` is for auditing, never for loading. `fs` refuses to remove an `index.md` or a pillar root; remove the entity's directory instead. After creating any Markdown file, give it a valid `summary:` — until then it is invisible to navigation and `cumaru doctor` fails.
 
 ## Language
 

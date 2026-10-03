@@ -9,7 +9,7 @@ summary: Verify a changeset is complete, absorb its topology delta, establish re
 # `cumaru-absorb` — close a changeset and absorb its delta into topology
 
 Load `.cumaru/roles/lead.md`, read `plans/index.md` and `topology/index.md`, then
-run `cumaru tree --pillars plans,topology --rows`. Use invocation arguments as the
+run `cumaru tree plans topology --rows`. Use invocation arguments as the
 changeset ID and preserve the phase-confirmation gates below.
 
 End-to-end recipe to close a `plans/<PLAN-ID>/`. It combines `cumaru fs`, `cumaru tree`, topology updates, and focused health checks.
@@ -55,10 +55,8 @@ validate**, never the authority on where a claim lands.
 2. **Recurse only into the areas you selected** — `cumaru tree topology/<area> --deep --rows`
    for each one, to place the claim on the right concern inside it.
 
-   Do **not** run `--deep` on the whole pillar. It is quadratic in practice: on a
-   3561-file bench pillar it does not finish in two minutes and would emit ~390 KB,
-   against 35 KB and one pass for the shallow list. The ownership question is
-   answered at the area level; only the selected areas need their interior.
+   Start shallow to bound context. Expand only selected areas to locate exact
+   owners. Historical Bash benchmarks do not establish native performance.
 3. **Adjudicate every durable claim** in `delta-draft.md` against the enumerated
    areas and their loaded concerns. Record a claim-to-file map; the deepest
    existing concern that already owns the subject is the exact destination.

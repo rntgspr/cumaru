@@ -23,7 +23,8 @@ updates the executable used by the terminal; source edits alone do not rebuild i
 
 All 14 active CLI commands are native. The [Rust specification](../.memory/specs/rust.md)
 is canonical for their arguments, ownership rules, failure behavior, tests,
-and differences from Bash. Older command guides retain the Bash contract.
+and differences from Bash. The command guides in this directory describe the
+native contract.
 
 Navigation uses TSV by default, with `--markdown` available. `map` preserves
 literal H1-H6 headings and their `#` markers. Neither navigation command needs

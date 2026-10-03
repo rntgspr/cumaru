@@ -8,7 +8,7 @@ description: Derive or update area-based Cumaru outcomes from one or more thread
 # Derive or reclassify an outcome
 
 Read `.cumaru/domain.md` and the
-[outcome contract](../../outcomes/index.md). Activate the declared
+`.cumaru/outcomes/index.md`. Activate the declared
 Admin role through `cumaru-role admin` when no role is active; if another role
 is active, honor its boundaries before changing roles.
 

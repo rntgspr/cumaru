@@ -102,4 +102,4 @@ Verify `delta-draft.md` exists (`status: draft`), every case done + handoff pres
 | "Draft the delta for AAA-1234" | Delta-draft recipe (Dev) → verify cases done → propose coverage changes |
 | "Absorption this campaign" | Verify state → hand off to `cumaru-absorb` |
 
-Use `cumaru tag get/set` (CLI) for `plans/index.md`; pair with `cumaru-absorb`, `cumaru-coverage`, `cumaru-doctor`.
+Use `cumaru tree plans --rows` for filesystem navigation; pair with `cumaru-absorb`, `cumaru-coverage`, `cumaru-doctor`.

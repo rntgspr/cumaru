@@ -5,9 +5,9 @@ name: skill-to-discipline
 description: Use when absorbing an external Claude Code / plugin skill into this framework as a "discipline" — distilling a SKILL.md (e.g. from obra/superpowers) into a modular disciplines/<name>.md (gate + cycle + red flags, MIT-attributed) and attaching it to the domain's domain.md. Trigger on "convert this skill into a discipline", "absorb <plugin> skill", "turn <skill> into a discipline", "import this skill as a practice". Repo-maintenance skill — not shipped to adopters.
 ---
 
-# skill-to-discipline — distill an external skill into a dot-llm discipline
+# skill-to-discipline — distill an external skill into a Cumaru discipline
 
-Convert a third-party skill (Claude Code / plugin `SKILL.md`) into a **discipline**: dot-llm's
+Convert a third-party skill (Claude Code / plugin `SKILL.md`) into a **discipline**: Cumaru's
 artifact for *how work is done*. This is a recipe of judgment, not an automatic converter.
 
 ## What a discipline is (and why, not a skill or a directive)
@@ -48,8 +48,8 @@ native to `.cumaru/` and does not create a second loading mechanism.
    samples (reskin to this project's stack or drop). Target ≤ ~50 lines.
 7. **Write `disciplines/<name>.md`** in the target domain, using the frontmatter contract below.
 8. **Attach** — add a row under `domain.md`'s `## Execution disciplines` table (`applies-when` + file).
-9. **Verify** — `cumaru doctor` (each file needs an H1, `human_revised`, and a valid `summary:`;
-   disciplines are eager context but are not a pillar, so no orphan-check; the `domain.md` list is
+9. **Verify** — `cumaru doctor` (each file needs an H1, `human_revised`, a valid `summary:`, and
+   a `strictness:` from `0/10` through `10/10`; the `domain.md` list is
    prose, not a `<!-- cumaru:* -->` block).
 
 ## Discipline file contract

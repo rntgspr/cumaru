@@ -57,6 +57,10 @@ domains/{__base,sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-mem
 10. `config.version` is the sole framework version source. The direct `root`
     tree declares structure and explicit `framework: true` ownership; named
     `workflows` optionally declare skill dependency graphs.
+11. Governed knowledge remains inside the adopter's `.cumaru/` tree. External
+    project-root pillar mounts are intentionally out of scope; `path` overrides
+    relocate entries only within that tree. This boundary does not change native
+    agent-adapter artifacts or read-only references to project source files.
 
 ## Inputs and ownership
 

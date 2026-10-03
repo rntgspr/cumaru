@@ -84,7 +84,7 @@ statement of what is verified now.
 ## Uses GWT (not Requirements Language)
 
 A coverage area carries `## Scenarios (GWT)` — `GIVEN … WHEN … THEN …`
-(a warning-level check, doctor sub-pass [4]). EARS / RFC 2119 is the
+(an agent-reviewed language contract; doctor does not enforce GWT). EARS / RFC 2119 is the
 **requirement language** and lives in active `intake/` (and slug-based plans).
 After intake cleanup, the durable scenario states the acceptance fact and its
 `## Decisions` entry retains the stable upstream tracker reference; no relation
@@ -105,4 +105,4 @@ to the removed local host remains.
 | "Split this area per flow" / "promote checkout/payment to a subarea" | Deepen recipe step 4 (split) or 5 (promote) |
 | "Consolidate coverage/checkout" | Consolidate recipe → read the body → recover history from git if needed → rewrite as current state |
 
-Use `cumaru tag get/set` (CLI) for the `coverage/index.md` round-trip; pair with `cumaru-plan` (`scope:`), `cumaru-absorb` (absorb), and `cumaru-doctor`.
+Use `cumaru tree coverage --rows` for filesystem navigation; pair with `cumaru-plan` (`scope:`), `cumaru-absorb` (absorb), and `cumaru-doctor`.

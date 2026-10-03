@@ -66,7 +66,7 @@ When working in any session, frame the request against the pillars (the first fo
 
 ## Initial load
 
-When activated for **planning or ad-hoc orchestration** (no plan yet declared), read the relevant directory indexes and run `cumaru tree --pillars plans,specs,intake,absorption,issues --rows` for the current filesystem projection. `exploring/` remains opt-in.
+When activated for **planning or ad-hoc orchestration** (no plan yet declared), read the relevant directory indexes and run `cumaru tree plans specs intake issues --rows` for the current filesystem projection. `exploring/` remains opt-in.
 
 When working **inside an active plan**, the standard plan-driven Loading rule applies: read `plans/<PLAN-ID>/index.md` plus the paths declared in `scope:` (resolved under `specs/<area>/`) and any `aux:` at the plan or task level. Do not browse `specs/` opportunistically.
 

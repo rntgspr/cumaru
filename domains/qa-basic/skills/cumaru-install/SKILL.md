@@ -2,8 +2,8 @@
 human_revised: false
 version: 1
 name: cumaru-install
-description: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, select an agent adapter, and (post-install) bootstrap the coverage areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap coverage from the codebase", "scaffold the coverage areas", "compactar / consolidate area X", "deepen the auth coverage", or any request to seed/grow the `coverage/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the coverage bootstrap that follows is LLM-driven via this skill.
-summary: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, select an agent adapter, and (post-install) bootstrap the coverage areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap coverage from the codebase", "scaffold the coverage areas", "compactar / consolidate area X", "deepen the auth coverage", or any request to seed/grow the `coverage/` pillar. The install itself is deterministic (copy framework files + skills + slash commands); the coverage bootstrap that follows is LLM-driven via this skill.
+description: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, select an agent adapter, and (post-install) bootstrap the coverage areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap coverage from the codebase", "scaffold the coverage areas", "compactar / consolidate area X", "deepen the auth coverage", or any request to seed/grow the `coverage/` pillar. The install itself is deterministic (materializes framework files, skills, and adapter wiring); the coverage bootstrap that follows is LLM-driven via this skill.
+summary: Use this skill whenever the user wants to adopt the Cumaru framework in a project — install the .cumaru/ tree, choose a domain, select an agent adapter, and (post-install) bootstrap the coverage areas for an existing codebase. Trigger on phrases like "install the framework", "set up .cumaru/ here", "adopt Cumaru", "instala o framework", "bootstrap coverage from the codebase", "scaffold the coverage areas", "compactar / consolidate area X", "deepen the auth coverage", or any request to seed/grow the `coverage/` pillar. The install itself is deterministic (materializes framework files, skills, and adapter wiring); the coverage bootstrap that follows is LLM-driven via this skill.
 ---
 
 # `cumaru install` — adopt the framework + bootstrap coverage
@@ -13,22 +13,21 @@ summary: Use this skill whenever the user wants to adopt the Cumaru framework in
 ## Install (mechanical)
 
 ```bash
-cumaru install                                        # default domain
-cumaru install --domain base                          # minimal kernel only (no pilares)
-cumaru install --domain sdlc-full
-cumaru install --with git                             # default domain + opt-in skill(s)
+cumaru install --domain qa-basic                         # this domain's workflow
+cumaru install --domain <name>                        # explicit domain from `cumaru help domains`
+cumaru install agent claude --domain <name>           # explicit adapter: none|claude|codex|opencode
+cumaru update skills claude --with git --apply        # opt-in skill, after adoption only
 ```
 
-What the script does, in order:
-1. Resolves the chosen domain → `domains/<name>/` (or `domains/__base/` for `base`).
-2. Refuses an existing `.cumaru/` and routes refresh or opt-in additions to `cumaru update`.
-3. Copies the domain wholesale into `.cumaru/`.
-4. **Auto-installs every `cumaru-*` skill** from the domain into the selected adapter's native skill directory.
-5. Applies `--with <skill>` opt-ins from the top-level `skills/` directory.
-6. Wires durable instructions through the selected agent adapter.
-7. Installs supported slash commands for the selected adapter without persisting that adapter in config.
+What the CLI does, in order:
+1. Validates the domain and adapter arguments and refuses an existing `.cumaru/` before any network access; refresh and opt-in skills belong to `cumaru update`.
+2. Resolves HEAD of `main` and pins every read to that commit (`base` aliases `__base`); there is no local or `--from` source.
+3. Materializes only the structure and files selected by the domain's `config.yaml` into `.cumaru/`.
+4. **Installs every `cumaru-*` skill** from the domain into the selected adapter's native skill directory, keeping existing skill folders.
+5. Wires durable instructions, plus session hooks where the adapter supports them (Claude, Codex), preserving adopter content; only Generic (`none`) and OpenCode also receive command launchers. The adapter is not persisted in config.
+6. Prints next steps. It does not run `cumaru doctor` or `cumaru bootstrap`.
 
-After step 7, the script prints "Next steps" — that's your cue to start the coverage bootstrap below.
+After step 6, the CLI prints "Next steps" — that's your cue to start the coverage bootstrap below.
 
 ## Post-install (LLM work — start here)
 
@@ -55,7 +54,7 @@ This skill stops at Step 1 because the coverage work is recurring (deepen + cons
 
 ## Uninstall
 
-Reverse of install — uninstall is mostly file ops with safety guardrails on `index.md` and pillar roots. Use when resetting a bench for testing.
+Removes the whole `.cumaru/` tree, including adopter knowledge, and every Cumaru-owned adapter artifact across all adapters after confirmation. Run it only on an explicit user request, such as resetting a bench.
 
 ```bash
 cumaru uninstall                # interactive confirm; refuses non-TTY without --yes
@@ -66,7 +65,7 @@ cumaru uninstall --yes          # non-interactive (agents / CI)
 
 | User says | You do |
 |---|---|---|
-| "Install the framework here" | `cumaru install` → declare test levels → hand off to `cumaru-coverage` for the coverage bootstrap |
+| "Install the framework here" | `cumaru install --domain qa-basic` → declare test levels → hand off to `cumaru-coverage` for the coverage bootstrap |
 | "Set up Cumaru for this project" | Same as above |
 | "Bootstrap the coverage" / "deepen auth" / "consolidate checkout" | Not this skill — hand off to `cumaru-coverage` (carries those recipes) |
-| "Add a domain" / "install with the X domain" | `cumaru install --domain <name>` (default = sdlc-full) |
+| "Add a domain" / "install with the X domain" | `cumaru install --domain <name>` (default = base) |

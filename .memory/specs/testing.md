@@ -172,6 +172,10 @@ ripgrep behavior, malformed tags, and Git recovery inventories.
 
 ## Known limit
 
+The completed [native recipe review](skill-cli-contracts.md) records the 99-skill
+inventory, launcher checks, and disposable offline CLI verification. It does not
+replace the separate test-scope audit or claim live agent behavior was tested.
+
 Skill tests assert local artifact structure, distribution, launchers, and some
 written gates; they do not prove that an agent follows a skill in a real task.
 [Issue 065](../issues/issue_065.md) tracks a measured coverage and test-scope

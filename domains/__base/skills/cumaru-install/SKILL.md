@@ -13,22 +13,19 @@ summary: Install the minimal Cumaru base package and hand custom-domain setup to
 ## Install (mechanical)
 
 ```bash
-cumaru install                                        # default domain
-cumaru install --domain base                          # minimal kernel only (no pilares)
-cumaru install --domain sdlc-full
-cumaru install --with git                             # default domain + opt-in skill(s)
+cumaru install                                        # default domain: base (minimal kernel)
+cumaru install --domain <name>                        # explicit domain from `cumaru help domains`
+cumaru install agent claude --domain <name>           # explicit adapter: none|claude|codex|opencode
+cumaru update skills claude --with git --apply        # opt-in skill, after adoption only
 ```
 
-What the script does, in order:
-1. Resolves the chosen domain → `domains/<name>/` (or `domains/__base/` for `base`).
-2. Refuses an existing `.cumaru/` and routes refresh or opt-in additions to `cumaru update`.
-3. Copies the domain wholesale into `.cumaru/`.
-4. **Auto-installs every `cumaru-*` skill** from the domain into the selected adapter's native skill directory.
-5. Applies `--with <skill>` opt-ins from the top-level `skills/` directory.
-6. Wires durable instructions through the selected agent adapter.
-7. Installs supported slash commands for the selected adapter without persisting that adapter in config.
-
-After step 7, the script prints domain-owned next steps.
+What the CLI does, in order:
+1. Validates the domain and adapter arguments and refuses an existing `.cumaru/` before any network access; refresh and opt-in skills belong to `cumaru update`.
+2. Resolves HEAD of `main` and pins every read to that commit (`base` aliases `__base`); there is no local or `--from` source.
+3. Materializes only the structure and files selected by the domain's `config.yaml` into `.cumaru/`.
+4. **Installs every `cumaru-*` skill** from the domain into the selected adapter's native skill directory, keeping existing skill folders.
+5. Wires durable instructions, plus session hooks where the adapter supports them (Claude, Codex), preserving adopter content; only Generic (`none`) and OpenCode also receive command launchers. The adapter is not persisted in config.
+6. Prints next steps. It does not run `cumaru doctor` or `cumaru bootstrap`.
 
 ## Post-install
 
@@ -36,7 +33,7 @@ Activate the Admin role to define a custom domain contract. Declare its neutral 
 
 ## Uninstall
 
-Reverse of install — uninstall is mostly file ops with safety guardrails on `index.md` and pillar roots. Use when resetting a bench for testing.
+Removes the whole `.cumaru/` tree, including adopter knowledge, and every Cumaru-owned adapter artifact across all adapters after confirmation. Run it only on an explicit user request, such as resetting a bench.
 
 ```bash
 cumaru uninstall                # interactive confirm; refuses non-TTY without --yes
@@ -50,4 +47,4 @@ cumaru uninstall --yes          # non-interactive (agents / CI)
 | "Install the framework here" | `cumaru install` → activate Admin for custom-domain setup |
 | "Set up Cumaru for this project" | Same as above |
 | "Bootstrap a custom domain" | Activate Admin and define its pillars, target vocabulary, and roles |
-| "Add a domain" / "install with the X domain" | `cumaru install --domain <name>` (default = sdlc-full) |
+| "Add a domain" / "install with the X domain" | `cumaru install --domain <name>` (default = base) |

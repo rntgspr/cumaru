@@ -1,43 +1,72 @@
 # `cumaru upgrade`
 
-Update the `cumaru` tool itself. Does **nothing beyond re-running the install script**: it resolves the highest plain `X.Y.Z` release tag with `git ls-remote`, downloads GitHub's tarball of that tag (or of `main` while no tag exists) into a temporary directory, and only after a successful download and unpack replaces `~/.cumaru`, writes the installed tag (or `main`) to `~/.cumaru/VERSION`, and re-links `~/.local/bin/cumaru`. GitHub's archive honors `.gitattributes` `export-ignore`, so maintainer-only paths never ship. No clone is made; Git is needed only for `ls-remote`.
+Replace the global `cumaru` binary with the latest release. It never touches a
+project's `.cumaru/`, its adapter artifacts, or its config version.
 
-```
-cumaru upgrade
+```text
+cumaru upgrade [--check]
 ```
 
-Equivalent to the install one-liner: `curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh | bash`. Upgrade always runs the installer script from `main`, never the installed copy; that script then installs the latest release tag.
+Bare `upgrade` resolves the highest plain `X.Y.Z` release tag once with
+`git ls-remote`, then runs the embedded `rust/install.sh` with that version.
+The installer downloads the `cumaru-<target>` asset for the detected platform,
+verifies that its `--version` equals `cumaru <version>`, publishes it to
+`/usr/local/bin/cumaru` (using sudo only for destination writes when needed),
+and records `{"version":"X.Y.Z"}` in the invoking user's
+`~/.config/cumaru.json`. There is no `main` fallback and no source snapshot.
+Bare `upgrade` does not compare versions first: it installs the latest release
+tag even when the running build is newer, so run `upgrade --check` before it.
+
+Supported targets are `aarch64-apple-darwin`, `x86_64-apple-darwin`,
+`aarch64-unknown-linux-musl`, and `x86_64-unknown-linux-musl`. No release
+publishes these assets yet, so a real upgrade cannot complete until they are
+attached; HTTP 404 names the missing asset and URL. A failed download,
+unsupported platform, or version mismatch leaves the existing binary and JSON
+in place.
 
 ## Version and staleness check
 
+```text
+cumaru --version        # offline: CLI build identity only
+cumaru version          # CLI identity; inside a project, installed and latest config at main HEAD
+cumaru upgrade --check  # network: compare the CLI build with the latest release tag; installs nothing
 ```
-cumaru version          # offline: installed release tag (or main) and contract version
-cumaru upgrade --check  # network: compare with the latest X.Y.Z tag on GitHub; replaces nothing
-```
 
-Two versions coexist:
+Two version identities are independent:
 
-- **Contract** — the integer `config.version` (`9`), gated by `cumaru update` and crossed only through `cumaru migrate`.
-- **Distribution** — a plain Git tag `X.Y.Z` (no `v` prefix) whose major equals the contract, e.g. `9.0.0`. The installer records it in `~/.cumaru/VERSION`. A Git checkout has no `VERSION` and reports `development build`.
+- **CLI** — the build-time package version, for example `0.9.1`, compared by
+  `upgrade --check` with plain `X.Y.Z` release tags.
+- **Config** — the integer `config.version` (`9`) of an installed project,
+  compared by `cumaru version` and gated by `cumaru update` with the domain
+  config at HEAD of `main`. It changes only through `cumaru migrate`.
 
-`upgrade --check` runs `git ls-remote --tags --refs https://github.com/rntgspr/cumaru.git`, picks the highest `X.Y.Z`, and prints `installed`, `latest`, `status`, and the upgrade command. An equal (or higher) installed tag is `up to date`; a lower tag, or `main` once any tag exists, is `behind`. Both exit `0`. It prints `cannot check` on stderr and exits `1` when the remote is unreachable, publishes no release tag, or the installed CLI is a development build. `cumaru doctor` never checks staleness; it stays offline.
+`upgrade --check` prints `installed`, `latest`, `status`, and the upgrade
+command. Both `behind` and `up to date` exit `0`. Missing tags, unavailable Git
+or network, or an invalid build version print `cannot check` on stderr and exit
+`1`. Neither field says anything about a project's config. `cumaru doctor`
+never checks staleness; it stays offline.
 
-## Kernel integrity check
+## Kernel integrity
 
-The install script verifies the downloaded snapshot before linking: every universal artifact — `index.md`, every file under `__base/skills/` (except `cumaru-install`, which is domain-owned), `__base/commands/`, and `__base/disciplines/` (except the domain-owned `index.md`) — must be **byte-identical** across all domains. On any divergence the install aborts with `✗ kernel drift` — the snapshot is a broken distribution, not something the adopter can fix locally.
-
-This check belongs here, not in `cumaru doctor`: doctor audits the **adopter's** `.cumaru/` tree, which never contains `__base` to compare against. Kernel drift is a distribution problem, caught at the point where the snapshot lands on disk.
+Universal artifacts must be byte-identical across every shipped domain. That is
+a source-repository property, enforced by `scripts/sync-domain-kernel.sh --check`
+in CI rather than at upgrade or install time; see
+[architecture](architecture.md#reuse-mechanism).
 
 ## Scope
 
 | Concern | Command |
 |---|---|
-| The tool (`cumaru`, `src/*.sh`, `domains/`, `skills/`, `commands/` in `~/.cumaru`) | `cumaru upgrade` |
-| An installed project tree (`.cumaru/`, its skills, slash commands) | [`cumaru update`](update.md) |
+| The global `cumaru` binary and `~/.config/cumaru.json` | `cumaru upgrade` |
+| An installed project tree (`.cumaru/`, its skills, commands, instructions) | [`cumaru update`](update.md) |
 
-`upgrade` never touches any project's `.cumaru/`. After upgrading, run `cumaru update` per project to pull the new framework content in.
+Upgrading the binary does not migrate or refresh any project. A legacy
+`~/.cumaru` snapshot, another PATH entry, or a former `cuma` binary is neither
+removed nor replaced; resolve PATH precedence deliberately. A local development
+symlink to `rust/target/release/cumaru` is managed by rebuilding, not by
+`upgrade`; see the [native CLI guide](rust.md).
 
 ## Related
 
 - [`cumaru update`](update.md) — steady-state update of an installed `.cumaru/` tree.
-- [architecture](architecture.md) — why the kernel must be byte-identical across domains.
+- [Native CLI guide](rust.md) — build, distribution, and verification.

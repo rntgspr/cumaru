@@ -101,6 +101,11 @@ bash rust/build.sh
 ./rust/target/release/cumaru --version
 ```
 
+For local development, link that binary into a directory on PATH, for example
+`ln -s "$PWD/rust/target/release/cumaru" ~/.local/bin/cumaru`. Each release
+build then updates the linked executable; this is separate from the release
+installer below.
+
 cURL reads domain/config sources from main HEAD. Binary release checks need Git;
 coverage also needs a Git work tree.
 Navigation and config/Markdown parsing need no runtime jq, yq, or rg. Bash is
@@ -114,8 +119,9 @@ publishes `/usr/local/bin/cumaru` and records the version in
 curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
 ```
 
-Release asset publication is still pending. The old hosted installer installs
-the deprecated Bash snapshot. Native upgrade replaces only the binary and user
+No release publishes platform binaries yet, so this installer cannot complete
+until assets are attached. The old hosted installer installs the deprecated Bash
+snapshot. Native upgrade replaces only the binary and user
 version record; it does not replace `~/.cumaru` or project knowledge.
 
 Inside a project:
@@ -123,7 +129,7 @@ Inside a project:
 ```bash
 cumaru install                                      # default: base
 cumaru install agent codex                          # Codex adapter
-cumaru install agent claude                          # Claude adapter
+cumaru install agent claude                         # Claude adapter
 cumaru install agent opencode                        # OpenCode adapter
 cumaru install --domain iac-basic                    # infrastructure workflow
 cumaru install --domain vault-memory                 # memory-vault workflow
@@ -132,13 +138,13 @@ cumaru install --domain base                         # build a custom domain
 cumaru update skills codex --with git --apply         # add an opt-in after adoption
 ```
 
-See the [native CLI guide](docs/rust.md). Existing command guides describe
-the legacy Bash surface unless they explicitly identify native behavior.
+See the [native CLI guide](docs/rust.md). Command guides describe the native
+binary; `cumaru <command> --help` is the authoritative usage.
 
 ## How an agent navigates a project
 
 ```text
-index.md → domain.md → cumaru tree .
+index.md → domain.md → disciplines/index.md → remaining disciplines → cumaru tree .
                          ↓
                 select relevant summaries
                          ↓
@@ -208,20 +214,31 @@ boundary. `cumaru update --apply` writes framework-owned content directly after
 the Git recovery check when source and local versions match, while preserving
 adopter-owned tag bodies and local-only files.
 
+Project source commands (`install`, `update`, `bootstrap`, `migrate`, `version`
+inside a project, and `help domains`) read HEAD of `main`, pinned to one commit
+per invocation. Binary release checks and `cumaru upgrade` use release tags
+instead. The CLI version (for example `0.9.1`) and the installed config integer
+(for example `9`) are independent: `cumaru upgrade` replaces only the global
+binary, while `cumaru update` refreshes one project's framework files. Neither
+implies the other.
+
 For major changes, `cumaru migrate` prints a rolling migration document. The
 command is read-only; the LLM performs the documented, detection-first steps.
 Migration has no transactional rollback. Require a clean affected worktree and
-tracked `.cumaru/`, or explicitly accept a filesystem backup before execution.
+tracked `.cumaru/` inside Git. Outside Git, disclose the missing recovery point;
+Cumaru does not initialize Git or create a backup.
 
 Read [updates](docs/update.md), [migration](docs/migrate.md), and
 [doctor](docs/doctor.md) before changing an existing installation.
 
 ## Documentation
 
+- [Native Rust CLI](docs/rust.md)
 - [Architecture](docs/architecture.md)
 - [Install](docs/install.md)
 - [Agent adapters](docs/agent-adapters.md)
 - [`cumaru tree`](docs/tree.md)
+- [`cumaru map`](docs/map.md)
 - [`cumaru doctor`](docs/doctor.md)
 - [`cumaru coverage`](docs/coverage.md)
 - [`cumaru tag`](docs/tag.md)
@@ -230,3 +247,4 @@ Read [updates](docs/update.md), [migration](docs/migrate.md), and
 - [`cumaru migrate`](docs/migrate.md)
 - [`cumaru bootstrap`](docs/bootstrap.md)
 - [`cumaru uninstall`](docs/uninstall.md)
+- [`cumaru upgrade`](docs/upgrade.md)

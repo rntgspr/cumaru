@@ -2,7 +2,7 @@
 human_revised: false
 version: 1
 name: terraform
-description: Use this skill whenever the work involves Terraform or OpenTofu — writing or reading HCL, running plan/apply/destroy, managing state and workspaces, reading module outputs, or reviewing a plan diff for blast radius. Opt-in companion to the iac-basic domain (`cumaru install --with terraform`); the tool mechanics are general, the integration notes assume the `.cumaru/` IaC pillars (topology/, plans/) when present. Trigger on `*.tf` files, `terraform`/`tofu` commands, "plan this change", "what will apply do", "read this stack's outputs".
+description: Use this skill whenever the work involves Terraform or OpenTofu — writing or reading HCL, running plan/apply/destroy, managing state and workspaces, reading module outputs, or reviewing a plan diff for blast radius. Opt-in companion to the iac-basic domain (`cumaru update skills <agent> --with terraform --apply` after adoption); the tool mechanics are general, the integration notes assume the `.cumaru/` IaC pillars (topology/, plans/) when present. Trigger on `*.tf` files, `terraform`/`tofu` commands, "plan this change", "what will apply do", "read this stack's outputs".
 ---
 
 # Terraform / OpenTofu

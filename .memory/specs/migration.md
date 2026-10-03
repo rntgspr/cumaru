@@ -49,6 +49,11 @@ domains/<domain>/migration.md
    non-Git projects receive a warning and continue without a recovery point.
 7. Supported migration input is an installed `.cumaru/` tree. Retired directory
    names are neither discovered nor normalized.
+8. Printed steps use only native CLI forms. Native `update config` requires
+   equal versions, so cross-version reconciliation reads the domain config and
+   global schema at one resolved main commit, and candidate validation runs
+   native doctor against a disposable copy of the tree. A failed source read is
+   a blocker; no target version is inferred.
 
 ## Inputs and ownership
 

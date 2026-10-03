@@ -2,7 +2,7 @@
 human_revised: false
 version: 1
 name: pytest
-description: Use this skill whenever the work involves pytest — writing or reading `test_*.py`/`*_test.py`, running the suite, reading a failure or traceback, using fixtures/parametrize/markers, measuring coverage, or mocking at the unit/integration level in Python. Opt-in companion to the qa-basic domain (`cumaru install --with pytest`); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on `test_*.py` files, `pytest` commands, "run the python tests", "why is this test failing", "add a fixture for X".
+description: Use this skill whenever the work involves pytest — writing or reading `test_*.py`/`*_test.py`, running the suite, reading a failure or traceback, using fixtures/parametrize/markers, measuring coverage, or mocking at the unit/integration level in Python. Opt-in companion to the qa-basic domain (`cumaru update skills <agent> --with pytest --apply` after adoption); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on `test_*.py` files, `pytest` commands, "run the python tests", "why is this test failing", "add a fixture for X".
 ---
 
 # pytest

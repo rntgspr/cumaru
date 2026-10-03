@@ -1,60 +1,37 @@
 # `cumaru install`
 
 Install a domain into a project's `.cumaru/`, then materialize one requested
-agent adapter. Without an explicit agent, the existing generic `.agents/`
-behavior remains active.
+agent adapter. Without an explicit agent, the generic `none` adapter is used.
 
 ## Prerequisites
 
-The CLI requires Bash, cURL, Git, ripgrep (`rg`), `jq`, and **Mike Farah `yq`
-v4** on `PATH`. The Python program also distributed as `yq` is not compatible:
-Cumaru depends on Mike Farah-specific YAML and Markdown frontmatter operators.
+The native `cumaru` binary needs cURL on `PATH` to read domain sources from
+GitHub. Navigation and config/Markdown parsing need no runtime `jq`, `yq`, or
+`rg`.
 
-Recommended macOS setup:
+- cURL is required by `install`, `update`, `bootstrap`, `migrate`,
+  `help domains`, and `version` inside a project.
+- Git is required by `upgrade` and `upgrade --check` (release tags) and by
+  `cumaru coverage`, whose source inventory comes from `git ls-files` in a Git
+  work tree. `update --apply` and `--clear` use Git, when present, for the
+  recovery check.
+- Bash runs the binary installer and installed session hooks.
 
-```bash
-brew install git jq ripgrep yq
-```
-
-Verify the commands before installation:
-
-```bash
-bash --version
-curl --version
-git --version
-rg --version
-jq --version
-yq --version # must identify mikefarah/yq v4
-```
-
-Dependency ownership:
-
-- `jq` implements Cumaru's operational configuration validation,
-  reconciliation, and agent-adapter JSON operations.
-- `rg` is required by `cumaru map` for deterministic recursive heading
-  discovery.
-- `yq` is required by navigation, doctor, update, migration, and config or
-  frontmatter operations.
-- Git is required by the installer and upgrade flow; `cumaru coverage` also
-  requires a Git work tree because its source inventory comes from
-  `git ls-files`.
-- cURL is required by the remote installer.
-
-Linux users can install Bash, cURL, Git, ripgrep, and `jq` through their
-distribution, then install Mike Farah `yq` v4 from the
-[official installation options](https://github.com/mikefarah/yq#install).
+See the [native CLI guide](rust.md) for building or installing the binary.
 
 ## Usage
 
-```
-cumaru install [agent <none|claude|codex|opencode>] [--domain <name>] [--with <skill>...]
+```text
+cumaru install [agent <none|claude|codex|opencode>] [--domain <name>]
 ```
 
 | Option | Default | Description |
 |---|---|---|
 | `agent <name>` | `none` | Materialize one native agent integration without changing config.yaml. |
-| `--domain <name>` (or `--domain=<name>`) | `sdlc-full` | Which domain to install. `base` resolves to `domains/__base/`; any other name to `domains/<name>/`. |
-| `--with <skill>` (or `--with=<skill>`) | none | Add an opt-in skill at install time. Repeatable. `cumaru-*` skills don't need `--with` — they ship automatically. |
+| `--domain <name>` (or `--domain=<name>`) | `base` | Which domain to install from main HEAD. `base` aliases `__base`. List names with `cumaru help domains`. |
+
+There is no `--with` and no local or `--from` source. Opt-in skills are added
+after adoption with `cumaru update skills <agent> --with <skill> --apply`.
 
 The install location is always `.cumaru/` at the project root. Instructions,
 skills, and supported commands use the paths in
@@ -62,37 +39,57 @@ skills, and supported commands use the paths in
 
 ## What it does
 
-1. **Pre-checks** — refuses an existing `.cumaru/` and directs the user to
-   `cumaru update`; verifies each requested `--with <skill>` exists at
-   `skills/<skill>/SKILL.md` before a fresh install writes anything.
-2. **Validates and copies the domain** — the complete source config and
-   discipline metadata must pass structural and semantic validation before any
-   project write. Source-only skills and commands do not live inside `.cumaru/`.
-3. **Installs skills** — copies domain `cumaru-*` skills and requested opt-ins into the selected adapter's native skill directory.
-4. **Wires durable instructions** — eagerly loads `.cumaru/index.md`, `.cumaru/domain.md`, the discipline evaluation index, and every installed discipline. Claude receives explicit imports, Generic and Codex receive materialized discipline bodies in their managed Markdown block, and OpenCode receives its native discipline glob.
-5. **Registers the session hook** — where the client has a session-start event (Claude, Codex), emits the discipline index, every remaining discipline body, and then runs `cumaru tree .` once per context. Merged into any existing config, never overwriting it. See [`agent-adapters.md`](agent-adapters.md#context-bootstrap).
-6. **Installs supported commands** — generic, Claude, and OpenCode receive native command files. Codex uses repository skills and receives no unsupported command directory.
-7. **Leaves config stateless** — the selected install-time adapter is not
-   persisted in `.cumaru/config.yaml`.
-8. **Prints next steps** — points at project metadata and `cumaru doctor`.
+1. **Pre-checks** — validates the domain name and adapter, and refuses any
+   existing `.cumaru` entry (including files and broken symlinks), before any
+   network access. Refresh belongs to `cumaru update`.
+2. **Resolves the source** — reads HEAD of `main` through GitHub, fetches its
+   recursive tree, and pins every download to that commit. Truncated
+   inventories, unsafe paths, symlinks, and unsupported entry modes fail.
+3. **Plans the complete install** — validates the remote config as version 9
+   for the selected domain, selects only the structure and files that config
+   describes, downloads everything into memory, and prepares adapter merges.
+   Source-only skills, commands, and bootstrap/migration prose never land in
+   `.cumaru/`. Malformed adopter JSON or instruction blocks fail here, before
+   any project write.
+4. **Publishes `.cumaru/`** — creates the tree exclusively.
+5. **Installs skills** — copies the domain's `cumaru-*` skills into the
+   selected adapter's native skill directory, keeping existing skill folders.
+6. **Wires durable instructions** — `.cumaru/index.md`, `.cumaru/domain.md`, the
+   discipline index, and every installed discipline. Claude receives explicit
+   imports, Generic and Codex receive materialized discipline bodies in their
+   managed block, and OpenCode receives its native instructions glob. Existing
+   files are merged, never overwritten.
+7. **Registers the session hook** — Claude and Codex only. See
+   [`agent-adapters.md`](agent-adapters.md#context-bootstrap).
+8. **Installs command launchers** — Generic and OpenCode only, when absent.
+   Claude and Codex invoke the skills directly.
+9. **Prints next steps** — points at `domain.md`, `config.yaml`, and
+   `cumaru doctor`. It does not run doctor or bootstrap.
+
+The adapter is never persisted in `.cumaru/config.yaml`. Install has no
+multi-file transaction or automatic rollback: an I/O failure after publication
+starts may leave a partial installation.
 
 ## Available Domains
 
-- **`sdlc-full`** *(default)* — software delivery lifecycle: `intake/`, `issues/`, `plans/`, `specs/`, `exploring/` pillars; Lead/Dev/Ghost roles; ships six domain-specific skills (`cumaru-intake`, `cumaru-issue`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-absorb`).
+`cumaru help domains` lists the domains at main HEAD.
+
+- **`base`** *(default)* — minimal kernel (resolves to `domains/__base/`): no pillars, only the rules + meta sections of the config. Start here to build a custom domain from scratch.
+- **`sdlc-full`** — software delivery lifecycle: `intake/`, `issues/`, `plans/`, `specs/`, `exploring/` pillars; Lead/Dev/Ghost roles; ships six domain-specific skills (`cumaru-intake`, `cumaru-issue`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-absorb`).
 - **`design-as-code`** — [design delivery](design-as-code.md): transient intake, research, concepts, and plans feed durable specs and an asset catalog through direct absorption.
 - **`sdlc-light`** — simplified SDLC with 3 pillars (`plans/`, `specs/`, `exploring/`), single lead role, direct plans→specs absorb. Ships four domain-specific skills (`cumaru-plan`, `cumaru-specs`, `cumaru-explore`, `cumaru-absorb`).
 - **`iac-basic`** — tool-agnostic infrastructure-as-code workflow: durable `topology/` (apply-order DAG) + `runbooks/` pillars alongside the lifecycle pillars (`intake/`, `plans/`, `exploring/`); `targets:` enumerates environments; Lead/Dev roles; ships six domain-specific skills (`cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-topology`, `cumaru-absorb`, `cumaru-arch`).
 - **`qa-basic`** — test-strategy & coverage workflow: durable `coverage/` + `standards/` pillars alongside the lifecycle pillars; `targets:` enumerates test levels; ships five domain-specific skills (`cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-coverage`, `cumaru-absorb`).
 - **`vault-memory`** — personal/team memory-vault workflow: transient `inbox/`, rough `drafts/`, durable graph-shaped `memories/`, and retained `attachments/`; ships four domain-specific skills (`cumaru-capture`, `cumaru-draft`, `cumaru-distill`, `cumaru-link`).
 - **`focus`** — directive-driven triage workflow: `directives/` declare priority scope, `threads/` retain source context with a dated state history and yearly archival, and `outcomes/` group results by adopter-declared area with cumulative value/work/policy views, and `sources/` describe read-only access to each data source; single Admin role; ships five domain-specific skills (`cumaru-directives`, `cumaru-sources`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`). Intake is declared per source in `sources/`; adopter intake policy stays in the `root` tag.
-- **`base`** — minimal kernel (resolves to `domains/__base/`): no pillars, only the rules + meta sections of the config. Start here to build a custom domain from scratch.
 
-New domains are auto-discovered from disk. Create `domains/<name>/` with a self-contained `config.yaml`, `domain.md`, starter files, and agent artifacts; `install --help` uses the domain's `domain.md` H1 as its one-line summary.
+A domain is discoverable once `domains/<name>/config.yaml` exists on `main`;
+`help domains` uses the H1 of its `domain.md` as the one-line summary.
 
 ## Available skills
 
 **Universal** (authored in `__base/skills/`, mirrored verbatim into every domain):
-  - `cumaru-doctor`, `cumaru-flow`, `cumaru-update`, `cumaru-summarize`, and `cumaru-role` —
+- `cumaru-doctor`, `cumaru-flow`, `cumaru-update`, `cumaru-summarize`, and `cumaru-role` —
   multi-step orchestration carried by `SKILL.md`.
 - `cumaru-refs` — spec↔code reference coverage: closes the gaps `cumaru coverage` reports by wiring source files into spec `reference` tables.
 
@@ -112,19 +109,24 @@ do not select it; its canonical trigger scenarios remain in the skill contract.
 - `vault-memory` adds `cumaru-capture`, `cumaru-draft`, `cumaru-distill`, `cumaru-link`.
 - `focus` adds `cumaru-directives`, `cumaru-sources`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`.
 
-**Opt-in** (sourced from top-level `skills/`; require `--with <name>`):
+**Opt-in** (sourced from top-level `skills/`; added after adoption with
+`cumaru update skills <agent> --with <name> --apply`):
 - `git` — unlocks mutating git commands (`commit`, `push`, `reset`, ...) under the framework's skill-gated capability rule.
 - `terraform`, `pulumi` — IaC tool mechanics plus the iac-basic safety discipline (the plan/preview diff IS the blast radius; environments along the promotion path).
 - `pytest`, `vitest`, `cypress`, `playwright` — test-runner mechanics; companions to the qa-basic domain.
 - `skill-to-discipline` — convert an explicitly selected external skill into a
   Cumaru execution discipline with source attribution.
 
-Opt-ins combine with any domain. `cumaru install --help` auto-discovers them from each `skills/<name>/SKILL.md` `description:`.
+Opt-ins combine with any domain. Update validates every requested name against
+main HEAD before mutation.
 
 ## Available slash commands
 
+Generic (`none`) and OpenCode receive command launchers; Claude and Codex invoke
+the skills directly.
+
 **Universal** (authored in `__base/commands/cumaru/`, mirrored verbatim into every domain):
-  - `/cumaru:doctor`, `/cumaru:flow`, `/cumaru:update`, `/cumaru:refs`, `/cumaru:summarize`, `/cumaru:role <role>` — universal launchers with no domain-specific recipe content. In OpenCode, use `/cumaru/role <role>`.
+- `/cumaru:doctor`, `/cumaru:flow`, `/cumaru:update`, `/cumaru:refs`, `/cumaru:summarize`, `/cumaru:role <role>` — universal launchers with no domain-specific recipe content. In OpenCode, use `/cumaru/role <role>`.
 
 Every command requires `skills/cumaru-<name>/SKILL.md`. Its body places
 `$ARGUMENTS` before the skill invocation and contains no workflow recipe;
@@ -141,7 +143,7 @@ domains with a command but no namesake skill are invalid.
 
 ## CLI primitives (no skill needed)
 
-`cumaru tag` (read/write `<!-- cumaru:NAME -->` tags; schema-validated), `cumaru fs` (4 verbs: `move`/`copy`/`create`/`remove`, with guardrails), and [`cumaru coverage`](coverage.md) (read-only spec↔code coverage report) are mechanical primitives — composed by recipe skills, documented in `cumaru <cmd> --help`.
+[`cumaru tag`](tag.md) (read/write `<!-- cumaru:NAME -->` tags; config-validated), [`cumaru fs`](fs.md) (4 verbs: `move`/`copy`/`create`/`remove`, with guardrails), and [`cumaru coverage`](coverage.md) (read-only spec↔code coverage report) are mechanical primitives — composed by recipe skills, documented in `cumaru <cmd> --help`.
 
 To inspect all canonical tag bodies:
 
@@ -158,22 +160,20 @@ or opt-in skills; replace a domain only by uninstalling deliberately first.
 ## Examples
 
 ```bash
-cumaru install                                                  # install the SDLC domain at .cumaru/
-cumaru install agent claude                                     # Claude-native project files
-cumaru install agent codex                                      # Codex-native instructions and skills
-cumaru install agent opencode                                   # OpenCode config, skills, and commands
-cumaru install --with git                                       # default domain + git skill
-cumaru install --domain base                                    # minimal kernel
-cumaru install --domain sdlc-full                               # explicit domain
-cumaru install --domain base --with git                         # base + git
-cumaru install --domain iac-basic --with terraform              # IaC domain + tool skill
-cumaru install --domain qa-basic --with pytest --with vitest    # QA domain + runners
-cumaru install --domain vault-memory                            # memory vault domain
-cumaru install --domain focus                                   # directive-driven threads and outcomes
+cumaru install                                   # base domain, generic adapter
+cumaru install agent claude                      # Claude-native project files
+cumaru install agent codex                       # Codex-native instructions and skills
+cumaru install agent opencode                    # OpenCode config, skills, and commands
+cumaru install --domain sdlc-full                # explicit domain
+cumaru install agent claude --domain iac-basic   # explicit adapter and domain
+cumaru install --domain vault-memory             # memory vault domain
+cumaru install --domain focus                    # directive-driven threads and outcomes
+cumaru update skills claude --with git --apply   # opt-in skill, after adoption
 ```
 
 ## Related
 
 - [`cumaru doctor`](doctor.md) — first thing to run after install.
-- [`cumaru update`](update.md) — keep an installed `.cumaru/` up to date with a newer framework version.
+- [`cumaru bootstrap`](bootstrap.md) — read-only post-install steps for the domain.
+- [`cumaru update`](update.md) — refresh an installed `.cumaru/` at the same config version, or add opt-ins.
 - [`cumaru uninstall`](uninstall.md) — reverse of install.

@@ -65,7 +65,7 @@ user approvals or bypasses command guardrails, repository safety, or Git skill g
 
 ## Initial load
 
-When planning or orienting, read the relevant directory indexes and run `cumaru tree --pillars plans,specs --rows` for the current filesystem projection. Explore `concepts/` only when looking for prior thoughts.
+When planning or orienting, read the relevant directory indexes and run `cumaru tree plans specs --rows` for the current filesystem projection. Explore `concepts/` only when looking for prior thoughts.
 
 When working inside an active plan, apply `domain.md`'s **Plan-scoped entry**
 to the active plan, relevant tasks, and review artifacts. Do not broaden the

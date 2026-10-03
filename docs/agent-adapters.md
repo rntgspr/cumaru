@@ -5,10 +5,10 @@ artifacts are addressed explicitly by each update command.
 
 ## Artifact matrix
 
-| Config value | Instructions | Skills | Commands | Session hook |
+| Adapter | Instructions | Skills | Commands | Session hook |
 |---|---|---|---|---|
-| `null` | `.agents/AGENTS.md` | `.agents/skills/cumaru-*` | `.agents/commands/cumaru/` | none |
-| `claude` | `CLAUDE.md` | `.claude/skills/cumaru-*` | `.claude/commands/cumaru/` | `.claude/settings.json` |
+| `none` | `.agents/AGENTS.md` | `.agents/skills/cumaru-*` | `.agents/commands/cumaru/` | none |
+| `claude` | `CLAUDE.md` | `.claude/skills/cumaru-*` | Native skills; no project command directory | `.claude/settings.json` |
 | `codex` | `AGENTS.md` | `.agents/skills/cumaru-*` | Native skills; no project command directory | `.codex/hooks.json` |
 | `opencode` | `opencode.json.instructions` | `.agents/skills/cumaru-*` | `.opencode/commands/cumaru/` | none |
 
@@ -19,8 +19,8 @@ Every shipped slash command is a thin launcher for a required namesake skill:
 `commands/cumaru/<name>.md` forwards `$ARGUMENTS` to
 `skills/cumaru-<name>/SKILL.md`. The skill is the only workflow source. Source
 domain validation rejects commands without that skill before install or update.
-Claude and OpenCode receive the same launcher content in their native command
-directories; Codex invokes the skills directly.
+Generic and OpenCode receive the same launcher content in their command
+directories; Claude and Codex invoke the skills directly.
 
 ## Context bootstrap
 
@@ -97,7 +97,7 @@ cumaru update agent claude --clear    # immediately clear Claude-owned files
 cumaru update agent --clear           # immediately clear every adapter set
 ```
 
-Install and refresh forms are dry-run unless `--apply` is present. `--clear` is
+Project install writes after preflight and has no preview. Update refresh forms preview unless `--apply` is present. `--clear` is
 the exception: it mutates immediately after the Git recovery check and does not
 require `--apply`. In a Git work tree, pending changes block the operation;
 outside Git, Cumaru warns and continues without a recovery point. With an agent

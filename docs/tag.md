@@ -1,109 +1,92 @@
 # `cumaru tag`
 
-Read, write, and audit `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->` tags. **Schema-validated**: `get` and `set` refuse if `<tag>` is not declared for the target file. The mechanical primitive composed by recipe skills (`cumaru-absorb`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-intake`) — no skill of its own; semantics fit in this doc plus `cumaru tag --help`.
+Read, write, and audit `<!-- cumaru:NAME --> ... <!-- /cumaru:NAME -->` tags. **Config-validated**: `get` and `set` refuse a `<tag>` that the installed `config.yaml` does not declare for the target file. The mechanical primitive composed by recipe skills (`cumaru-absorb`, `cumaru-explore`, `cumaru-plan`, `cumaru-specs`, `cumaru-intake`) — no skill of its own; semantics fit in this doc plus `cumaru tag --help`.
 
 ## Usage
 
-```
-cumaru tag                                  list tags declared for the root index.md
-cumaru tag all [--body|--rows] list every tag in every .cumaru/*.md
-cumaru tag <file>                           list the file's actual tags + schema's expected; flag diffs
+```text
+cumaru tag                                  audit the root index.md
+cumaru tag <file>                           audit the file's tags against the config
 cumaru tag [<file>] get <tag>               print the body of <tag>
 cumaru tag [<file>] set <tag> [<content>]   replace the body; content positional or stdin
 cumaru tag get [<file>] <tag>               equivalent verb-first form
 cumaru tag set [<file>] <tag> [<content>]   equivalent verb-first form
+cumaru tag all [--body]                     list (or dump) every tag in every .cumaru/*.md
 ```
 
-`<file>` must end in `.md` and is relative to `.cumaru/`. An absolute path is
-accepted only when it resolves inside the current `.cumaru/` tree. When omitted,
-it defaults to the root `index.md` (`.cumaru/index.md`).
+`<file>` must end in `.md` and is relative to `.cumaru/`. Absolute paths and
+paths prefixed with `.cumaru/` are accepted only when they resolve inside the
+current `.cumaru/` tree. When omitted, it defaults to the root `index.md`.
+Hosts must be regular files; direct and parent symlinks are refused.
 
-Tag name format: `[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*` — colon segments repeat, so deep node-tree names like `plans:plan:handoff:touched` are valid. The `cumaru:` prefix in the file is implicit — pass `specs` or `cumaru:specs`, both resolve to the same.
+Tag name format: `[a-z][a-z0-9_-]*(:[a-z][a-z0-9_*-]*)*` — colon segments repeat, so deep node-tree names like `plans:plan:handoff:touched` are valid. The `cumaru:` prefix is implicit — pass `specs` or `cumaru:specs`, both resolve to the same.
 
-`<file>` audit mode (`cumaru tag <file>`) shows a diff between what the schema declares for that file and which tags actually exist — tags declared in schema but absent from the file marked `[+]`, and tags present in the file but not declared marked `[✗]`.
+Audit mode prints `Schema declares:` and `File contains:` lists, then reports
+whether they are aligned. A mismatch exits `1`.
 
-## Schema validation
+## Config validation
 
-Every `get` / `set` is validated against the schema:
-- The tag must be **declared** for the file (root tags, pillar tags, or `meta.tags` with matching `host_file`).
-- The set of declared tags comes from the schema walk (`root.tags`, `root.entities.<pillar>.tags`, `meta.tags`).
+Audits and ordinary `get`/`set` load the validated configuration and resolve
+the declared tree, including path overrides, literal and glob selectors, and
+the union of overlapping wildcard tag sets. A tag must be declared for the
+host. Exception: `reference` may be read or written without a declaration or
+configuration. `tag all` modes also need no configuration.
 
 ## Tag bodies
 
-Every tag body is opaque adopter content. Cumaru preserves it byte-for-byte during update. `--rows` reads table-shaped rows when present; it does not impose a body format.
+Every tag body is opaque adopter content. `tag` never parses tables, classifies
+links, resolves references, or enforces a body format; `cumaru update` preserves
+bodies byte-for-byte. Reference resolution belongs to
+[`cumaru coverage`](coverage.md) and [`cumaru doctor`](doctor.md).
 
-Tag parsing uses balanced stack semantics. Nested tags remain independently
-addressable, while reading an outer tag includes the complete nested tag and
-its delimiters. `cumaru doctor` warns about valid nesting because it is unusual.
-Crossing tags and tags without an exact closing delimiter are invalid; reads,
-writes, and update merges fail instead of interpreting the remainder of the file
-as tag data.
+Tag parsing uses balanced stack semantics. Whole-line markers accept
+surrounding whitespace and optional `#` or `//` prefixes. Nested tags remain
+independently addressable, while reading an outer tag includes the complete
+nested tag and its delimiters. `cumaru doctor` warns about valid nesting
+because it is unusual. Crossing tags, unclosed tags, and unmatched closers are
+invalid; reads, writes, and update merges fail instead of interpreting the rest
+of the file as tag data.
 
 Reads expose duplicate top-level bodies in document order. Operations that
 rewrite the file, including `tag set` and update, consolidate them at the first
-occurrence with one blank line. Tag names use the shared grammar enforced by
-both commands.
+occurrence. A missing block is inserted after closed leading frontmatter.
 
-Update preservation is name-based. Tag declarations tell the CLI where a tag is expected, but do not permit update to discard
-an undeclared, moved, or opaque local body. Source-only tags retain their
-canonical placeholder/scaffold body until the adopter edits them.
+`set` accepts positional content, including an explicitly empty string, or
+stdin. It stages the result beside the host, checks that the result is still a
+balanced document and that the host was not concurrently changed, then renames
+it into place. A failure preserves the original host. This is a single-file
+operation, not a multi-file transaction.
 
-```markdown
-| Link                          | Description                          |
-|-------------------------------|--------------------------------------|
-| [name](path/to/index.md)      | one-line prose about the linked file |
-```
-
-`list` views show every tag the schema declares alongside what's actually in the file.
+Update preservation is name-based. Tag declarations tell the CLI where a tag is
+expected, but do not permit update to discard an undeclared, moved, or opaque
+local body. Source-only tags retain their canonical placeholder body until the
+adopter edits them.
 
 ## Tree-wide listing
 
-`cumaru tag all` is the canonical tree-wide tag walker.
-
 ```bash
-# Group every tag by host file.
-cumaru tag all
-
-# Dump every tag body.
-cumaru tag all --body
-
-# Machine-readable rows for hooks and doctor:
-# file<TAB>tag<TAB>link<TAB>description<TAB>target<TAB>status
-cumaru tag all --rows
+cumaru tag all          # every tag name, grouped by host file
+cumaru tag all --body   # every tag body, with its host and name
 ```
 
-`--rows` parses table-shaped rows and resolves links
-relative to the file that hosts the tag. Root `index.md` and `domain.md` links
-resolve from the project root. Status values are `ok`, `missing`, `removed`,
-`external`, `anchor`, `template`, `empty`, and `invalid`. `removed` is valid only
-for a `touched` target whose description identifies an intentional removal.
-
-Exception: rows of the `reference` tag resolve from the **project root** (the parent of `.cumaru/`) and must target repository source files. A `reference` row pointing inside `.cumaru/`, at a directory, an absolute path, or a URL resolves to `invalid`. See [`cumaru coverage`](coverage.md).
+There is no typed `--rows` mode. Malformed hosts or traversal defects exit `1`
+while safe hosts still emit.
 
 ## Examples
 
 ```bash
-# List declared tags for the project's root index.md.
+# Audit the root index.md and one specific file.
 cumaru tag
-
-# Audit a specific file's tags against the schema.
 cumaru tag specs/index.md
-
-# List every tag under .cumaru/.
-cumaru tag all
 
 # Get the components table body (hosted on domain.md).
 cumaru tag get domain.md components
-
-# Get a pillar index's table.
-cumaru tag get plans/index.md plans
-cumaru tag plans/index.md get plans
 
 # Set a body via positional arg (multi-line works with $'...').
 cumaru tag set intake/index.md intake "$body"
 cumaru tag intake/index.md set intake "$body"
 
-# Set a semantic tag body via stdin (preferred for long content).
+# Set a reference body via stdin (preferred for long content).
 cat <<'EOF' | cumaru tag specs/auth/index.md set reference
 | Link | Description |
 |---|---|
@@ -114,12 +97,13 @@ EOF
 ## Exit codes
 
 - `0` — success.
-- `1` — file/tag absent, validation failure, or write failure.
+- `1` — invalid config, undeclared or absent tag, malformed host, audit
+  mismatch, or write failure.
 - `2` — usage error or invalid tag name.
 
 ## Why a primitive (no skill)
 
-Skills exist when there's multi-step orchestration that doesn't fit in `--help`. Tag operations are atomic: read a body, write a body, audit a file. Lifecycle skills use `cumaru tree` for structural navigation and use `cumaru tag set` only for declared semantic tags such as `reference`.
+Skills exist when there's multi-step orchestration that doesn't fit in `--help`. Tag operations are primitives: read a body, replace one host through a staged rename, or audit a file. Lifecycle skills use `cumaru tree` for structural navigation and use `cumaru tag set` only for declared semantic tags such as `reference`.
 
 ## Related
 

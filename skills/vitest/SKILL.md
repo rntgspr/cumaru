@@ -2,7 +2,7 @@
 human_revised: false
 version: 1
 name: vitest
-description: Use this skill whenever the work involves Vitest (or Jest — the runner mechanics map 1:1) — writing or reading `*.test.ts`/`*.spec.ts`, running the suite, reading a failure, measuring coverage, or mocking at the unit/integration level. Opt-in companion to the qa-basic domain (`cumaru install --with vitest`); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on `*.test.*`/`*.spec.*` files, `vitest`/`jest` commands, "run the unit tests", "why is this test failing", "add coverage for X".
+description: Use this skill whenever the work involves Vitest (or Jest — the runner mechanics map 1:1) — writing or reading `*.test.ts`/`*.spec.ts`, running the suite, reading a failure, measuring coverage, or mocking at the unit/integration level. Opt-in companion to the qa-basic domain (`cumaru update skills <agent> --with vitest --apply` after adoption); the tool mechanics are general, the integration notes assume the `.cumaru/` QA pillars (coverage/, standards/, plans/) when present. Trigger on `*.test.*`/`*.spec.*` files, `vitest`/`jest` commands, "run the unit tests", "why is this test failing", "add coverage for X".
 ---
 
 # Vitest (and Jest)
