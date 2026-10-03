@@ -33,7 +33,7 @@ enum Command {
 
     /// Validate the installed configuration, Markdown tree, references, and agent instructions.
     Doctor(commands::doctor::DoctorArgs),
-    /// Print the installed distribution version.
+    /// Print the CLI version and, inside an adopter, its installed domain and config version.
     Version,
 
     /// Install a domain from the latest GitHub release into the current project.
@@ -77,10 +77,7 @@ fn main() -> ExitCode {
     match cli.command {
         Some(Command::Help(args)) => commands::help::run(args),
         Some(Command::Doctor(args)) => commands::doctor::run(args),
-        Some(Command::Version) => {
-            commands::version::run();
-            ExitCode::SUCCESS
-        }
+        Some(Command::Version) => commands::version::run(),
         Some(Command::Tree(args)) => commands::tree::run(args),
         Some(Command::Install(args)) => commands::install::run(args),
         Some(Command::Uninstall(args)) => commands::uninstall::run(args),
