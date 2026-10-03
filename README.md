@@ -52,8 +52,8 @@ Use the precompiled binary for your platform. The download installer selects
 macOS or Linux and ARM64 or x86_64, installs `cumaru` in `/usr/local/bin`, and
 may request sudo for that destination.
 
-**Release binaries are not published yet.** The following installer requires
-platform assets on [GitHub Releases](https://github.com/rntgspr/cumaru/releases).
+Download the compiled assets from [GitHub Releases](https://github.com/rntgspr/cumaru/releases),
+or use the installer below. Linux ARM64 requires FP16 CPU instruction support.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
@@ -188,7 +188,7 @@ adopter-owned tag bodies and local-only files.
 Project source commands (`install`, `update`, `bootstrap`, `migrate`, `version`
 inside a project, and `help domains`) read HEAD of `main`, pinned to one commit
 per invocation. Binary release checks and `cumaru upgrade` use release tags
-instead. The CLI version (for example `0.9.1`) and the installed config integer
+instead. The CLI version (for example `0.10.0`) and the installed config integer
 (for example `9`) are independent: `cumaru upgrade` replaces only the global
 binary, while `cumaru update` refreshes one project's framework files. Neither
 implies the other.

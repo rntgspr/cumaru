@@ -77,6 +77,10 @@ and returned the expected HTTP 404 for the absent catalog, with empty stdout.
 Linux/musl and macOS x86 validation with these new dependencies remains unverified.
 The existing historical fixture intermittency is not declared fixed by serial success.
 
+Subsequent catalog availability, four-target compilation/testing, and published
+binary evidence are recorded in [release verification](rust.md#release-verification).
+Those distribution checks do not close the pending ranking-quality evaluation.
+
 ```bash
 cargo test --manifest-path rust/Cargo.toml --locked -- --test-threads=1
 cargo fmt --manifest-path rust/Cargo.toml --check

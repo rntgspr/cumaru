@@ -95,8 +95,9 @@ the native guide links there rather than duplicating build recipes.
   reported as passing. Native checks and YAML parsing provide separate evidence.
 - The retired Bash runner returned its documented missing-entry-point failure.
   ShellSpec is retained reference, not proof of native recipe behavior.
-- GitHub release listing returned no releases on 2026-10-03. Documentation
-  explicitly states that platform assets are not available for remote installation.
+- GitHub release listing returned no releases at the time of this review.
+  Subsequent publication and platform evidence are recorded in
+  [release verification](rust.md#release-verification).
 
 This review does not execute an LLM, tracker, browser suite, infrastructure tool,
 or provider API. Compatibility review and deterministic checks do not prove a

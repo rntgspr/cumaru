@@ -59,8 +59,9 @@ in `~/.config/cumaru.json`. It does not remove or replace a legacy `~/.cumaru`
 snapshot, another PATH entry, or the former `cuma` binary. Resolve old aliases
 and PATH precedence deliberately when switching executables.
 
-Platform release assets still need publication before remote binary installation
-can work. A release build and offline smokes do not prove live release availability.
+Platform assets are published in [release 0.10.0](https://github.com/rntgspr/cumaru/releases/tag/0.10.0).
+Linux ARM64 requires FP16 CPU instruction support. Publication and target
+verification are recorded in the [native specification](../.memory/specs/rust.md#release-verification).
 Previously installed `cuma` session hooks are recognized during native refresh
 and cleanup so they can be replaced without duplicating Cumaru-owned entries.
 
@@ -71,5 +72,6 @@ Follow [development verification](../HOW_TO_DEV.md#verify-changes).
 Routine CI runs on Ubuntu 24.04: native tests, formatting, release compilation,
 and a release-binary version/help smoke. It does not verify macOS runtime
 behavior or build Apple release assets. The Bash job was
-removed with its CLI entry point. Retained ShellSpec scenarios do not establish
+removed with its CLI entry point. The separate release matrix tests and builds
+all four installer targets. Retained ShellSpec scenarios do not establish
 native parity and require a deliberate port before reuse.

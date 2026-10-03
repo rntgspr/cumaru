@@ -18,9 +18,10 @@ Bare `upgrade` does not compare versions first: it installs the latest release
 tag even when the running build is newer, so run `upgrade --check` before it.
 
 Supported targets are `aarch64-apple-darwin`, `x86_64-apple-darwin`,
-`aarch64-unknown-linux-musl`, and `x86_64-unknown-linux-musl`. No release
-publishes these assets yet, so a real upgrade cannot complete until they are
-attached; HTTP 404 names the missing asset and URL. A failed download,
+`aarch64-unknown-linux-musl`, and `x86_64-unknown-linux-musl`. Compiled assets
+are available from [GitHub Releases](https://github.com/rntgspr/cumaru/releases).
+Linux ARM64 requires FP16 CPU instruction support. HTTP 404 names a missing
+asset and URL. A failed download,
 unsupported platform, or version mismatch leaves the existing binary and JSON
 in place.
 
@@ -34,7 +35,7 @@ cumaru upgrade --check  # network: compare the CLI build with the latest release
 
 Two version identities are independent:
 
-- **CLI** — the build-time package version, for example `0.9.1`, compared by
+- **CLI** — the build-time package version, for example `0.10.0`, compared by
   `upgrade --check` with plain `X.Y.Z` release tags.
 - **Config** — the integer `config.version` (`9`) of an installed project,
   compared by `cumaru version` and gated by `cumaru update` with the domain

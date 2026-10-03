@@ -15,7 +15,6 @@ from 139.
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
-| [138](issue_138.md) | medium | Update checkout to Node.js 24 and remove the CI deprecation warning |
 
 ## Notes
 

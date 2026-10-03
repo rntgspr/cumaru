@@ -383,8 +383,9 @@ release build, formatting, and diff checks passed. Unit tests live beside their
 implementations under `#[cfg(test)]`. Disposable offline CLI smokes complement
 them; no native integration suite has been added by maintainer decision.
 Retained ShellSpec scenarios target the removed Bash entry point and cannot run
-unchanged; their CI job has been removed. Live remote installation, release asset
-publication, and a real-project bench remain unverified or undelivered.
+unchanged; their CI job has been removed. Subsequent live installation and release
+publication evidence are recorded in [release verification](#release-verification).
+Those disposable checks do not replace the separate real-project bench.
 
 The stage-specific verification records below describe earlier suite sizes and
 warnings at the time of each change, rather than the current aggregate result.
@@ -456,9 +457,9 @@ destinations rewritten and Git/cURL/uname/sudo stubbed. All four platform
 asset selections, latest-release resolution, binary/config publication,
 config mode, and preservation after download/version failures passed.
 Eight native tests, build, shell syntax, and diff checks passed.
-No real global installation or sudo operation was performed. Release asset
-publishing is not implemented in this repository yet, so production downloads
-require those assets to be attached to releases before this installer is usable.
+No real global installation or sudo operation was performed. At the time of this
+installer verification, release publishing was not implemented; subsequent
+publication is recorded in [release verification](#release-verification).
 
 Fs verification on 2026-10-02: `cargo test --locked` passed 15 native tests,
 including seven `fs` unit tests on disposable fixtures for create, implicit
@@ -927,6 +928,28 @@ usage errors, HTTP 404 and truncated-inventory failures with empty stdout, and a
 unchanged project. No Rust integration tests or live release validation were run.
 All active Bash command names now have native implementations; the differences
 and remaining feature/distribution boundaries above still apply.
+
+## Release verification
+
+Release [0.10.0](https://github.com/rntgspr/cumaru/releases/tag/0.10.0) was published
+on 2026-10-03 from tag source `fa536038e68d04df51ce05ba7f2a72dddb484fb8`, using
+the corrected release workflow on main `3d674c8` through manual dispatch.
+The [release run](https://github.com/rntgspr/cumaru/actions/runs/37160250329)
+passed all four target jobs and publication. Each target passed 81 native tests
+(one prepared-model smoke ignored), locked release compilation, and version/help
+smokes. Both Linux assets passed the no-ELF-interpreter gate. All four assets
+and `SHA256SUMS` are public. The initial ARM build failed on GEMM FP16 assembly;
+the corrected Linux ARM64 asset requires FP16 CPU instruction support.
+Public HTTPS downloads of all four executables matched `SHA256SUMS`. Downloaded
+macOS ARM and Intel binaries passed version/help locally; Intel ran through Rosetta.
+
+Local 0.10.0 tests/build passed, and the prepared-model smoke passed separately.
+A disposable live-main sdlc-light/Codex install passed doctor with zero errors
+and warnings and offline lightweight context querying. Read-only live model list
+returned BGE Micro. No global installer or real home model installation was run.
+The [main CI run](https://github.com/rntgspr/cumaru/actions/runs/37160244499) passed
+with checkout v7.0.1 and no Node.js 20/deprecation warning in its logs, resolving
+[GitHub issue 16](https://github.com/rntgspr/cumaru/issues/16).
 
 ## Verification
 
