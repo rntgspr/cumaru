@@ -101,7 +101,8 @@ bash rust/build.sh
 ./rust/target/release/cumaru --version
 ```
 
-Git and cURL are needed for release access; coverage also needs a Git work tree.
+cURL reads domain/config sources from main HEAD. Binary release checks need Git;
+coverage also needs a Git work tree.
 Navigation and config/Markdown parsing need no runtime jq, yq, or rg. Bash is
 used by the binary installer and installed session hooks.
 
@@ -170,7 +171,7 @@ documentation for the complete traversal contract.
 | `cumaru upgrade` | Replace the native binary; `--check` only compares build identity with the latest GitHub tag |
 | `cumaru migrate` | Print the current read-only, LLM-executed migration instructions |
 | `cumaru bootstrap` | Print the read-only post-install bootstrap steps for the installed domain |
-| `cumaru version` | Print the build-time binary version, plus the installed domain and config version inside an adopter; offline |
+| `cumaru version` | Print binary identity and installed/latest domain config version and drift against main HEAD; read-only |
 | `cumaru help` | Show the complete command catalog |
 | `cumaru help domains` | List installable domains; this is not a `domains` subcommand |
 

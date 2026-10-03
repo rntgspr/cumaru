@@ -18,9 +18,10 @@ The [Rust CLI contract](rust.md#port-status) records all 14 native commands and
 their shared module boundaries. Rust is the supported CLI; the Bash CLI is
 removed at the root entry point; deprecated modules and tests remain as port
 reference. Rust
-uses a binary-only global installation and remote release source resolution.
+uses a binary-only global installation and remote main-HEAD domain source resolution.
 Runtime navigation/config/Markdown mechanics need no Bash, jq, yq, or rg;
-explicit release access uses Git/cURL, and coverage uses read-only Git inventory.
+domain source access uses cURL against main HEAD; binary release checks and
+coverage use read-only Git commands.
 The following dependency and source tables describe the Bash implementation.
 
 ## Public surface

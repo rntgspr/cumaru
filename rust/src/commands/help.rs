@@ -3,16 +3,16 @@ use std::process::ExitCode;
 
 use clap::{Args, CommandFactory};
 
-use crate::distribution::{self, DomainRelease};
+use crate::distribution::{self, DomainSource};
 
 #[derive(Args)]
 pub struct HelpArgs {
-    /// Show domains from the latest release, or help for a CLI command.
+    /// Show domains from the main HEAD, or help for a CLI command.
     #[arg(value_name = "TOPIC")]
     topic: Option<String>,
 }
 
-/// Renders local Clap help or assembles the complete pinned-release domain catalog before emitting it.
+/// Renders local Clap help or assembles the complete pinned-main domain catalog before emitting it.
 pub fn run(args: HelpArgs) -> ExitCode {
     if !matches!(args.topic.as_deref(), Some("domains" | "domain")) {
         let mut cli = crate::Cli::command();
@@ -32,8 +32,7 @@ pub fn run(args: HelpArgs) -> ExitCode {
         return ExitCode::SUCCESS;
     }
     let result = (|| {
-        let tag = distribution::latest_release()?;
-        let release = distribution::domain_release(&tag, "__base")?;
+        let release = distribution::domain_source("__base")?;
         render_domains(&release, |path| release.read_repository(path))
     })();
     match result {
@@ -70,17 +69,15 @@ fn domain_names(inventory: &BTreeMap<String, String>) -> Result<Vec<String>, Str
                 .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
         {
             return Err(format!(
-                "release catalog contains an invalid domain name: {}",
+                "main catalog contains an invalid domain name: {}",
                 crate::text::shell_quote(name)
             ));
         }
         if name == "base" {
-            return Err("release domain 'base' conflicts with the reserved __base alias".into());
+            return Err("main domain 'base' conflicts with the reserved __base alias".into());
         }
         if !matches!(mode.as_str(), "100644" | "100755") {
-            return Err(format!(
-                "release domain config is not a regular file: {path}"
-            ));
+            return Err(format!("main domain config is not a regular file: {path}"));
         }
         let metadata = format!("domains/{name}/domain.md");
         if inventory
@@ -88,14 +85,14 @@ fn domain_names(inventory: &BTreeMap<String, String>) -> Result<Vec<String>, Str
             .is_some_and(|mode| !matches!(mode.as_str(), "100644" | "100755"))
         {
             return Err(format!(
-                "release domain metadata is not a regular file: {metadata}"
+                "main domain metadata is not a regular file: {metadata}"
             ));
         }
         names.push(name.to_string());
     }
     names.sort_by_key(|name| (name != "__base", name.clone()));
     if !names.iter().any(|name| name == "__base") {
-        return Err("release catalog has no base domain".into());
+        return Err("main catalog has no base domain".into());
     }
     Ok(names)
 }
@@ -121,7 +118,7 @@ fn title(bytes: &[u8]) -> Result<String, String> {
 
 /// Assembles a deterministic base-first catalog using only regular metadata files in the pinned inventory.
 fn render_domains(
-    release: &DomainRelease,
+    release: &DomainSource,
     mut read: impl FnMut(&str) -> Result<Vec<u8>, String>,
 ) -> Result<String, String> {
     let names = domain_names(&release.repository_files)?;
@@ -154,7 +151,7 @@ mod tests {
     /// Discovers only configured immediate public domains and renders sorted titles without requiring an adopter.
     #[test]
     fn renders_catalog_and_metadata_fallback() {
-        let release = DomainRelease {
+        let release = DomainSource {
             revision: "a".repeat(40),
             domain: "__base".into(),
             files: BTreeMap::new(),
@@ -206,7 +203,7 @@ mod tests {
             assert!(domain_names(&inventory).is_err());
         }
         assert!(domain_names(&BTreeMap::new()).is_err());
-        let release = DomainRelease {
+        let release = DomainSource {
             revision: "a".repeat(40),
             domain: "__base".into(),
             files: BTreeMap::new(),

@@ -31,15 +31,21 @@ config or exposes the former `--pillars`/`--domain` filters. Tag bodies remain
 opaque; typed `tag all --rows` is not supported.
 
 Install defaults to `base`, with an explicit stateless adapter target. Domain
-content is downloaded from the latest plain release and pinned to one commit.
+content is downloaded from HEAD of `main` and pinned to one commit per invocation.
 Optional skills belong to `update skills <agent> --with <name>`, not install.
 Source-consuming commands do not support `--from` or local snapshot sources.
-Doctor and bare invocation are offline; `help domains` explicitly uses Git/cURL.
+Doctor and bare invocation are offline; `help domains` uses cURL against main.
 
 `cumaru version` prints the CLI version and, inside an adopter, the installed
 `domain:` and `config:` version read from `.cumaru/config.yaml`. These are
 independent identities: upgrading the binary does not migrate the config.
-`--version` prints only the package identity.
+Inside an adopter, it also consults `domains/<domain>/config.yaml` at main HEAD,
+printing `source:`, `latest config:`, `config status:`, and `config drift:`.
+A lower installed integer is `outdated`; equal versions can still have drift
+from missing defaults or incompatible properties. Valid local choices and YAML
+formatting do not cause drift. Network/config failures return 1 while retaining
+the installed identity; no files are changed. Without an adopter it stays offline.
+`--version` prints only the package identity and always stays offline.
 
 ## Distribution and transition
 

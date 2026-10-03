@@ -16,7 +16,7 @@ use crate::{
 #[derive(Args)]
 #[command(override_usage = "cumaru install [agent <none|claude|codex|opencode>] [--domain <name>]")]
 pub struct InstallArgs {
-    /// Selects a release domain; base is an alias for __base.
+    /// Selects a main domain; base is an alias for __base.
     #[arg(long, default_value = "__base")]
     domain: String,
     /// Optional literal 'agent' followed by its native adapter name.
@@ -64,7 +64,7 @@ fn arguments(args: &InstallArgs) -> Result<(String, Adapter), String> {
     Ok((domain.into(), adapter))
 }
 
-/// Installs the latest remote domain with classified usage and runtime failures.
+/// Installs the main domain with classified usage and runtime failures.
 pub fn run(args: InstallArgs) -> ExitCode {
     let (domain, adapter) = match arguments(&args) {
         Ok(args) => args,
@@ -77,14 +77,13 @@ pub fn run(args: InstallArgs) -> ExitCode {
         let project = fs::canonicalize(std::env::current_dir().map_err(|e| e.to_string())?)
             .map_err(|e| e.to_string())?;
         refuse_existing(&project)?;
-        let release = distribution::latest_release()?;
-        println!("Fetching domain '{domain}' from release {release}...");
-        let source = distribution::domain_release(&release, &domain)?;
+        println!("Fetching domain '{domain}' from main HEAD...");
+        let source = distribution::domain_source(&domain)?;
         let config_bytes = source.read(config::CONFIG_FILE)?;
         let doc = config::parse(std::str::from_utf8(&config_bytes).map_err(|e| e.to_string())?)?;
         let expected = if domain == "__base" { "base" } else { &domain };
         if doc["version"].as_i64() != Some(9) || doc["domain"].as_str() != Some(expected) {
-            return Err("release config must declare v9 and the selected domain".into());
+            return Err("main config must declare v9 and the selected domain".into());
         }
         let inventory = source.files.keys().cloned().collect();
         let selected = config_tree::install_files(&doc, &inventory)?;
@@ -184,7 +183,8 @@ pub fn run(args: InstallArgs) -> ExitCode {
         preflight(&project, &writes)?;
         apply(&project, &writes)?;
         println!(
-            "Installed domain '{domain}' from release {release} into .cumaru/.\n\nNext steps:\n  1. Read .cumaru/domain.md.\n  2. Review .cumaru/config.yaml and its target values.\n  3. Run cumaru doctor.\n\nAdapter selection is stateless. Optional skills belong to update."
+            "Installed domain '{domain}' from main ({}) into .cumaru/.\n\nNext steps:\n  1. Read .cumaru/domain.md.\n  2. Review .cumaru/config.yaml and its target values.\n  3. Run cumaru doctor.\n\nAdapter selection is stateless. Optional skills belong to update.",
+            source.revision
         );
         Ok(())
     })();
@@ -230,7 +230,7 @@ fn validate_disciplines(files: &BTreeMap<String, Vec<u8>>) -> Result<(), String>
 fn add_skills(
     project: &Path,
     adapter: Adapter,
-    source: &distribution::DomainRelease,
+    source: &distribution::DomainSource,
     writes: &mut Vec<Write>,
 ) -> Result<(), String> {
     let mut skipped = BTreeSet::new();

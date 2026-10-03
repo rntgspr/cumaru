@@ -8,9 +8,19 @@ version: 9
 
 # Cumaru update specification
 
-The [native Rust update contract](rust.md#native-project-update) uses the latest
-GitHub release and records its v9-only, postcheck, and source-selection boundaries.
+The [native Rust update contract](rust.md#native-project-update) resolves HEAD of
+GitHub main on every invocation and records its v9-only, postcheck, and source-selection boundaries.
 The Bash command and its public surface below retain their separate contract.
+
+The universal `cumaru-update` skill now targets the native CLI. It checks
+`cumaru version` at the adopter root and reports CLI build, domain identity,
+and installed/latest config integers plus drift separately. Latest config is read
+from `domains/<installed-domain>/config.yaml` at the resolved HEAD of main, never
+from a CLI tag. Only source/local config integers
+determine migration; CLI freshness and GitHub tags never stand in for config
+metadata. Global upgrade remains an explicitly requested separate operation.
+The skill uses native remote-source commands without `--from` and restricts
+separate commands refresh to Generic/OpenCode. Its copies are universal mirrors.
 
 ## Purpose
 

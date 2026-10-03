@@ -28,21 +28,21 @@ struct Cli {
 /// Supported subcommands.
 #[derive(Subcommand)]
 enum Command {
-    /// Show CLI help, command help, or the domains available in the latest release.
+    /// Show CLI help, command help, or the domains available at main HEAD.
     Help(commands::help::HelpArgs),
 
     /// Validate the installed configuration, Markdown tree, references, and agent instructions.
     Doctor(commands::doctor::DoctorArgs),
-    /// Print the CLI version and, inside an adopter, its installed domain and config version.
+    /// Print CLI identity and check the adopter config version and drift against main HEAD.
     Version,
 
-    /// Install a domain from the latest GitHub release into the current project.
+    /// Install a domain from the main HEAD into the current project.
     Install(commands::install::InstallArgs),
 
     /// Remove the project installation and every Cumaru-owned adapter artifact.
     Uninstall(commands::uninstall::UninstallArgs),
 
-    /// Preview or apply a same-version project refresh from the latest GitHub release.
+    /// Preview or apply a same-version project refresh from the main HEAD.
     Update(commands::update::UpdateArgs),
 
     /// Print the post-install bootstrap steps for this project's domain.

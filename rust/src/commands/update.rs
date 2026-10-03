@@ -12,7 +12,7 @@ use crate::artifacts::{self, Change, Surface, add, merge_json, prune_namespace, 
 use crate::{
     adapter::{self, Adapter},
     config, config_tree,
-    distribution::{self, DomainRelease},
+    distribution::{self, DomainSource},
     paths, tags,
     walk::Walk,
 };
@@ -178,18 +178,17 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
             clear_plan(&project, &mode, target, &mut changes)?;
         }
     } else {
-        let release = distribution::latest_release()?;
-        let source = distribution::domain_release(&release, domain)?;
+        let source = distribution::domain_source(domain)?;
         let bytes = source.read("config.yaml")?;
         let canonical = config::parse(std::str::from_utf8(&bytes).map_err(|e| e.to_string())?)?;
         if canonical["domain"] != local["domain"] {
-            return Err("release domain differs from installed domain".into());
+            return Err("main domain differs from installed domain".into());
         }
         if canonical["version"] != local["version"] {
-            return Err("release config version differs; use cumaru migrate".into());
+            return Err("main config version differs; use cumaru migrate".into());
         }
         config_tree::install_files(&canonical, &source.files.keys().cloned().collect())?;
-        println!("source: release {release} ({})", source.revision);
+        println!("source: main ({})", source.revision);
         match &mode {
             Mode::Config => {
                 let (candidate, removed) = config::reconcile(&original_config, &canonical)?;
@@ -340,7 +339,7 @@ fn inventory(root: &Path) -> Result<BTreeSet<String>, String> {
 fn artifact_plan(
     project: &Path,
     root: &Path,
-    source: &DomainRelease,
+    source: &DomainSource,
     mode: &Mode,
     target: Adapter,
     optins: &[String],
@@ -381,7 +380,7 @@ fn artifact_plan(
                     .repository_files
                     .contains_key(&format!("{prefix}SKILL.md"))
                 {
-                    return Err(format!("release has no opt-in skill: {name}"));
+                    return Err(format!("main has no opt-in skill: {name}"));
                 }
                 for (origin, mode) in source
                     .repository_files
