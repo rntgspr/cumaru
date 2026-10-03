@@ -15,6 +15,12 @@ for an installed project. The command is strictly read-only: an LLM executes and
 adjudicates the printed detection-first steps. It converges supported prior
 layouts directly from `N` to v9 rather than chaining historical adapters.
 
+The [native migration contract](rust.md#execution) resolves current/legacy config
+without requiring its schema to pass, then prints base/domain instructions from
+one commit of the latest release. Rust has no `--from` or local source snapshot.
+It remains read-only and does not deliver the missing migration skill. The Bash
+source-selection surface below retains its separate contract.
+
 ## Public surface
 
 ```text

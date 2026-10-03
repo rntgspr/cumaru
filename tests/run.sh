@@ -19,6 +19,11 @@ if [[ $# -gt 1 ]]; then
   exit 2
 fi
 
+if [[ ! -f "$REPO_DIR/cumaru" ]]; then
+  printf 'The legacy Bash CLI was removed; retained ShellSpec scenarios await porting. Run cargo test --manifest-path rust/Cargo.toml --locked.\n' >&2
+  exit 1
+fi
+
 if ! command -v shellspec >/dev/null 2>&1; then
   printf 'ShellSpec is required. Install it from https://shellspec.info/\n' >&2
   exit 1

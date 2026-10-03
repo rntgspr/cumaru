@@ -13,6 +13,11 @@ version: 9
 `cumaru doctor` checks an installed adopter tree against the deterministic v9
 configuration and reports structural or metadata defects without editing it.
 
+The [native Rust doctor contract](rust.md#native-doctor) records its offline
+binary-only implementation, embedded defaults, ASCII presentation, installed
+workflow-skill boundary, default invocation, and verification. The Bash
+implementation below retains its separate source-snapshot contract.
+
 ## Public surface
 
 ```text

@@ -1,3 +1,14 @@
+pub mod bootstrap;
+pub mod coverage;
+pub mod doctor;
 pub mod fs;
+pub mod help;
+pub mod install;
+pub mod map;
+pub mod migrate;
+pub mod tag;
 pub mod tree;
+pub mod uninstall;
+pub mod update;
+pub mod upgrade;
 pub mod version;

@@ -15,6 +15,10 @@ client's native instructions, skills, commands, and session-hook surfaces.
 They are explicit stateless command targets and may coexist; config does not
 select or persist an active adapter.
 
+The [Rust installer](rust.md#project-installation) keeps adapter
+instruction/hook wiring but omits separate Claude slash-command files in favor
+of skills. That decision has not changed the implemented Bash adapter matrix.
+
 ## Public surface
 
 ```text

@@ -14,7 +14,17 @@ The test system verifies Cumaru's CLI, contracts, adapters, schema, and update
 transactions with isolated ShellSpec examples. A separate manual bench validates
 real-project adoption flows that are inappropriate for fixture-only execution.
 
+The supported native CLI is checked by cargo unit tests, formatting, and release
+build in its own macOS CI job. ShellSpec scenarios are retained as port reference;
+their Bash entry point and CI job have been removed, so they cannot run unchanged.
+the canonical native scope remains in the [Rust specification](rust.md#regression-coverage).
+
 ## Public surface
+
+The sections below retain the former Bash testing contract as port reference.
+`tests/run.sh` now exits 1 with an explicit native-test direction when the removed
+root Bash entry point is absent, instead of starting a suite of missing-command
+failures. The native verification commands live in the Rust specification.
 
 ```text
 bash tests/run.sh
@@ -113,8 +123,13 @@ project-local lock/staging/backup/recovery debris.
 ## Regression coverage
 
 Native Rust tests and their current scope are recorded in the
-[Rust bootstrap specification](rust.md#regression-coverage). They run separately
-through `cargo test`; the ShellSpec runner continues to exercise the Bash CLI.
+[Rust CLI specification](rust.md#regression-coverage). They run separately
+through `cargo test`; retained ShellSpec scenarios target the removed Bash CLI
+and require a deliberate port before they can execute again.
+The current native suite has 64 unit tests. Disposable offline CLI smokes cover
+command behavior and preservation without adding a committed Rust integration
+suite. The native verification record is canonical in `rust.md`; ShellSpec success
+does not establish native parity or production release availability.
 
 | Test | Covered behavior |
 |---|---|

@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 134.
+from 135.
 
 ## Open issues
 
@@ -18,6 +18,7 @@ from 134.
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
+| [134](issue_134.md) | medium | Report adopter domain/config version alongside native CLI identity |
 
 ## Notes
 

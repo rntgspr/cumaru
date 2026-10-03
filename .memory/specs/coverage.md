@@ -14,6 +14,11 @@ version: 9
 under the configured durable specification pillar. It reports gaps and malformed
 or out-of-scope references without modifying either source or specifications.
 
+The [native coverage contract](rust.md#native-coverage) records the Rust port,
+shared reference parser, configured physical directory resolution, malformed-host
+diagnostics, and offline verification. The Bash surface below remains available;
+the `.codex/` exclusion gap applies to both implementations.
+
 ## Public surface
 
 ```text
