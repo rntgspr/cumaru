@@ -1,0 +1,16 @@
+[package]
+name = "cumaru-encoder-comparison"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+candle-core = { version = "=0.9.1", default-features = false }
+candle-nn = { version = "=0.9.1", default-features = false }
+candle-transformers = { version = "=0.9.1", default-features = false }
+tokenizers = { version = "=0.22.2", default-features = false, features = ["fancy-regex"] }
+serde_json = "=1.0.151"
+libc = "=0.2.190"
+
+[profile.release]
+strip = true

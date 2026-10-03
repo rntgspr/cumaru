@@ -13,8 +13,10 @@ version: 9
 Record the supported Rust CLI under `rust/`. The root Bash entry point has been
 removed; deprecated `src/*.sh` CLI modules and ShellSpec scenarios remain as
 reference for the later test port, without a supported Bash CLI invocation.
-The Rust CLI implements all 14 active command names: `version`,
-`tree`, `map`, `fs`, `tag`, `coverage`, `doctor`, `install`, `uninstall`, `bootstrap`, `migrate`, `update`, `upgrade`, and `help`, with no claim of complete Bash parity.
+The Rust CLI implements 16 command families: `version`,
+`tree`, `map`, `fs`, `tag`, `coverage`, `doctor`, `install`, `uninstall`, `bootstrap`, `migrate`, `update`, `upgrade`, `help`, `context`, and `model`, with no claim of complete Bash parity.
+The [context and models contract](context.md) owns optional external encoder
+packages, offline ranking, the lightweight fallback, and their verification limits.
 
 ## Public surface
 
@@ -374,7 +376,9 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 
 ## Regression coverage
 
-Current verification on 2026-10-03: 71 native unit tests passed serially; locked
+Current context/model verification on 2026-10-03: 81 native unit tests passed serially
+and the ignored prepared-model smoke passed separately; see [context and models](context.md).
+Earlier verification on 2026-10-03: 71 native unit tests passed serially; locked
 release build, formatting, and diff checks passed. Unit tests live beside their
 implementations under `#[cfg(test)]`. Disposable offline CLI smokes complement
 them; no native integration suite has been added by maintainer decision.

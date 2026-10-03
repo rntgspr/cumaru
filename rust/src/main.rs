@@ -9,9 +9,11 @@ mod config;
 mod config_tree;
 mod distribution;
 mod markdown;
+mod models;
 mod paths;
 mod references;
 mod release;
+mod relevance;
 mod tags;
 mod text;
 mod tsv;
@@ -28,6 +30,11 @@ struct Cli {
 /// Supported subcommands.
 #[derive(Subcommand)]
 enum Command {
+    /// List the closed model catalog or explicitly download a supported model.
+    Model(commands::model::ModelArgs),
+
+    /// Rank local Markdown by query relevance using a cached encoder or lightweight fallback.
+    Context(commands::context::ContextArgs),
     /// Show CLI help, command help, or the domains available at main HEAD.
     Help(commands::help::HelpArgs),
 
@@ -75,6 +82,8 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
 
     match cli.command {
+        Some(Command::Model(args)) => commands::model::run(args),
+        Some(Command::Context(args)) => commands::context::run(args),
         Some(Command::Help(args)) => commands::help::run(args),
         Some(Command::Doctor(args)) => commands::doctor::run(args),
         Some(Command::Version) => commands::version::run(),

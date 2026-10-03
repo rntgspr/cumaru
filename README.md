@@ -172,6 +172,8 @@ documentation for the complete traversal contract.
 | `cumaru coverage` | Report source files covered by durable-specification references |
 | `cumaru tree` | List filesystem-backed candidates and their summaries |
 | `cumaru map` | List literal H1-H6 headings with markers and source lines under a selected scope |
+| `cumaru context "query"` | Rank local Markdown offline with a cached encoder or lightweight fallback; [guide](docs/context.md) |
+| `cumaru model list` / `cumaru model push <name>` | Read the closed GitHub catalog or download an optional model into `~/.cumaru/<name>/`; [guide](docs/model.md) |
 | `cumaru fs` | Perform guarded file operations inside `.cumaru/` |
 | `cumaru update` | Preview or directly refresh framework content at the installed integer version |
 | `cumaru upgrade` | Replace the native binary; `--check` only compares build identity with the latest GitHub tag |

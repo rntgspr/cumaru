@@ -129,7 +129,9 @@ Native Rust tests and their current scope are recorded in the
 [Rust CLI specification](rust.md#regression-coverage). They run separately
 through `cargo test`; retained ShellSpec scenarios target the removed Bash CLI
 and require a deliberate port before they can execute again.
-The current native suite has 71 unit tests. Disposable offline CLI smokes cover
+The current native suite has 81 routine unit tests and one ignored prepared-model
+smoke, separately exercised as recorded in [context and models](context.md).
+Disposable offline CLI smokes cover
 command behavior and preservation without adding a committed Rust integration
 suite. The native verification record is canonical in `rust.md`; ShellSpec success
 does not establish native parity or production release availability.

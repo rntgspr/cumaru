@@ -31,6 +31,7 @@ mandatory framework order.
 
 ## Specifications
 
+- [Context and models](specs/context.md) — offline relevance ranking and independent closed model catalog/cache.
 - [Architecture](specs/architecture.md) — kernel, ownership, configuration, lifecycle, and system boundaries.
 - [Rust bootstrap](specs/rust.md) — current Rust CLI, module boundaries, config schemas, native tests, and parity limits.
 - [Navigation](specs/navigation.md) — filesystem projection, summaries, filters, and bounded traversal.
@@ -61,6 +62,7 @@ mandatory framework order.
 
 ## Other Memory
 
+- [Plans](plans/index.md) — active implementation plans, loaded on demand.
 - [Advisor mode](advisor_mode.md) — collaboration behavior.
 - [Spec template](_spec_template.md) — canonical specification structure.
 - [Issues](issues/index.md) — open issues only; completed records are absorbed into `specs/` and removed.

@@ -1,4 +1,5 @@
 pub mod bootstrap;
+pub mod context;
 pub mod coverage;
 pub mod doctor;
 pub mod fs;
@@ -6,6 +7,7 @@ pub mod help;
 pub mod install;
 pub mod map;
 pub mod migrate;
+pub mod model;
 pub mod tag;
 pub mod tree;
 pub mod uninstall;

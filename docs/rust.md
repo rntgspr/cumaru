@@ -21,7 +21,7 @@ updates the executable used by the terminal; source edits alone do not rebuild i
 
 ## Command contracts
 
-All 14 active CLI commands are native. The [Rust specification](../.memory/specs/rust.md)
+All 16 CLI command families are native. The [Rust specification](../.memory/specs/rust.md)
 is canonical for their arguments, ownership rules, failure behavior, tests,
 and differences from Bash. The command guides in this directory describe the
 native contract.
@@ -49,6 +49,13 @@ the installed identity; no files are changed. Without an adopter it stays offlin
 `--version` prints only the package identity and always stays offline.
 
 ## Distribution and transition
+
+[`cumaru context`](context.md) ranks local Markdown offline, using a cached
+encoder or the lightweight fallback. [`cumaru model`](model.md) separately lists
+the closed GitHub catalog and explicitly installs a model in `~/.cumaru/<name>/`.
+These are model packages, not the retired global CLI source snapshot. The binary
+does not embed pretrained weights. List/push require the catalog to be published
+on main; local prepared-package verification does not establish live availability.
 
 The binary installer remains a Bash script at `rust/install.sh`; Bash also
 runs installed session hooks. Deprecating the Bash CLI does not remove those
