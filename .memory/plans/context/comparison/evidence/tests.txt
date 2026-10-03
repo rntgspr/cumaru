@@ -10,4 +10,3 @@ test relevance::tests::candidate_independence_and_repetition ... ok
 test relevance::tests::late_content_and_budget ... ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
