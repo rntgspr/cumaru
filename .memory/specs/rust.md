@@ -895,8 +895,13 @@ and remaining feature/distribution boundaries above still apply.
 `rust/build.sh` resolves its own manifest path, builds with `--release --locked`
 from any working directory, and preserves incremental artifacts. The native
 binary remains at `rust/target/release/cumaru`; the root Bash `./cumaru` entry
-point has been removed. CI runs native formatting, unit tests, and release
-compilation; its former Bash regression job has been removed.
+point has been removed. Routine CI runs on `ubuntu-24.04`: native formatting,
+unit tests, locked release compilation, and a release-binary `--version`/`help`
+smoke, with the existing main-push/pull-request triggers and concurrency
+cancellation. Linux success does not establish macOS runtime compatibility or
+produce Apple release assets; that validation remains separate and undelivered.
+The former Bash regression job has been removed. The doctor no-warning unit test
+expects `git` and `curl` on PATH, as GitHub's Ubuntu runner provides.
 No old global binary, alias, PATH entry, or snapshot is removed by this transition.
 The public [native guide](../../docs/rust.md) describes build and distribution.
 
@@ -908,6 +913,23 @@ stubbed published `cumaru`, no `cuma`, and the version-only JSON. Release help
 and `--version` passed outside an adopter; shell syntax, formatting, and diff
 checks passed. No real global install or legacy snapshot removal was performed.
 The added native CI job has not yet run remotely.
+
+Linux CI verification on 2026-10-02: in an `ubuntu-24.04` container (aarch64,
+non-root user, stable rustup toolchain), formatting, all 70 native unit tests,
+the locked release build, and the workflow's binary smoke passed; the smoke also
+failed as intended against a mismatched package version. Every platform gate in
+the suite is `cfg(unix)`, so symlink, permission, containment, and preservation
+tests executed; none were disabled. Without `git` on PATH the doctor no-warning
+test failed deterministically through its external-tools warning; with `git`
+installed, ten consecutive runs passed. The workflow has not yet run remotely
+on GitHub's x86_64 runner.
+
+Pre-push macOS verification on 2026-10-02: formatting, diff checks, locked release
+build, and all 70 native tests with `--test-threads=1` passed. A default parallel
+run failed in uninstall's concurrent-edit fixture with an unclosed instruction
+block; the focused test passed immediately afterward. This remains an unresolved
+intermittent fixture failure, alongside the earlier doctor fixture failure;
+serialized success is not evidence that parallel execution is reliable.
 
 Local bench on 2026-10-02: the maintainer requested publication of the verified
 binary to `~/.local/bin/cumaru`, replacing only the old Bash symlink and leaving
