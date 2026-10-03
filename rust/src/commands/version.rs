@@ -1,7 +1,7 @@
 //! `cumaru version`: print the build-time CLI version and, inside an adopter,
 //! the installed domain and config contract version.
 //!
-//! Offline and read-only. The CLI and installed config versions are independent
+//! Read-only; an installed adopter triggers a main-HEAD config check. The versions are independent
 //! identities; neither is inferred from the other, and the installed config is
 //! not validated against the current schema so older contracts still report.
 
@@ -15,6 +15,7 @@ use crate::config::{CONFIG_FILE, CUMARU_DIR};
 use crate::paths::is_symlink;
 use crate::release::VERSION;
 use crate::text::has_control;
+use crate::{config, distribution};
 
 /// Installed adopter identity read from `.cumaru/config.yaml`.
 #[derive(Debug, PartialEq)]
@@ -32,13 +33,74 @@ pub fn run() -> ExitCode {
         Ok(Some(Installed { domain, version })) => {
             println!("domain:   {domain}");
             println!("config:   {version}");
-            ExitCode::SUCCESS
+            let result: Result<(), String> = (|| {
+                let source =
+                    distribution::domain_source(if domain == "base" { "__base" } else { &domain })?;
+                let remote = source.read(CONFIG_FILE)?;
+                let remote = std::str::from_utf8(&remote).map_err(|error| error.to_string())?;
+                let local = fs::read_to_string(Path::new(CUMARU_DIR).join(CONFIG_FILE))
+                    .map_err(|error| error.to_string())?;
+                if identity(&local)?
+                    != (Installed {
+                        domain: domain.clone(),
+                        version,
+                    })
+                {
+                    return Err("installed config changed during version inspection".into());
+                }
+                let report = compare(&local, remote)?;
+                println!("source:   main ({})\n{report}", source.revision);
+                Ok(())
+            })();
+            match result {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(error) => {
+                    eprintln!("cumaru version: cannot check latest config: {error}");
+                    ExitCode::FAILURE
+                }
+            }
         }
         Err(message) => {
             eprintln!("cumaru version: {message}");
             ExitCode::FAILURE
         }
     }
+}
+
+/// Compares actual domain/config identities and equal-version reconciliation drift without mutating adopter choices.
+fn compare(local: &str, remote: &str) -> Result<String, String> {
+    let installed = identity(local)?;
+    let latest = identity(remote)?;
+    if installed.domain != latest.domain {
+        return Err("main domain differs from installed domain".into());
+    }
+
+    let drift = if installed.version != latest.version {
+        true
+    } else {
+        let source = config::parse(remote)?;
+        let (candidate, _) = config::reconcile(local, &source)?;
+        let local = config::yaml_to_json(
+            &YamlLoader::load_from_str(local).map_err(|error| error.to_string())?[0],
+        )?;
+        let candidate: serde_json::Value =
+            serde_json::from_str(&candidate).map_err(|error| error.to_string())?;
+        candidate != local
+    };
+    let status = if installed.version < latest.version {
+        "outdated"
+    } else if installed.version > latest.version {
+        "ahead"
+    } else if drift {
+        "drift"
+    } else {
+        "up to date"
+    };
+    Ok(format!(
+        "latest config: {}\nconfig status: {status}\nconfig drift: {}",
+        latest.version,
+        if drift { "yes" } else { "no" }
+    ))
 }
 
 /// Reads the adopter identity when `.cumaru/` exists; absence is not an error, a present but unsafe or malformed adopter is.
@@ -88,6 +150,58 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    /// Distinguishes version boundaries, formatting, missing defaults, and preserved local choices against main config.
+    #[test]
+    fn compares_main_config_without_inventing_versions() {
+        let source = include_str!("../../../domains/__base/config.yaml");
+        assert!(
+            compare(source, source)
+                .unwrap()
+                .contains("config drift: no")
+        );
+        assert!(
+            compare(&source.replace("version: 9", "version: 8"), source)
+                .unwrap()
+                .contains("config status: outdated")
+        );
+        assert!(
+            compare(source, &source.replace("version: 9", "version: 10"))
+                .unwrap()
+                .contains("latest config: 10")
+        );
+        assert!(
+            compare(&source.replace("version: 9", "version: 10"), source)
+                .unwrap()
+                .contains("config status: ahead")
+        );
+        assert!(
+            compare(&format!("{source}\n"), source)
+                .unwrap()
+                .contains("config drift: no")
+        );
+        assert!(compare(&source.replace("domain: base", "domain: other"), source).is_err());
+        assert!(compare(source, "version: wrong\ndomain: base\n").is_err());
+        assert!(
+            compare(
+                &source.replace("version: 9", "version: 9\nunknown: true"),
+                source
+            )
+            .unwrap()
+            .contains("config status: drift")
+        );
+        let missing = source.replace("meta: {targets: {values: [platform, meta]}}", "meta: {}");
+        assert!(
+            compare(&missing, source)
+                .unwrap()
+                .contains("config drift: yes")
+        );
+        assert!(
+            compare(&source.replace("platform", "custom"), source)
+                .unwrap()
+                .contains("config drift: no")
+        );
+    }
 
     /// Creates a unique disposable project directory for one test.
     fn project(label: &str) -> PathBuf {

@@ -64,9 +64,9 @@ the rename to `fs`, not a remaining command implementation.
 | `tree`, `map` | TSV by default; optional Markdown output; no config/domain/pillar filter; map lists literal H1-H6 headings with markers. |
 | `fs`, `tag` | Guarded filesystem operations and opaque balanced tag bodies; tag has no typed `all --rows` mode. |
 | `coverage`, `doctor` | Offline reports; shared reference resolution; bare invocation runs doctor. |
-| `install`, `update`, `bootstrap`, `migrate`, `help domains` | Latest plain GitHub release, commit-pinned reads, no local snapshot or `--from`. |
+| `install`, `update`, `bootstrap`, `migrate`, `help domains` | HEAD of main, commit-pinned reads, no local snapshot or `--from`. |
 | `uninstall` | All stateless adapters; owned native cleanup; confirmed removal of the complete project tree. |
-| `version`, `upgrade` | Build identity plus offline installed domain/config report; binary-only global installation as `cumaru`. |
+| `version`, `upgrade` | Build identity plus installed/latest domain config and drift report against main; binary-only global installation as `cumaru`. |
 | `help` | Offline local CLI help; explicit domain discovery uses the network. |
 
 The canonical native details live in this file. Capability specifications link
@@ -231,8 +231,8 @@ retained Bash module contracts or legacy public docs.
     string from a regular, non-symlink `.cumaru/config.yaml` with exactly one
     YAML document, without schema validation, maps `base` to `__base`, and
     accepts only ASCII letters, digits, `-`, and `_` before any network access.
-22. It resolves the highest plain release through `distribution::latest_release`
-    and the domain inventory through `domain_release`, so both documents come
+22. It resolves main HEAD and the domain inventory through
+    `distribution::domain_source`, so both documents come
     from one commit revision. `domains/__base/bootstrap.md` is required; the
     domain's `bootstrap.md` is optional. Frontmatter is removed by
     `markdown::strip_frontmatter`, which reproduces the Bash awk filter: blank
@@ -245,9 +245,8 @@ retained Bash module contracts or legacy public docs.
     Intentional differences from Bash: there is no `--from`, local checkout, or
     Git URL source; legacy `schema.yaml`/`flavor` resolution is not ported;
     diagnostics go to stderr with the `cumaru bootstrap:` prefix instead of
-    colored stdout; an unknown domain reports the release lookup failure; and
-    CRLF fences are accepted. Release-resolution failures reuse the shared
-    `cannot check:` wording from `latest_release`.
+    colored stdout; an unknown domain reports the source lookup failure; and
+    CRLF fences are accepted. Network failures use shared source diagnostics.
 24. `migrate` ports the strictly read-only [migration contract](migration.md)
     and takes no source argument. It reads `.cumaru/config.yaml` or, only when
     that entry is absent, legacy `.cumaru/schema.yaml`; the selected entry must
@@ -255,11 +254,11 @@ retained Bash module contracts or legacy public docs.
     read from exactly one YAML document without schema validation, so old
     configurations still receive instructions. `base` maps to `__base`; names
     use the bootstrap grammar and are validated before network access.
-25. It resolves the latest plain release and the `__base` inventory through
-    `domain_release`, then reads `domains/__base/migration.md` and, for other
+25. It resolves main HEAD and the `__base` inventory through
+    `domain_source`, then reads `domains/__base/migration.md` and, for other
     domains, an inventoried `domains/<domain>/migration.md` through
     `read_repository`, all pinned to one commit. A domain absent from the
-    release receives the base document only, matching the Bash checkout path.
+    main inventory receives the base document only, matching the Bash checkout path.
 26. Output is the Bash `# Migration — <domain>` heading and LLM execution
     preamble, then the base body before the whole-line
     `<!-- cumaru:migration-domain-extension -->` checkpoint, the optional domain
@@ -280,6 +279,7 @@ retained Bash module contracts or legacy public docs.
 | Deep traversal defects | `1` after traversal; valid rows may be emitted | none |
 | Clean traversal or version output, with or without an adopter | `0` | none |
 | `version` present adopter with linked/non-directory root, missing/linked config, or malformed/multi-document/mistyped metadata | `1`, CLI version still on stdout | none |
+| `version` remote lookup, domain mismatch, or config comparison failure | `1`, installed identity retained | none |
 | Release check reports behind or up to date | `0` | none |
 | Release listing or comparison failure | `1` | none |
 | Bare upgrade succeeds | `0` | global binary and invoking user's version JSON replaced |
@@ -315,7 +315,7 @@ retained Bash module contracts or legacy public docs.
 | `uninstall` detected pre-publication concurrent edits | `1` | none |
 | `uninstall` I/O failure after publication begins | `1` | partial cleanup possible; no rollback |
 | `help` unknown topic or extra argument | `2` | none |
-| `help domains` release/inventory/download/metadata failure | `1`, empty stdout | none |
+| `help domains` source/inventory/download/metadata failure | `1`, empty stdout | none |
 | `help` local command help or complete domain catalog | `0` | none |
 
 ## Transaction and recovery
@@ -341,17 +341,17 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 | Artifact | Responsibility |
 |---|---|
 | `rust/src/main.rs` | CLI arguments and dispatch. |
-| `rust/src/commands/version.rs` | Build-time package version plus installed domain/config metadata read, and their unit tests. |
-| `rust/src/commands/help.rs` | Local Clap help and read-only pinned-release domain discovery, title rendering, and their unit tests. |
+| `rust/src/commands/version.rs` | Build identity, installed/latest domain config integers, main-HEAD reconciliation drift, and their unit tests. |
+| `rust/src/commands/help.rs` | Local Clap help and read-only pinned-main domain discovery, title rendering, and their unit tests. |
 | `rust/src/commands/upgrade.rs` | Upgrade arguments, coordination, release comparison, and result presentation. |
 | `rust/src/release.rs` | Shared build-time `VERSION`, plain numeric release parsing/selection, and their unit tests. |
-| `rust/src/distribution.rs` | Official repository access, latest-release resolution, pinned domain inventories/downloads, and binary installer execution. |
+| `rust/src/distribution.rs` | Official repository access, binary release-tag resolution, main-HEAD domain inventories/downloads, and binary installer execution. |
 | `rust/install.sh` | Platform asset download, binary verification, global executable publication, and per-user version JSON. |
 | `rust/src/commands/tree.rs` | CLI coordination, tree-specific entry parsing, index/summary rules, diagnostics, and output. |
 | `rust/src/commands/map.rs` | Exact-file or recursive heading projection, diagnostics, and TSV/Markdown output. |
 | `rust/src/commands/fs.rs` | Guarded create/move/copy/remove inside `.cumaru/`, private fs path resolution and shape checks, and their unit tests. |
 | `rust/src/commands/tag.rs` | Tag CLI parsing, audits, traversal, opaque body reads, and staged host publication. |
-| `rust/src/commands/install.rs` | Latest-release domain coordination, complete download/preflight planning, and initial project publication. |
+| `rust/src/commands/install.rs` | Main-HEAD domain coordination, complete download/preflight planning, and initial project publication. |
 | `rust/src/commands/uninstall.rs` | Whole-footprint preflight, interactive/non-TTY confirmation, owned-file cleanup, and guarded final tree removal. |
 | `rust/src/commands/update.rs` | Remote preview planning, scoped content/artifact refresh, exact clear, conditional Git recovery, direct publication, and native postchecks. |
 | `rust/src/commands/bootstrap.rs` | Installed-domain resolution, pinned base/domain bootstrap reads, rendering, and their unit tests. |
@@ -373,8 +373,8 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 
 ## Regression coverage
 
-Current verification on 2026-10-02: 64 native unit tests passed; locked debug and
-release builds, formatting, and diff checks passed. Unit tests live beside their
+Current verification on 2026-10-03: 71 native unit tests passed serially; locked
+release build, formatting, and diff checks passed. Unit tests live beside their
 implementations under `#[cfg(test)]`. Disposable offline CLI smokes complement
 them; no native integration suite has been added by maintainer decision.
 Retained ShellSpec scenarios target the removed Bash entry point and cannot run
@@ -508,13 +508,13 @@ Rust integration tests were added, and no real adopter was touched.
 
 ## Project installation
 
-Native `install` implements initial project adoption from the latest plain
-GitHub release. The Bash CLI retains its separate distribution contract.
+Native `install` implements initial project adoption from HEAD of
+GitHub main. The Bash CLI retains its separate distribution contract.
 
 1. Default to domain `__base`; preserve explicit adapter selection and the
    existing generic adapter default.
 2. Refuse an existing `.cumaru/`; project refresh belongs to `update`.
-3. Resolve and validate the selected domain from a GitHub release tag. The
+3. Resolve and validate the selected domain from main HEAD. The
    machine-global installation contains only the CLI binary, not a domain or
    skill source snapshot.
 4. Optional skills are outside initial installation. Their availability and
@@ -540,8 +540,7 @@ GitHub release. The Bash CLI retains its separate distribution contract.
 1. Validate domain/adapter arguments and refuse any existing `.cumaru` entry,
    including files and broken symlinks, before network access. `base` aliases
    `__base`; unsafe names and unknown adapters fail without writes.
-2. Use the highest plain X.Y.Z release independently of binary version, as
-   selected by the maintainer. Resolve the tag through GitHub's commits API,
+2. Resolve HEAD of main through GitHub's commits API on each invocation,
    fetch its recursive Git tree, and pin raw downloads to that commit SHA.
    Reject truncated inventories, unsafe/duplicate domain paths, symlinks, and
    unsupported Git entry modes. No checkout, snapshot, or tarball is downloaded.
@@ -589,17 +588,23 @@ truncated inventories, symlinked adapter destinations, and rejected opt-in
 flags. Build, formatting, and diff checks passed. No Rust
 integration tests were added; no real adopter or global installation was run.
 
-Install needs Git and cURL, without runtime jq/yq or a local domain source.
+Remote install source access needs cURL, without runtime jq/yq or a local domain source.
 Public GitHub API rate limits/network failures are reported as download errors;
 truncated inventories fail closed. Native config validation retains its
 declarative-schema boundary; install does not check workflow cycles or skill
-availability. Native doctor checks them separately after installation. The latest release must contain
+availability. Native doctor checks them separately after installation. Main HEAD must contain
 compatible v9 source content. Live remote installation has not been verified;
 smokes use the current checkout as stubbed release data.
 
 ## Native project update
 
-Native update uses the latest plain GitHub release, pinned to one commit through
+The universal update skill verifies CLI identity and installed domain/config
+identity separately through `cumaru version` before project preview. It never
+uses a release tag or CLI `behind` status as config-version evidence; only the
+validated source/local config integer gate routes to migration. Its native
+commands omit `--from`, and global binary upgrade remains separately authorized.
+
+Native update resolves HEAD of main on each invocation, pinned to one commit through
 the shared distribution module. It does not use a local snapshot or `--from`.
 Only installed v9 configurations and equal source/config versions are supported;
 other versions fail before writes and route to migration. Configuration and
@@ -749,7 +754,7 @@ and missing installed workflow skills fail preflight.
 5. Compare config with the domain defaults embedded at build time, naming missing
    defaults by JSON Pointer and ignoring formatting/order/additive local entries.
    Custom domains retain their local tree, rules, metadata, and workflows. No
-   remote freshness is claimed: latest-release reconciliation remains the explicit
+   remote freshness is claimed: main-HEAD reconciliation remains the explicit
    `update config` operation. New source defaults require rebuilding the binary.
 6. Emit ASCII `[ok]`, `[warn]`, and `[error]` lines and a summary counting failed
    checks, not individual defects. Quiet mode suppresses passes only. Preflight
@@ -833,15 +838,25 @@ adopter removals, global uninstall, or Git mutations were performed.
 
 ## Native version
 
-`version` is offline and read-only. It always prints `version:  <cli>` first,
+`version` is read-only and consults main HEAD when an adopter is present. It always prints `version:  <cli>` first,
 the build-time package version. When the fixed `.cumaru/` path is absent, that
 is the whole output and the status is 0. When it is present, the root must be a
 regular directory and `config.yaml` a regular, non-symlink file holding exactly
 one YAML document with a non-empty `domain` string without control characters
 and an integer `version`. The command then adds `domain:   <name>` and
-`config:   <integer>`, printing the installed values verbatim.
+`config:   <integer>`, printing the installed values verbatim. It resolves main HEAD once, then reads
+`domains/<domain>/config.yaml` at that SHA (base aliases __base), independently
+of CLI release tags. Output adds `source: main (<sha>)`, `latest config:`,
+`config status:`, and `config drift:`. Lower installed integers are outdated,
+higher ones ahead; equal versions may still have reconciliation drift. Drift
+means different version contracts or a changed schema/default candidate, not
+formatting or preserved valid local choices. Future remote integers are reported
+without applying the current schema across version boundaries. Equal-version
+comparison uses the shared read-only reconciliation, which rejects invalid values.
+Remote/metadata failures return 1 with installed fields preserved and no invented
+latest version. No adopter means no network; doctor remains offline.
 
-The read does not validate the current schema, so an older installed contract
+The identity read does not validate the current schema, so an older installed contract
 still reports its actual integer; nothing is migrated or inferred. CLI and
 config versions are independent: neither is derived from the other, and no
 Markdown domain-version field exists. A present but unsafe or malformed adopter
@@ -859,6 +874,20 @@ Release CLI smokes in disposable directories reported the CLI-only form, focus
 config 9, legacy config 7, and status 1 for mistyped version and missing config;
 `--version` printed `cumaru 0.9.1` and the copied config stayed byte-identical.
 
+Main-HEAD verification on 2026-10-03: all 71 native unit tests passed serially.
+The added comparison test covers older/ahead/future integers, domain mismatch,
+invalid metadata, missing defaults, unknown properties, formatting, and preserved
+local choices. Disposable offline install/update/version smokes passed, including
+four adapters and eight domains, with tag lookups rejected by the source stub.
+They verified pinned main reads, drift/status output, remote failure preservation,
+and offline `--version`. A read-only live version query in the maintainer's
+sdlc-light adopter reported installed/latest config 9 and no drift against
+main `cfc2664f189c3611a397c6507e8c9f17fc4676eb`. At the maintainer's request,
+remote tag `0.0.0` was moved to that commit; runtime domain freshness does not
+depend on that tag. Universal update mirrors passed synchronization. The retired
+Bash runner returned its expected missing-entry-point diagnostic; no native
+integration suite, real adopter edits, or global upgrade was performed.
+
 ## Native help
 
 `help` prints local Clap help; `help <command>` prints that command's long help.
@@ -866,10 +895,10 @@ Both work outside an adopter without dependencies or network access. Unknown
 topics return 2. `--help` remains Clap's ordinary help flag.
 
 `help domains` (also `help domain`) discovers public immediate domain directories
-with regular `config.yaml` files from the latest plain release's recursive Git
+with regular `config.yaml` files from main HEAD's recursive Git
 inventory. Shared distribution resolution pins the inventory and every metadata
-read to one commit; there is no local snapshot, embedded catalog, or main fallback.
-It needs Git and cURL but no adopter configuration.
+read to one commit; there is no local snapshot, embedded catalog, or release-tag lookup.
+It needs cURL but no adopter configuration.
 
 The catalog lists `__base` as `base` first, then other names in byte order, skipping
 hidden and other `__` directories. Names use install's ASCII name grammar;

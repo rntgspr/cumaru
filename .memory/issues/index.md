@@ -11,10 +11,8 @@ from 136.
 
 | Issue | Priority | Description |
 |---|---|---|
-| [035](issue_035.md) | low | Add a configurable post-upgrade snapshot pruner |
 | [040](issue_040.md) | low | Implement the manifest, loader, and hooks using issue 120's context policy |
 | [044](issue_044.md) | medium | Let pillar content live at project-root mounts |
-| [045](issue_045.md) | medium | Explore grounded intelligent search before defining its public contract |
 | [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
@@ -28,5 +26,3 @@ from 136.
   [`../specs/migration.md`](../specs/migration.md).
 - [065](issue_065.md) is the known limit recorded in
   [`../specs/testing.md`](../specs/testing.md).
-- [045](issue_045.md) references a `docs/quickstart.md` that does not exist;
-  resolve the target before defining the public contract.

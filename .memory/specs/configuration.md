@@ -18,7 +18,7 @@ The [native configuration contract](rust.md#invariants) embeds versioned JSON
 Schemas and parses YAML in-process. Native `config::load` applies declarative
 validation; [doctor](rust.md#native-doctor) separately checks workflow graphs and
 installed skill availability. Native reconciliation remains read-only and uses
-remote release defaults through [update config](rust.md#native-project-update).
+remote main-HEAD defaults through [update config](rust.md#native-project-update).
 The Bash validator/dependency contract below is unchanged.
 
 ## Public surface

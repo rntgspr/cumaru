@@ -2,8 +2,8 @@
 //!
 //! Mirrors `src/cmd_migrate.sh` without a local checkout: the installed domain
 //! comes from `.cumaru/config.yaml` or, only when it is absent, the legacy
-//! `.cumaru/schema.yaml`; both documents are read from the latest GitHub release,
-//! pinned to that release's commit. Strictly read-only, with no apply mode.
+//! `.cumaru/schema.yaml`; both documents are read from the main HEAD,
+//! pinned to that main commit. Strictly read-only, with no apply mode.
 
 use std::fs;
 use std::io::{self, Write};
@@ -48,7 +48,7 @@ const PREAMBLE: &str = "\
 /// Arguments for `cumaru migrate`; `--apply` is accepted only to refuse it with an explanation.
 #[derive(Args)]
 #[command(
-    after_help = "Reads domains/__base/migration.md plus the installed domain's optional migration.md\nfrom the latest GitHub release, pinned to one commit, strips their frontmatter, and\nprints the bodies with the domain extension at the base preservation checkpoint.\nThe document is never copied into .cumaru/.\n\nThis command performs no migration and has no --apply. The LLM executes the printed\ninstructions. Commit or stash before starting: git is the only rollback."
+    after_help = "Reads domains/__base/migration.md plus the installed domain's optional migration.md\nfrom the main HEAD, pinned to one commit, strips their frontmatter, and\nprints the bodies with the domain extension at the base preservation checkpoint.\nThe document is never copied into .cumaru/.\n\nThis command performs no migration and has no --apply. The LLM executes the printed\ninstructions. Commit or stash before starting: git is the only rollback."
 )]
 pub struct MigrateArgs {
     /// Refused: the LLM executes the printed instructions.
@@ -75,12 +75,11 @@ pub fn run(args: MigrateArgs) -> ExitCode {
     }
 }
 
-/// Resolves the installed domain, fetches both bodies from one pinned release, and renders them.
+/// Resolves the installed domain, fetches both bodies from one pinned main commit, and renders them.
 fn execute(cumaru: &Path) -> Result<String, String> {
     let domain = installed_domain(cumaru)?;
 
-    let tag = distribution::latest_release()?;
-    let release = distribution::domain_release(&tag, BASE_DOMAIN)?;
+    let release = distribution::domain_source(BASE_DOMAIN)?;
     let base = utf8(release.read(MIGRATION_FILE)?, "domains/__base/migration.md")?;
 
     let path = format!("domains/{domain}/{MIGRATION_FILE}");
@@ -151,9 +150,9 @@ fn domain_from_config(text: &str, name: &str) -> Result<String, String> {
     })
 }
 
-/// Decodes a release document as UTF-8 text.
+/// Decodes a source document as UTF-8 text.
 fn utf8(bytes: Vec<u8>, path: &str) -> Result<String, String> {
-    String::from_utf8(bytes).map_err(|_| format!("release file is not UTF-8: {path}"))
+    String::from_utf8(bytes).map_err(|_| format!("source file is not UTF-8: {path}"))
 }
 
 /// Builds the heading and preamble, then the base body split at its checkpoint around the optional domain body.

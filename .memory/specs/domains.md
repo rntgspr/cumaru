@@ -14,12 +14,12 @@ Define how Cumaru packages one self-contained knowledge model per domain and
 installs exactly one validated domain plus one agent adapter into a project.
 
 The [Rust installer](rust.md#project-installation) uses `__base`
-by default and materializes remote release content from the domain config
+by default and materializes remote main-HEAD content from the domain config
 instead of copying a complete local domain. Its separate native contract does
 not change the current Bash installation contract below.
 
-The [native domain catalog](rust.md#native-help) discovers the latest GitHub
-release instead of a local source snapshot, without requiring an adopter tree.
+The [native domain catalog](rust.md#native-help) discovers HEAD of GitHub
+main instead of a local source snapshot, without requiring an adopter tree.
 
 ## Public surface
 
