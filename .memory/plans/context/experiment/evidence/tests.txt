@@ -8,4 +8,3 @@ test tests::heading_cuts_keep_late_sections ... ok
 test tests::fragments_cover_long_documents ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
-
