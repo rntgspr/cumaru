@@ -14,6 +14,11 @@ Semantic tags delimit adopter-owned bodies inside framework Markdown. The
 shared balanced parser powers `cumaru tag` and update preservation; configuration
 declares where tags are valid.
 
+The [native tag contract](rust.md#execution) retains balanced parsing, declaration
+gates, opaque get/set bodies, and staged single-file publication. Rust deliberately
+omits typed `tag all --rows`; table/reference interpretation lives in shared
+`references.rs` for coverage and doctor. The Bash rows surface below is unchanged.
+
 ## Public surface
 
 ```text

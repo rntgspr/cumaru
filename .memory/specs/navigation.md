@@ -14,6 +14,12 @@ Project the `.cumaru/` filesystem as a bounded, read-only candidate tree so an
 agent can select relevant knowledge from paths and summaries before loading
 Markdown bodies.
 
+The [native navigation contract](rust.md#execution) records Rust's config-free
+directory selection, TSV default, optional Markdown output, reusable walker,
+and literal H1-H6 map with retained `#` markers. Native navigation has no
+`--pillars` or `--domain`. The Bash surface below retains its distinct defaults,
+filters, and level-two heading projection.
+
 ## Public surface
 
 ```text

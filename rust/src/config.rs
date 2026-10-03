@@ -27,7 +27,12 @@ pub(crate) fn load(root: &Path) -> Result<Yaml, String> {
 
     let text = fs::read_to_string(&config)
         .map_err(|error| format!("cannot read .cumaru/config.yaml: {error}"))?;
-    let mut docs = YamlLoader::load_from_str(&text)
+    parse(&text)
+}
+
+/// Parses one configuration document and applies the private embedded-schema validation gate.
+pub(crate) fn parse(text: &str) -> Result<Yaml, String> {
+    let mut docs = YamlLoader::load_from_str(text)
         .map_err(|error| format!("cannot parse .cumaru/config.yaml: {error}"))?;
     if docs.len() != 1 {
         return Err("config must contain exactly one YAML document".into());
@@ -71,7 +76,7 @@ fn validate(doc: &Yaml) -> Result<(), String> {
 }
 
 /// Converts YAML values to JSON without coercing non-string mapping keys.
-fn yaml_to_json(value: &Yaml) -> Result<Value, String> {
+pub(crate) fn yaml_to_json(value: &Yaml) -> Result<Value, String> {
     match value {
         Yaml::Null => Ok(Value::Null),
         Yaml::Boolean(value) => Ok(Value::Bool(*value)),
@@ -101,9 +106,121 @@ fn yaml_to_json(value: &Yaml) -> Result<Value, String> {
     }
 }
 
+/// Reports a schema-pruned, default-filled v9 candidate without replacing permitted local values.
+pub(crate) fn reconcile(text: &str, source: &Yaml) -> Result<(String, Vec<String>), String> {
+    let docs = YamlLoader::load_from_str(text).map_err(|e| e.to_string())?;
+    if docs.len() != 1 {
+        return Err("config must contain exactly one YAML document".into());
+    }
+    if docs[0]["version"].as_i64() != source["version"].as_i64() {
+        return Err("config reconciliation cannot cross versions; use cumaru migrate".into());
+    }
+    let model: Value = serde_json::from_str(include_str!("../../schemas/config.schema.json"))
+        .map_err(|e| e.to_string())?;
+    let mut candidate = yaml_to_json(&docs[0])?;
+    let mut removed = Vec::new();
+    prune(&mut candidate, &model, &model, "", &mut removed);
+    fill(&mut candidate, &yaml_to_json(source)?);
+
+    let output = serde_json::to_string_pretty(&candidate).map_err(|e| e.to_string())?;
+    parse(&output)?;
+    Ok((format!("{output}\n"), removed))
+}
+
+/// Removes only model-incompatible properties, following local schema references recursively.
+fn prune(value: &mut Value, schema: &Value, model: &Value, path: &str, removed: &mut Vec<String>) {
+    let schema = schema["$ref"]
+        .as_str()
+        .and_then(|reference| reference.strip_prefix('#'))
+        .and_then(|pointer| model.pointer(pointer))
+        .unwrap_or(schema);
+    if let Some(object) = value.as_object_mut() {
+        if schema.get("properties").is_none() && schema.get("additionalProperties").is_none() {
+            return;
+        }
+        let keys: Vec<_> = object.keys().cloned().collect();
+        for key in keys {
+            let pointer = format!("{path}/{}", key.replace('~', "~0").replace('/', "~1"));
+            let contract = schema["properties"]
+                .get(&key)
+                .or_else(|| schema.get("additionalProperties").filter(|s| s.is_object()));
+            if let Some(contract) = contract {
+                prune(
+                    object.get_mut(&key).unwrap(),
+                    contract,
+                    model,
+                    &pointer,
+                    removed,
+                );
+            } else if schema["additionalProperties"] != true {
+                object.remove(&key);
+                removed.push(pointer);
+            }
+        }
+    } else if let Some(array) = value.as_array_mut() {
+        if let Some(items) = schema.get("items") {
+            for (index, child) in array.iter_mut().enumerate() {
+                prune(child, items, model, &format!("{path}/{index}"), removed);
+            }
+        }
+    }
+}
+
+/// Fills missing defaults while preserving scalar/array choices and refined wildcard selectors.
+fn fill(local: &mut Value, source: &Value) {
+    let (Some(local), Some(source)) = (local.as_object_mut(), source.as_object()) else {
+        return;
+    };
+    for (key, default) in source {
+        if let Some(value) = local.get_mut(key) {
+            fill(value, default);
+        } else {
+            let refined = key.contains(['*', '?'])
+                && !key.contains('[')
+                && glob::Pattern::new(key).is_ok_and(|pattern| {
+                    local.keys().any(|candidate| {
+                        !["path", "optional", "framework", "frontmatter", "tags"]
+                            .contains(&candidate.as_str())
+                            && pattern.matches_with(
+                                candidate,
+                                glob::MatchOptions {
+                                    case_sensitive: true,
+                                    require_literal_separator: true,
+                                    require_literal_leading_dot: true,
+                                },
+                            )
+                    })
+                });
+            if !refined {
+                local.insert(key.clone(), default.clone());
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Prunes unknown properties, fills missing defaults, and blocks invalid permitted local values.
+    #[test]
+    fn reconciles_without_overwriting_local_choices() {
+        let source = parse(include_str!("../../domains/__base/config.yaml")).unwrap();
+        let mut local = yaml_to_json(&source).unwrap();
+        local["extra"] = Value::Bool(true);
+        local["meta"]["targets"]["values"] = serde_json::json!(["mine"]);
+        local.as_object_mut().unwrap().remove("rules");
+        let (candidate, removed) = reconcile(&local.to_string(), &source).unwrap();
+        assert_eq!(removed, vec!["/extra"]);
+        let candidate = parse(&candidate).unwrap();
+        assert_eq!(
+            candidate["meta"]["targets"]["values"][0].as_str(),
+            Some("mine")
+        );
+        assert!(candidate["rules"].as_hash().is_some());
+        local["meta"]["targets"]["values"] = serde_json::json!("bad");
+        assert!(reconcile(&local.to_string(), &source).is_err());
+    }
 
     /// Accepts the shipped v9 base configuration against the active schema.
     #[test]

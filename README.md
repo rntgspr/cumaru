@@ -13,6 +13,11 @@
 
 Cumaru is a structured context-driven framework for AI-assisted work.
 
+The supported CLI is the native Rust executable `cumaru`. The root Bash
+entry point has been removed; `src/*.sh` CLI modules and ShellSpec scenarios
+remain deprecated reference material for a later test port. The Bash-based download installer and agent hooks
+remain part of native distribution; they are not the legacy CLI.
+
 It gives a text-based project a durable, navigable knowledge layer: the
 filesystem is the structural source of truth, concise summaries make selective
 loading possible, and domain workflows separate durable knowledge from
@@ -73,14 +78,14 @@ not compose.
 
 | Domain | Durable knowledge | Workflow focus |
 |---|---|---|
-| `sdlc-full` *(default)* | `specs/` | Intake, issues, plans, exploration, and software delivery |
+| `sdlc-full` | `specs/` | Intake, issues, plans, exploration, and software delivery |
 | `design-as-code` | `specs/`, `assets/` | Briefs, research, concepts, reviewed design evidence, and direct absorption |
 | `sdlc-light` | `specs/` | A lean plan → spec lifecycle |
 | `iac-basic` | `topology/`, `runbooks/` | Infrastructure changes, apply-order dependencies, and operations |
 | `qa-basic` | `coverage/`, `standards/` | Test strategy and coverage |
 | `vault-memory` | `memories/` | Personal or team memory as a typed graph |
 | `focus` | `directives/`, `threads/`, `outcomes/` | Priority directives over captured work threads and their results |
-| `base` | Custom | Minimal kernel for a new domain |
+| `base` *(default)* | Custom | Minimal kernel for a new domain |
 
 A music-production domain could use the same model: durable pillars for sonic
 identity, arrangement, mix decisions, and references; transient areas for
@@ -89,35 +94,33 @@ lifecycle model, not a fixed vocabulary.
 
 ## Install
 
-Cumaru requires Bash, cURL, Git, [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep),
-`jq`, and [Mike Farah `yq` v4](https://github.com/mikefarah/yq).
-The Python program also named `yq` is incompatible.
-
-| Tool | Used for |
-|---|---|
-| Bash | CLI and installed agent hooks |
-| cURL | Remote installer |
-| Git | Installer, upgrades, and source coverage |
-| ripgrep (`rg`) | Fast, deterministic Markdown heading discovery |
-| `jq` | JSON tracker payloads and hook configuration |
-| Mike Farah `yq` v4 | Schema and Markdown frontmatter parsing |
+Build the native CLI from this checkout with a Rust toolchain:
 
 ```bash
-# macOS prerequisites
-brew install git jq ripgrep yq
-
-# Install the CLI
-curl -fsSL https://pixelpunk.works/cumaru/install.sh | bash
+bash rust/build.sh
+./rust/target/release/cumaru --version
 ```
 
-The installer places the tool at `~/.cumaru` and links `cumaru` into
-`~/.local/bin`. `cumaru upgrade` replaces that snapshot wholesale; use it only
-when intentionally updating the CLI itself.
+Git and cURL are needed for release access; coverage also needs a Git work tree.
+Navigation and config/Markdown parsing need no runtime jq, yq, or rg. Bash is
+used by the binary installer and installed session hooks.
+
+Once platform binaries are attached to releases, the native download installer
+publishes `/usr/local/bin/cumaru` and records the version in
+`~/.config/cumaru.json`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
+```
+
+Release asset publication is still pending. The old hosted installer installs
+the deprecated Bash snapshot. Native upgrade replaces only the binary and user
+version record; it does not replace `~/.cumaru` or project knowledge.
 
 Inside a project:
 
 ```bash
-cumaru install                                      # default: sdlc-full
+cumaru install                                      # default: base
 cumaru install agent codex                          # Codex adapter
 cumaru install agent claude                          # Claude adapter
 cumaru install agent opencode                        # OpenCode adapter
@@ -125,10 +128,11 @@ cumaru install --domain iac-basic                    # infrastructure workflow
 cumaru install --domain vault-memory                 # memory-vault workflow
 cumaru install --domain focus                        # directive-driven threads and outcomes
 cumaru install --domain base                         # build a custom domain
-cumaru install --with git                            # opt-in git mutation skill
+cumaru update skills codex --with git --apply         # add an opt-in after adoption
 ```
 
-See [installation details](docs/install.md) and the [agent adapter matrix](docs/agent-adapters.md).
+See the [native CLI guide](docs/rust.md). Existing command guides describe
+the legacy Bash surface unless they explicitly identify native behavior.
 
 ## How an agent navigates a project
 
@@ -160,13 +164,13 @@ documentation for the complete traversal contract.
 | `cumaru tag` | Inspect or update config-declared semantic tags |
 | `cumaru coverage` | Report source files covered by durable-specification references |
 | `cumaru tree` | List filesystem-backed candidates and their summaries |
-| `cumaru map` | List level-two headings and source lines under a selected scope |
+| `cumaru map` | List literal H1-H6 headings with markers and source lines under a selected scope |
 | `cumaru fs` | Perform guarded file operations inside `.cumaru/` |
 | `cumaru update` | Preview or directly refresh framework content at the installed integer version |
-| `cumaru upgrade` | Replace the CLI checkout and verify distribution kernel integrity; `--check` only compares with the latest GitHub tag |
+| `cumaru upgrade` | Replace the native binary; `--check` only compares build identity with the latest GitHub tag |
 | `cumaru migrate` | Print the current read-only, LLM-executed migration instructions |
 | `cumaru bootstrap` | Print the read-only post-install bootstrap steps for the installed domain |
-| `cumaru version` | Print the installed distribution and contract versions, offline |
+| `cumaru version` | Print the build-time binary version, offline |
 | `cumaru help` | Show the complete command catalog |
 | `cumaru help domains` | List installable domains; this is not a `domains` subcommand |
 

@@ -1,0 +1,65 @@
+# Native Rust CLI
+
+The supported executable is `cumaru`, built at `rust/target/release/cumaru`.
+The former `cuma` name is retired. The root `./cumaru` Bash entry point has been
+removed. Deprecated `src/*.sh` CLI modules and ShellSpec scenarios remain as
+reference for the later test port; that suite cannot run unchanged without its
+former entry point. No wrapper silently redirects Bash scenarios to Rust.
+
+## Build and run
+
+```bash
+bash rust/build.sh
+./rust/target/release/cumaru --version
+./rust/target/release/cumaru help
+```
+
+The build script works from any directory and preserves incremental artifacts.
+For local development, link this checkout's release binary from `~/.local/bin/cumaru`
+and include `~/.local/bin` in PATH. Every successful local release build then
+updates the executable used by the terminal; source edits alone do not rebuild it.
+
+## Command contracts
+
+All 14 active CLI commands are native. The [Rust specification](../.memory/specs/rust.md)
+is canonical for their arguments, ownership rules, failure behavior, tests,
+and differences from Bash. Older command guides retain the Bash contract.
+
+Navigation uses TSV by default, with `--markdown` available. `map` preserves
+literal H1-H6 headings and their `#` markers. Neither navigation command needs
+config or exposes the former `--pillars`/`--domain` filters. Tag bodies remain
+opaque; typed `tag all --rows` is not supported.
+
+Install defaults to `base`, with an explicit stateless adapter target. Domain
+content is downloaded from the latest plain release and pinned to one commit.
+Optional skills belong to `update skills <agent> --with <name>`, not install.
+Source-consuming commands do not support `--from` or local snapshot sources.
+Doctor and bare invocation are offline; `help domains` explicitly uses Git/cURL.
+
+## Distribution and transition
+
+The binary installer remains a Bash script at `rust/install.sh`; Bash also
+runs installed session hooks. Deprecating the Bash CLI does not remove those
+native distribution components.
+
+The installer publishes `/usr/local/bin/cumaru` and records only the version
+in `~/.config/cumaru.json`. It does not remove or replace a legacy `~/.cumaru`
+snapshot, another PATH entry, or the former `cuma` binary. Resolve old aliases
+and PATH precedence deliberately when switching executables.
+
+Platform release assets still need publication before remote binary installation
+can work. A release build and offline smokes do not prove live release availability.
+Previously installed `cuma` session hooks are recognized during native refresh
+and cleanup so they can be replaced without duplicating Cumaru-owned entries.
+
+## Verification
+
+```bash
+cargo test --manifest-path rust/Cargo.toml --locked
+cargo fmt --manifest-path rust/Cargo.toml --check
+bash rust/build.sh
+```
+
+CI checks native tests, formatting, and release compilation. The Bash job was
+removed with its CLI entry point. Retained ShellSpec scenarios do not establish
+native parity and require a deliberate port before reuse.

@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  shellspec:
-    name: ShellSpec on macOS
+  rust:
+    name: Native Rust on macOS
     runs-on: macos-14
     timeout-minutes: 15
 
@@ -19,8 +19,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install test dependencies
-        run: brew install jq ripgrep yq shellspec
+      - name: Select stable Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
 
-      - name: Run test suite
-        run: bash tests/run.sh --ci
+      - name: Verify formatting
+        run: cargo fmt --manifest-path rust/Cargo.toml --check
+
+      - name: Run native unit tests
+        run: cargo test --manifest-path rust/Cargo.toml --locked
+
+      - name: Build release binary
+        run: bash rust/build.sh

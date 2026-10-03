@@ -14,6 +14,15 @@ Define Cumaru's v9 system boundaries: a domain-neutral kernel, self-contained
 domains, filesystem-backed knowledge navigation, one global configuration
 model, semantic tag islands, and agent-native delivery.
 
+The [Rust CLI contract](rust.md#port-status) records all 14 native commands and
+their shared module boundaries. Rust is the supported CLI; the Bash CLI is
+removed at the root entry point; deprecated modules and tests remain as port
+reference. Rust
+uses a binary-only global installation and remote release source resolution.
+Runtime navigation/config/Markdown mechanics need no Bash, jq, yq, or rg;
+explicit release access uses Git/cURL, and coverage uses read-only Git inventory.
+The following dependency and source tables describe the Bash implementation.
+
 ## Public surface
 
 ```text
@@ -108,12 +117,12 @@ Git history before mutation.
 
 ## Implementation map
 
-The separate [Rust bootstrap](rust.md) records the current native CLI surface,
+The separate [Rust CLI specification](rust.md) records the current native CLI surface,
 module boundaries, and implementation limits.
 
 | Script or artifact | Responsibility |
 |---|---|
-| `cumaru` | Module loading and command dispatch. |
+| `rust/src/main.rs` | Supported native CLI arguments and dispatch; root Bash entry point removed. |
 | `src/schema.sh` | Typed reads, global-model validation, and config reconciliation. |
 | `src/common.sh` | Shared frontmatter, balanced tags, inventory, and kernel helpers. |
 | `src/cmd_update.sh` | Ownership-aware planning, conditional Git recovery check, and direct mutation. |

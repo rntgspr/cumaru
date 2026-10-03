@@ -14,6 +14,13 @@ Cumaru v9 validates every domain source `config.yaml` and adopter
 `.cumaru/config.yaml` against one global model. `cumaru update config` reports
 reconciliation context; the agent edits adopter state deliberately.
 
+The [native configuration contract](rust.md#invariants) embeds versioned JSON
+Schemas and parses YAML in-process. Native `config::load` applies declarative
+validation; [doctor](rust.md#native-doctor) separately checks workflow graphs and
+installed skill availability. Native reconciliation remains read-only and uses
+remote release defaults through [update config](rust.md#native-project-update).
+The Bash validator/dependency contract below is unchanged.
+
 ## Public surface
 
 ```text
@@ -116,7 +123,7 @@ current; the highest suffix is its immediate predecessor.
 
 ## Implementation map
 
-The [Rust bootstrap](rust.md) documents the native `config::load` implementation,
+The [Rust CLI specification](rust.md) documents the native `config::load` implementation,
 embedded schema selection, diagnostics, and its current validation boundaries.
 
 | Script or artifact | Responsibility |

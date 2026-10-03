@@ -14,6 +14,14 @@ version: 9
 and one agent adapter. `cumaru upgrade` replaces the machine-global Cumaru
 snapshot and executable link; it never updates an adopter project.
 
+This specification describes the deprecated Bash distribution, retained for
+reference and legacy regression. The supported native executable is `cumaru`,
+published to `/usr/local/bin/cumaru` by `rust/install.sh`. The separate
+[Rust specification](rust.md) records binary-only global installation and the
+[native project-install contract](rust.md#project-installation).
+Native project removal is recorded in the
+[Rust uninstall contract](rust.md#native-project-uninstall).
+
 ## Public surface
 
 ```text
@@ -148,7 +156,7 @@ upgrade without an explicit request.
 | [`../../src/install.sh`](../../src/install.sh) | Latest-tag resolution, tarball download, `VERSION`, destructive global snapshot replacement, drift check, and symlink. |
 | [`../../.gitattributes`](../../.gitattributes) | Maintainer-only `export-ignore` paths excluded from GitHub's archive tarballs. |
 | [`../../src/cmd_version.sh`](../../src/cmd_version.sh) | `cumaru version` and the read-only `cumaru upgrade --check` comparison. |
-| [`../../cumaru`](../../cumaru) | Dispatches `install` and `version`; `upgrade --check` compares, bare `upgrade` fetches and runs the installer from `main`. |
+| Removed root Bash entry point | Former install/version/upgrade dispatch, retained only through Git history. |
 | [`../../src/agent_adapter.sh`](../../src/agent_adapter.sh) | Native adapter artifact wiring. |
 
 ## Principal methods

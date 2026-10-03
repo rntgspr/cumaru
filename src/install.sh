@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Deprecated snapshot installer, retained for legacy regression; use rust/install.sh for native binary installation.
 set -euo pipefail
 
 REPO="https://github.com/rntgspr/cumaru"

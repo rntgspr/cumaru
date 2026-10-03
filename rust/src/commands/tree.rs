@@ -15,17 +15,18 @@ use clap::Args;
 use yaml_rust2::{Yaml, YamlLoader};
 
 use crate::config::CUMARU_DIR;
-use crate::markdown::{SUMMARY_MAX, SUMMARY_MIN, markdown_escape, read_frontmatter};
+use crate::markdown::{markdown_escape, read_frontmatter, validate_summary};
 use crate::paths::{
     canonical_inside, file_name, has_symlink_component, is_symlink, normalize_target,
+    resolve_target, validate_target_syntax,
 };
-use crate::text::{has_control, shell_quote};
+use crate::text::shell_quote;
 use crate::walk::{Entry, Walk};
 
 /// Arguments for `cumaru tree`.
 #[derive(Args)]
 #[command(
-    override_usage = "cumaru tree [<directory-or-md>...] [--deep] [--rows]",
+    override_usage = "cumaru tree [<directory-or-md>...] [--deep] [--rows|--markdown]",
     args_override_self = true
 )]
 pub struct TreeArgs {
@@ -37,9 +38,13 @@ pub struct TreeArgs {
     #[arg(long)]
     deep: bool,
 
-    /// Emit path<TAB>summary TSV instead of a Markdown table.
-    #[arg(long)]
+    /// Emit path<TAB>summary TSV (the default).
+    #[arg(long, conflicts_with = "markdown")]
     rows: bool,
+
+    /// Emit an escaped Markdown table instead of TSV.
+    #[arg(long)]
+    markdown: bool,
 }
 
 /// Tree-specific parsing results and diagnostics.
@@ -86,7 +91,12 @@ fn execute(args: &TreeArgs) -> Result<bool, String> {
 
     let mut target_dirs = Vec::new();
     for target in &targets {
-        let dir = resolve_target(&root, target)?;
+        let resolved = resolve_target(&root, target)?;
+        let dir = if resolved.is_file() {
+            resolved.parent().unwrap_or(&root).to_path_buf()
+        } else {
+            resolved
+        };
         if !target_dirs.contains(&dir) {
             target_dirs.push(dir);
         }
@@ -113,7 +123,7 @@ fn execute(args: &TreeArgs) -> Result<bool, String> {
 
     parser.records.sort();
     parser.records.dedup();
-    emit(&mut parser.records, args.rows);
+    emit(&mut parser.records, args.rows || !args.markdown);
 
     parser.diagnostics.sort();
     parser.diagnostics.dedup();
@@ -122,82 +132,6 @@ fn execute(args: &TreeArgs) -> Result<bool, String> {
     }
 
     Ok(parser.diagnostics.is_empty())
-}
-
-/// Rejects absolute, control-character, `..`, and hidden target paths before any filesystem access.
-fn validate_target_syntax(target: &str) -> Result<(), String> {
-    if target.starts_with('/') {
-        return Err(format!(
-            "target must be relative to .cumaru/: {}",
-            shell_quote(target)
-        ));
-    }
-    if has_control(target) {
-        return Err(format!(
-            "target path contains a control character: {}",
-            shell_quote(target)
-        ));
-    }
-
-    for segment in target.split('/') {
-        if segment == ".." {
-            return Err(format!(
-                "`..` path segments are not allowed: {}",
-                shell_quote(target)
-            ));
-        }
-        if segment.starts_with('.') && segment != "." {
-            return Err(format!(
-                "hidden target paths are not allowed: {}",
-                shell_quote(target)
-            ));
-        }
-    }
-
-    Ok(())
-}
-
-/// Resolves the target to the directory to walk; a Markdown file target becomes its parent.
-fn resolve_target(root: &Path, target: &str) -> Result<PathBuf, String> {
-    let candidate = if target == "." {
-        root.to_path_buf()
-    } else {
-        root.join(target)
-    };
-    if has_symlink_component(root, &candidate) {
-        return Err(format!(
-            "target contains a symlink: {}",
-            shell_quote(target)
-        ));
-    }
-
-    let unsafe_target = || {
-        format!(
-            "target does not resolve safely inside .cumaru/: {}",
-            shell_quote(target)
-        )
-    };
-    if candidate.is_dir() {
-        return canonical_inside(root, &candidate).ok_or_else(unsafe_target);
-    }
-    if candidate.is_file() {
-        if !target.ends_with(".md") {
-            return Err(format!(
-                "file target must end in .md: {}",
-                shell_quote(target)
-            ));
-        }
-        let canonical = canonical_inside(root, &candidate).ok_or_else(unsafe_target)?;
-        return Ok(canonical.parent().unwrap_or(root).to_path_buf());
-    }
-
-    if candidate.exists() {
-        return Err(format!(
-            "target must be a directory or Markdown file: {}",
-            shell_quote(target)
-        ));
-    }
-    Err(format!("target not found: {}", shell_quote(target)))
 }
 
 impl TreeParser {
@@ -272,18 +206,12 @@ impl TreeParser {
             }
         };
 
-        let length = summary.chars().count();
-        if summary.trim() != summary {
-            self.diag(rel, "summary must be trimmed");
-        } else if has_control(&summary) {
-            self.diag(rel, "summary must not contain C0 or DEL control characters");
-        } else if !(SUMMARY_MIN..=SUMMARY_MAX).contains(&length) {
-            self.diag(rel, "summary must contain 32 to 512 Unicode code points");
+        if let Err(message) = validate_summary(&Yaml::String(summary.clone())) {
+            self.diag(rel, &message);
+            None
         } else {
-            return Some(summary);
+            Some(summary)
         }
-
-        None
     }
 
     /// Records a diagnostic with the tree command's path formatting.

@@ -8,6 +8,10 @@ version: 9
 
 # Cumaru update specification
 
+The [native Rust update contract](rust.md#native-project-update) uses the latest
+GitHub release and records its v9-only, postcheck, and source-selection boundaries.
+The Bash command and its public surface below retain their separate contract.
+
 ## Purpose
 
 `cumaru update` refreshes an installed v9 project from its selected source
