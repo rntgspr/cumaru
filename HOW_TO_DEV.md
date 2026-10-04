@@ -108,12 +108,23 @@ bash rust/build.sh
 ./rust/target/release/cumaru help
 git diff --check
 scripts/sync-domain-kernel.sh --check
+bash tests/run.sh
+bash tests/run.sh --random
 ```
 
 Native tests live beside implementations. The prepared-model smoke is explicitly
 opt-in; its setup and limits are in the [context/model specification](.memory/specs/context.md).
 Use disposable projects and cache roots when exercising writes. Never use a real
 global installer or adopter uninstall as routine verification.
+
+Native process regressions retain [ShellSpec 0.28.1](https://github.com/shellspec/shellspec/releases/tag/0.28.1)
+as the harness and run `tests/native/` plus five reviewed legacy artifact suites.
+Process tests invoke the actual release binary,
+reuse legacy scenarios/fixtures, isolate HOME, and replace cURL with a closed
+main-SHA source stub. `CUMARU_TEST_BINARY` optionally selects another absolute
+executable path; missing binaries fail with a build instruction. `--ci` emits TAP;
+`--random` reorders the same selected suite.
+The [coverage inventory](tests/native/README.md) records adapted and deferred cases.
 
 After editing canonical universal domain artifacts, follow the
 [synchronization contract](.memory/specs/sync-domain-kernel.md). Domain-owned
@@ -138,8 +149,9 @@ Routine native CI runs on Ubuntu 24.04. Actual build/runtime evidence for each
 target remains separate from an installer's platform selection table.
 
 The root Bash CLI and former `cuma` name are retired. Deprecated `src/*.sh` and
-ShellSpec scenarios remain reference material; the old suite cannot run unchanged
-without its removed entry point. The Bash download installer and session hooks
+unported ShellSpec scenarios remain reference material; the old suite cannot run
+unchanged without its removed entry point. Selected regressions now run through
+`tests/run.sh` against Rust. The Bash download installer and session hooks
 remain valid native distribution components. Do not use the old hosted installer
 for the supported Rust executable.
 

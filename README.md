@@ -222,3 +222,7 @@ Read [updates](docs/update.md), [migration](docs/migrate.md), and
 - [`cumaru bootstrap`](docs/bootstrap.md)
 - [`cumaru uninstall`](docs/uninstall.md)
 - [`cumaru upgrade`](docs/upgrade.md)
+
+## License
+
+Cumaru is licensed under the [MIT License](LICENSE).

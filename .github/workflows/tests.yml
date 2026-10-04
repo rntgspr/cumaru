@@ -36,6 +36,19 @@ jobs:
       - name: Build release binary
         run: bash rust/build.sh
 
+      - name: Prepare pinned ShellSpec process harness
+        run: |
+          curl -fsSL https://github.com/shellspec/shellspec/archive/refs/tags/0.28.1.tar.gz -o "$RUNNER_TEMP/shellspec.tar.gz"
+          echo "400d835466429a5fe6c77a62775a9173729d61dd43e05dfa893e8cf6cb511783  $RUNNER_TEMP/shellspec.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/shellspec"
+          tar -xzf "$RUNNER_TEMP/shellspec.tar.gz" -C "$RUNNER_TEMP/shellspec" --strip-components=1
+          echo "$RUNNER_TEMP/shellspec/bin" >> "$GITHUB_PATH"
+
+      - name: Run native CLI regressions
+        run: |
+          bash tests/run.sh --ci
+          bash tests/run.sh --random
+
       - name: Smoke release binary
         run: |
           expected="cumaru $(sed -n 's/^version = "\(.*\)"$/\1/p' rust/Cargo.toml | head -n 1)"

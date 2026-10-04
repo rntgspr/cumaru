@@ -1,7 +1,8 @@
 [package]
 name = "cumaru"
-version = "0.10.0"
+version = "0.10.2"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 candle-core = { version = "=0.9.1", default-features = false }

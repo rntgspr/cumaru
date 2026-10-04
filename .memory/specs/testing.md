@@ -10,28 +10,35 @@ version: 9
 
 ## Purpose
 
-The test system verifies Cumaru's CLI, contracts, adapters, schema, and update
-transactions with isolated ShellSpec examples. A separate manual bench validates
-real-project adoption flows that are inappropriate for fixture-only execution.
+The native test system combines Rust unit tests beside implementations with
+selected ShellSpec process regressions and source-independent artifact contracts.
+The complete legacy-file disposition and outstanding port gaps are canonical in
+[the native inventory](../../tests/native/README.md); issue 139 remains open.
 
 The supported native CLI is checked by cargo unit tests, formatting, and release
 build in its own Ubuntu 24.04 CI job, followed by a release-binary version and help
-smoke. Linux success does not establish macOS runtime compatibility or produce
-Apple release assets; that validation stays separate and undelivered. ShellSpec
-scenarios are retained as port reference; their Bash entry point and CI job have
-been removed, so they cannot run unchanged. The canonical native scope remains in the [Rust specification](rust.md#regression-coverage).
+smoke, followed by the selected process suite in default and randomized order.
+CI prepares SHA-256-verified ShellSpec 0.28.1. Release target validation remains
+separate. Unselected ShellSpec scenarios retain the deleted Bash CLI/source-module
+contract and cannot run unchanged. The canonical native unit scope remains in
+the [Rust specification](rust.md#regression-coverage).
 
 ## Public surface
 
-The sections below retain the former Bash testing contract as port reference.
-`tests/run.sh` now exits 1 with an explicit native-test direction when the removed
-root Bash entry point is absent, instead of starting a suite of missing-command
-failures. The native verification commands live in the Rust specification.
+`tests/run.sh` selects `tests/native/` and five reviewed artifact suites, never
+the entire legacy directory. It requires an actual absolute executable path
+(`CUMARU_TEST_BINARY`, default `rust/target/release/cumaru`) and fails with a build
+instruction when absent. Every process fixture isolates HOME and project state;
+the closed cURL stub permits only one main identity/inventory and SHA-pinned raw
+source reads. Unknown URLs fail without real network access. No deprecated CLI
+module, actual home cache, inference service or global installer is invoked.
+`--ci` emits TAP and `--random` reorders the same selection. The remaining sections
+retain historical Bash details where explicitly identified.
 
 ```text
 bash tests/run.sh
 bash tests/run.sh --ci
-shellspec --random examples
+bash tests/run.sh --random
 .github/workflows/tests.yml
 ```
 
@@ -55,14 +62,15 @@ shellspec --random examples
 | `tests/fixtures/` | framework | Stable reusable inputs; tests copy rather than mutate canonical fixtures. |
 | `tests/report/` | generated | Ignored ShellSpec output. |
 | Real bench project | maintainer | Git history remains read-only; install artifacts may be reset during the cycle. |
-| `.github/workflows/tests.yml` | framework | Ubuntu 24.04 native Rust formatting, unit tests, locked release build, and binary smoke. |
+| `.github/workflows/tests.yml` | framework | Ubuntu 24.04 native Rust formatting, unit tests, release build/smoke, and selected default/random process and artifact regressions. |
 
 ## Execution
 
 ### Preflight
 
-1. Require `shellspec`; tested areas also require Bash, Git, ripgrep (`rg`),
-   `jq`, and Mike Farah `yq` as exercised by production commands.
+1. Selected native regressions require ShellSpec, Bash, Git, and ordinary POSIX
+   fixture tools. Retained unselected Bash scenarios have additional jq/yq/rg
+   requirements; those are not native runtime dependencies.
 2. Examples create private temporary state and register cleanup through
    ShellSpec hooks/helpers.
 
@@ -75,7 +83,9 @@ snapshotting every managed surface and proving byte and metadata non-mutation.
 
 1. Local `bash tests/run.sh` executes ShellSpec with documentation formatting.
 2. `bash tests/run.sh --ci` executes the same discovered examples with TAP.
-3. `shellspec --random examples` verifies order independence.
+3. `bash tests/run.sh --random` verifies order independence for the same selected
+   suite. Its environment script routes ShellSpec 0.28.1's example list to the
+   harness temporary directory instead of the repository root.
 
 ## Manual bench
 
@@ -119,22 +129,27 @@ project-local lock/staging/backup/recovery debris.
 
 | Method | Contract |
 |---|---|
-| `tests/run.sh` | Accept only optional `--ci`; execute ShellSpec from repository root. |
+| `tests/run.sh` | Accept optional `--ci` or `--random`; execute only the reviewed native/artifact selection. |
 | ShellSpec `Before`/`After` hooks | Establish and clean isolated per-example state. |
 | Integration/update helpers | Copy fixtures, invoke production CLI, and compare streams/snapshots. |
 
 ## Regression coverage
 
-Native Rust tests and their current scope are recorded in the
+Native Rust unit tests and their current scope are recorded in the
 [Rust CLI specification](rust.md#regression-coverage). They run separately
-through `cargo test`; retained ShellSpec scenarios target the removed Bash CLI
-and require a deliberate port before they can execute again.
+through `cargo test`; selected native process scenarios exercise actual CLI
+streams/status, safe partial output, four adapters, preview/config non-mutation,
+update/clear ownership and opaque body preservation, Git recovery and source
+failures. Retained unselected scenarios still require a deliberate port.
 The current native suite has 81 routine unit tests and one ignored prepared-model
 smoke, separately exercised as recorded in [context and models](context.md).
-Disposable offline CLI smokes cover
-command behavior and preservation without adding a committed Rust integration
-suite. The native verification record is canonical in `rust.md`; ShellSpec success
-does not establish native parity or production release availability.
+The selected harness has 57 process cases and 18 artifact cases. Local macOS ARM
+verification uses ShellSpec 0.28.1/Bash 3.2. Disposable mutation wrappers for wrong
+status, stream routing, unsafe acceptance and copy source loss each fail the
+reused fs regressions. No production binary was changed. Default/random execution
+and missing-binary/legacy-invocation diagnostics are checked separately. Remote CI
+execution requires publication; local success does not establish complete legacy
+parity, Linux behavior or permission to delete unselected `src/` consumers.
 
 | Test | Covered behavior |
 |---|---|
@@ -188,7 +203,7 @@ audit. Automated tests remain deterministic and offline.
 ```bash
 bash tests/run.sh
 bash tests/run.sh --ci
-shellspec --random examples
+bash tests/run.sh --random
 ```
 
 ## References

@@ -38,7 +38,7 @@ meaning, ownership, scope
 new authorization boundary
 Modify only the `summary` frontmatter value
 between 32 and 512 Unicode code points
-no CR, LF, or tab
+without C0 control or DEL characters
 Run `cumaru doctor` when complete
 EOF
   End
