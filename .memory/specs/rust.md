@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh 
 
 An invocation without a subcommand runs `doctor`. Package version
 `0.10.3` is baked into development builds; it is separate from adopter config version 9.
-The latest published release is `0.10.2`; the published Homebrew formula pins
+The latest published release is `0.10.3`; the published Homebrew formula pins
 that release (see [Homebrew distribution](#homebrew-distribution)).
 `version` reports both identities inside an adopter; see [Native version](#native-version).
 
@@ -962,6 +962,12 @@ from `cbb6c3c`; all four target jobs and publication passed. Public downloads of
 the four executables and `LICENSE` matched `SHA256SUMS`, and the macOS ARM64
 binary reported `cumaru 0.10.2`.
 
+Release [0.10.3](https://github.com/rntgspr/cumaru/releases/tag/0.10.3) was published
+on 2026-10-04 by the tag-push [release run](https://github.com/rntgspr/cumaru/actions/runs/37170336429)
+from `b1df1dc`; all four target jobs and publication passed. Public downloads of
+the four executables matched `SHA256SUMS`, and the public `main/src/install.sh`,
+redirected to scratch paths, resolved and installed `cumaru 0.10.3`.
+
 ## Homebrew distribution
 
 `brew install rntgspr/tap/cumaru` installs one pinned, SHA-256-verified release
@@ -983,8 +989,8 @@ Changing this repository never updates the tap.
 5. A formula bump follows a complete published release: all four URLs and
    checksums change together and must match the release `SHA256SUMS`.
 
-The 0.10.2 formula was published on 2026-10-04 (tap commit `38990e0`) after
-`brew style` passed. Actual install, `brew test`, and audit evidence exists only
+The 0.10.3 formula was published on 2026-10-04 (tap commit `19908cc`) after
+`brew style` and `brew audit --strict` passed. Actual install, `brew test`, and audit evidence exists only
 for the 0.10.0 candidate on macOS ARM64 in an isolated prefix; macOS Intel and
 Linux installation remain unverified and are tracked by
 [issue 142](../issues/issue_142.md).

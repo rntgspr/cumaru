@@ -32,7 +32,7 @@ and installed session hooks; no Rust compiler or Python is required.
 
 ## Platforms
 
-macOS ARM64/Intel and Linux ARM64/Intel select their respective 0.10.2 assets.
+macOS ARM64/Intel and Linux ARM64/Intel select their respective 0.10.3 assets.
 Linux assets are static musl executables. Linux ARM64 requires `fphp` and
 `asimdhp` CPU features; the formula rejects missing or unsupported CPU feature
 reports before installation. This is a package gate for the current binary's
@@ -68,15 +68,16 @@ An actual formula-install invocation with mocked Linux ARM64 CPU metadata
 rejected missing `asimdhp` before attempting binary installation. A subsequent
 isolated `brew uninstall` preserved byte-identical scratch model/legacy cache,
 user version JSON, and project knowledge sentinels.
-The 0.10.2 formula was published to the tap on 2026-10-04 (commit `38990e0`) after
-its checksums matched the release `SHA256SUMS` and `brew style` passed; the
-0.10.0 install, test, and audit evidence above was not repeated for 0.10.2.
+The 0.10.3 formula was published to the tap on 2026-10-04 (commit `19908cc`) after
+all four checksums matched the release `SHA256SUMS`, `brew style` passed, and
+`brew audit --strict` passed on the tapped formula; the 0.10.0 install and test
+evidence above was not repeated for 0.10.3.
 Installation on macOS Intel and Linux remains open in
 [issue 142](../../.memory/issues/issue_142.md).
 
 ## References
 
-- [Published release and checksums](https://github.com/rntgspr/cumaru/releases/tag/0.10.2)
+- [Published release and checksums](https://github.com/rntgspr/cumaru/releases/tag/0.10.3)
 - [Homebrew formula cookbook](https://docs.brew.sh/Formula-Cookbook)
 - [Homebrew tap maintenance](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap)
 - [Native upgrade ownership](../../docs/upgrade.md)
