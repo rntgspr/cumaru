@@ -113,9 +113,9 @@ does not claim exclusion or prescribe a change.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`../../src/cmd_coverage.sh`](../../src/cmd_coverage.sh) | Source inventory, filtering, bucket adjudication, rendering, and strict status. |
-| [`../../src/common.sh`](../../src/common.sh) | Shared reference-row parsing and target resolution. |
-| [`../../src/cmd_tag.sh`](../../src/cmd_tag.sh) | Reference tag read/write primitive. |
+| [`../../src/cmd_coverage.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_coverage.sh) | Source inventory, filtering, bucket adjudication, rendering, and strict status. |
+| [`../../src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Shared reference-row parsing and target resolution. |
+| [`../../src/cmd_tag.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_tag.sh) | Reference tag read/write primitive. |
 | [`../../domains/__base/skills/cumaru-refs/SKILL.md`](../../domains/__base/skills/cumaru-refs/SKILL.md) | Gap-remediation workflow. |
 
 ## Principal methods

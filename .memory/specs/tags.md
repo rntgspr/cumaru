@@ -107,11 +107,11 @@ continues without a Git recovery point.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`src/common.sh`](../../src/common.sh) | Grammar, balanced parsing, extraction, merge, replacement, and target resolution. |
-| [`src/cmd_tag.sh`](../../src/cmd_tag.sh) | CLI parsing, declaration validation, audit, typed listing, and set orchestration. |
-| [`src/cmd_coverage.sh`](../../src/cmd_coverage.sh) | Reference coverage bucket adjudication. |
-| [`src/cmd_doctor_checks.sh`](../../src/cmd_doctor_checks.sh) | Tag contracts, nesting warning, and retained-reference checks. |
-| [`src/cmd_update.sh`](../../src/cmd_update.sh) | Canonical Markdown reconstruction using shared merge semantics. |
+| [`src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Grammar, balanced parsing, extraction, merge, replacement, and target resolution. |
+| [`src/cmd_tag.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_tag.sh) | CLI parsing, declaration validation, audit, typed listing, and set orchestration. |
+| [`src/cmd_coverage.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_coverage.sh) | Reference coverage bucket adjudication. |
+| [`src/cmd_doctor_checks.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor_checks.sh) | Tag contracts, nesting warning, and retained-reference checks. |
+| [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Canonical Markdown reconstruction using shared merge semantics. |
 
 ## Principal methods
 
@@ -142,7 +142,7 @@ bash tests/run.sh
 
 ## References
 
-- [`src/common.sh`](../../src/common.sh)
+- [`src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh)
 - [`docs/tag.md`](../../docs/tag.md)
 - [`docs/coverage.md`](../../docs/coverage.md)
 - [`update.md`](update.md)

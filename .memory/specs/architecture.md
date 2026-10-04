@@ -127,7 +127,7 @@ module boundaries, and implementation limits.
 
 | Script or artifact | Responsibility |
 |---|---|
-| `rust/src/main.rs` | Supported native CLI arguments and dispatch; root Bash entry point removed. |
+| `src/main.rs` | Supported native CLI arguments and dispatch; root Bash entry point removed. |
 | `src/schema.sh` | Typed reads, global-model validation, and config reconciliation. |
 | `src/common.sh` | Shared frontmatter, balanced tags, inventory, and kernel helpers. |
 | `src/cmd_update.sh` | Ownership-aware planning, conditional Git recovery check, and direct mutation. |

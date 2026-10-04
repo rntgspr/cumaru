@@ -16,7 +16,6 @@ from 143.
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
 | [139](issue_139.md) | high | Reuse legacy Bash regression scenarios for the native Rust CLI |
-| [140](issue_140.md) | medium | Review deprecated src files and prepare an evidence-backed deletion manifest |
 | [142](issue_142.md) | medium | Verify Homebrew installation on every supported platform |
 
 ## Notes

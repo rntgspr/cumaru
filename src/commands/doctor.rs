@@ -475,15 +475,15 @@ fn instruction_issues(project: &Path, files: &BTreeMap<String, String>) -> Vec<S
 fn drift(text: &str, local: &Yaml) -> Result<Vec<String>, String> {
     let domain = local["domain"].as_str().unwrap_or_default();
     let source = match domain {
-        "base" | "__base" => include_str!("../../../domains/__base/config.yaml"),
-        "sdlc-full" => include_str!("../../../domains/sdlc-full/config.yaml"),
-        "sdlc-light" => include_str!("../../../domains/sdlc-light/config.yaml"),
-        "design-as-code" => include_str!("../../../domains/design-as-code/config.yaml"),
-        "iac-basic" => include_str!("../../../domains/iac-basic/config.yaml"),
-        "qa-basic" => include_str!("../../../domains/qa-basic/config.yaml"),
-        "focus" => include_str!("../../../domains/focus/config.yaml"),
-        "vault-memory" => include_str!("../../../domains/vault-memory/config.yaml"),
-        _ => include_str!("../../../domains/__base/config.yaml"),
+        "base" | "__base" => include_str!("../../domains/__base/config.yaml"),
+        "sdlc-full" => include_str!("../../domains/sdlc-full/config.yaml"),
+        "sdlc-light" => include_str!("../../domains/sdlc-light/config.yaml"),
+        "design-as-code" => include_str!("../../domains/design-as-code/config.yaml"),
+        "iac-basic" => include_str!("../../domains/iac-basic/config.yaml"),
+        "qa-basic" => include_str!("../../domains/qa-basic/config.yaml"),
+        "focus" => include_str!("../../domains/focus/config.yaml"),
+        "vault-memory" => include_str!("../../domains/vault-memory/config.yaml"),
+        _ => include_str!("../../domains/__base/config.yaml"),
     };
     let mut source = config::parse(source)?;
     if ![
@@ -737,12 +737,12 @@ mod tests {
     /// Reports missing source defaults while accepting YAML formatting and additive local entries.
     #[test]
     fn reviews_config_defaults_offline() {
-        let text = include_str!("../../../domains/__base/config.yaml");
+        let text = include_str!("../../domains/__base/config.yaml");
         let local = config::parse(text).unwrap();
         assert!(drift(text, &local).unwrap().is_empty());
         let changed = text.replace("depends-on: {optional: true}", "");
         let changed = config::parse(&changed).unwrap();
-        let text = include_str!("../../../domains/__base/config.yaml")
+        let text = include_str!("../../domains/__base/config.yaml")
             .replace("depends-on: {optional: true}", "");
         assert!(
             drift(&text, &changed)

@@ -396,7 +396,7 @@ dependencies = [
 
 [[package]]
 name = "cumaru"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "candle-core",
  "candle-nn",

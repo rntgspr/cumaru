@@ -66,6 +66,6 @@ installation as part of this plan.
 ## References
 
 - [Native CLI specification](../../specs/rust.md)
-- [Shared walker](../../../rust/src/walk.rs)
-- [CLI dispatch](../../../rust/src/main.rs)
+- [Shared walker](../../../src/walk.rs)
+- [CLI dispatch](../../../src/main.rs)
 - [System1 architecture reference](https://github.com/steph4n-gh/system1)

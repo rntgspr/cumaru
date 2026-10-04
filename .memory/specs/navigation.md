@@ -139,7 +139,7 @@ bash tests/run.sh
 
 ## References
 
-- [`../../src/cmd_tree.sh`](../../src/cmd_tree.sh)
+- [`../../src/cmd_tree.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_tree.sh)
 - [`../../docs/tree.md`](../../docs/tree.md)
 - [`../../docs/architecture.md`](../../docs/architecture.md)
 - [`architecture.md`](architecture.md)

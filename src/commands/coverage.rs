@@ -1,6 +1,6 @@
 //! `cumaru coverage`: report which Git-tracked source files the durable specification references.
 //!
-//! Mirrors `src/cmd_coverage.sh`. Coverage owns the interpretation of `reference`
+//! Mirrors the retired Bash `src/cmd_coverage.sh` (tag 0.10.0). Coverage owns the interpretation of `reference`
 //! table bodies; the general tag command keeps bodies opaque. Strictly read-only:
 //! Git is used only for work-tree and tracked-file queries.
 

@@ -27,7 +27,7 @@ the [Rust specification](rust.md#regression-coverage).
 
 `tests/run.sh` selects `tests/native/` and five reviewed artifact suites, never
 the entire legacy directory. It requires an actual absolute executable path
-(`CUMARU_TEST_BINARY`, default `rust/target/release/cumaru`) and fails with a build
+(`CUMARU_TEST_BINARY`, default `target/release/cumaru`) and fails with a build
 instruction when absent. Every process fixture isolates HOME and project state;
 the closed cURL stub permits only one main identity/inventory and SHA-pinned raw
 source reads. Unknown URLs fail without real network access. No deprecated CLI

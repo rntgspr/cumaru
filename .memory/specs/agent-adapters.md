@@ -122,11 +122,11 @@ not one filesystem-wide atomic operation.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`../../src/agent_adapter.sh`](../../src/agent_adapter.sh) | Adapter paths, instruction/hook merge, validation, and cleanup. |
-| [`../../src/cmd_install.sh`](../../src/cmd_install.sh) | Project install and initial adapter materialization. |
-| [`../../src/cmd_update.sh`](../../src/cmd_update.sh) | Dry-run, conditional Git recovery check, direct adapter mutation, and post-check. |
-| [`../../src/cmd_uninstall.sh`](../../src/cmd_uninstall.sh) | Scoped removal of active Cumaru artifacts. |
-| [`../../src/cmd_doctor.sh`](../../src/cmd_doctor.sh) | Installed instruction-set discovery. |
+| [`../../src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh) | Adapter paths, instruction/hook merge, validation, and cleanup. |
+| [`../../src/cmd_install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh) | Project install and initial adapter materialization. |
+| [`../../src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Dry-run, conditional Git recovery check, direct adapter mutation, and post-check. |
+| [`../../src/cmd_uninstall.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_uninstall.sh) | Scoped removal of active Cumaru artifacts. |
+| [`../../src/cmd_doctor.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor.sh) | Installed instruction-set discovery. |
 
 ## Principal methods
 

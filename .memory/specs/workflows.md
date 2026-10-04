@@ -62,7 +62,7 @@ domains/<domain>/skills/cumaru-flow/SKILL.md
 | Artifact | Responsibility |
 |---|---|
 | [`../../schemas/schema-validate-v9.jq`](../../schemas/schema-validate-v9.jq) | Graph shape and dependency validation. |
-| [`../../src/schema.sh`](../../src/schema.sh) | Domain-skill availability and stable topological order. |
+| [`../../src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Domain-skill availability and stable topological order. |
 | [`../../domains/__base/skills/cumaru-flow/SKILL.md`](../../domains/__base/skills/cumaru-flow/SKILL.md) | Runtime orchestration and stop gates. |
 | [`../../tests/spec/integration/workflow_graph_spec.sh`](../../tests/spec/integration/workflow_graph_spec.sh) | Graph validity and ordering. |
 | [`../../tests/spec/contracts/workflow_orchestrator_skill_spec.sh`](../../tests/spec/contracts/workflow_orchestrator_skill_spec.sh) | Universal skill and launcher contract. |

@@ -89,4 +89,4 @@ directory iteration order nor an arbitrary downloaded folder selects a backend.
 
 - [Current ranking acceptance contract](index.md)
 - [Encoder comparison and artifact hashes](comparison.md)
-- [Native distribution implementation](../../../rust/src/distribution.rs)
+- [Native distribution implementation](../../../src/distribution.rs)

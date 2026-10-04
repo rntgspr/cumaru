@@ -12,7 +12,7 @@ This experiment does not select a production architecture or alter the CLI.
 ## Saved state
 
 - [Frozen relevance source](comparison/current-relevance.rs) is a byte-for-byte
-  checkpoint of `rust/src/relevance.rs`, not a second canonical implementation.
+  checkpoint of `src/relevance.rs`, not a second canonical implementation.
 - The original [lightweight experiment](lightweight/README.md) retains teaching
   examples, fitted coefficients, and limitations. The comparator freezes those
   coefficients; it does not retrain either variant on the comparison corpus.
@@ -136,7 +136,7 @@ of added production binary size. `otool -L` lists only macOS libiconv/libSystem.
 - Removing the prepared asset directory and setting `PATH=/nonexistent` still
   allowed encoder inference. Two identical calls emitted byte-identical ranking
   TSV. Corpus SHA-256 snapshots before/after remained identical.
-- Snapshot source stayed byte-identical to `rust/src/relevance.rs`; no production
+- Snapshot source stayed byte-identical to `src/relevance.rs`; no production
   dependencies, dispatch, installer, or global installation changed.
 - Formatting, shell syntax, and diff checks passed. Only local macOS ARM behavior
   was evaluated; no other platform compatibility or live adopter behavior is claimed.

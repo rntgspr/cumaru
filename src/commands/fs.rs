@@ -1,6 +1,6 @@
 //! `cumaru fs`: guarded mechanical file operations inside `.cumaru/`.
 //!
-//! Mirrors `src/cmd_fs.sh`: four verbs, no content awareness, and every path
+//! Mirrors the retired Bash `src/cmd_fs.sh` (tag 0.10.0): four verbs, no content awareness, and every path
 //! validated and resolved before mutation. Parent symlinks are resolved and
 //! accepted only when the canonical destination stays inside the root; direct
 //! symlink targets are refused. Navigation's stricter symlink policy does not

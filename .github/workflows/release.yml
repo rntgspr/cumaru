@@ -55,22 +55,22 @@ jobs:
           fi
       - name: Validate release and source
         run: |
-          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' rust/Cargo.toml | head -n 1)"
+          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)"
           [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           test "$RELEASE_VERSION" = "$version"
           scripts/sync-domain-kernel.sh --check
-          cargo fmt --manifest-path rust/Cargo.toml --check
+          cargo fmt --manifest-path Cargo.toml --check
       - name: Test and build target
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          cargo test --manifest-path rust/Cargo.toml --target "$TARGET" --locked
-          cargo build --manifest-path rust/Cargo.toml --target "$TARGET" --release --locked
+          cargo test --manifest-path Cargo.toml --target "$TARGET" --locked
+          cargo build --manifest-path Cargo.toml --target "$TARGET" --release --locked
       - name: Smoke and package binary
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          binary="rust/target/$TARGET/release/cumaru"
+          binary="target/$TARGET/release/cumaru"
           test "$("$binary" --version)" = "cumaru $RELEASE_VERSION"
           "$binary" help >/dev/null
           if [[ "$TARGET" == *linux-musl ]]; then

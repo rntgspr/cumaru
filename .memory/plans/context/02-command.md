@@ -44,5 +44,5 @@ before wiring optional encoder selection into production.
 ## References
 
 - [Acceptance criteria](index.md)
-- [Walker](../../../rust/src/walk.rs)
-- [TSV writer](../../../rust/src/tsv.rs)
+- [Walker](../../../src/walk.rs)
+- [TSV writer](../../../src/tsv.rs)

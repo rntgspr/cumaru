@@ -22,8 +22,8 @@ reading the entire memory tree.
 
 ## Architecture
 
-The CLI is native Rust. `rust/src/main.rs` parses and dispatches commands;
-`rust/src/commands/` owns command orchestration. Shared modules hold reusable
+The CLI is native Rust. `src/main.rs` parses and dispatches commands;
+`src/commands/` owns command orchestration. Shared modules hold reusable
 mechanics rather than domain workflows.
 
 | Surface | Responsibility |
@@ -66,17 +66,17 @@ for canonical contracts. CLI package version and adopter config version are inde
 ## Build and run locally
 
 ```bash
-bash rust/build.sh
-./rust/target/release/cumaru --version
-./rust/target/release/cumaru help
+bash src/build.sh
+./target/release/cumaru --version
+./target/release/cumaru help
 ```
 
 The script resolves its own manifest, uses `--release --locked`, and preserves
-incremental artifacts. The executable is `rust/target/release/cumaru`.
+incremental artifacts. The executable is `target/release/cumaru`.
 For a quick development invocation:
 
 ```bash
-cargo run --manifest-path rust/Cargo.toml -- help
+cargo run --manifest-path Cargo.toml -- help
 ```
 
 Source-consuming commands still read GitHub main, pinned per invocation; building
@@ -89,7 +89,7 @@ If `~/.local/bin/cumaru` is unused, create a link from the repository root:
 
 ```bash
 mkdir -p ~/.local/bin
-ln -s "$PWD/rust/target/release/cumaru" ~/.local/bin/cumaru
+ln -s "$PWD/target/release/cumaru" ~/.local/bin/cumaru
 ```
 
 Add `~/.local/bin` to PATH if needed. Rebuilding updates the executable reached by
@@ -101,11 +101,11 @@ to refresh a development build.
 ## Verify changes
 
 ```bash
-cargo fmt --manifest-path rust/Cargo.toml --check
-cargo test --manifest-path rust/Cargo.toml --locked
-bash rust/build.sh
-./rust/target/release/cumaru --version
-./rust/target/release/cumaru help
+cargo fmt --manifest-path Cargo.toml --check
+cargo test --manifest-path Cargo.toml --locked
+bash src/build.sh
+./target/release/cumaru --version
+./target/release/cumaru help
 git diff --check
 scripts/sync-domain-kernel.sh --check
 bash tests/run.sh
@@ -132,12 +132,12 @@ exceptions must remain intact.
 
 ## Distribution and legacy boundaries
 
-`rust/install.sh` downloads a platform binary, verifies its reported version,
+`src/install.sh` downloads a platform binary, verifies its reported version,
 publishes `/usr/local/bin/cumaru`, and records `~/.config/cumaru.json`. It does not
 compile source. Release assets must be published before this route can work;
 local builds and routine test CI do not publish them. The
 [release workflow](.github/workflows/release.yml) runs on plain numeric tag pushes.
-It checks that the tag matches `rust/Cargo.toml`, tests/builds all four targets,
+It checks that the tag matches `Cargo.toml`, tests/builds all four targets,
 smokes each executable, and publishes the complete asset set plus `SHA256SUMS`
 only after every target succeeds. Linux binaries must have no ELF interpreter.
 The workflow can also rebuild an existing tag through `workflow_dispatch`.

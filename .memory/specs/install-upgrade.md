@@ -14,9 +14,14 @@ version: 9
 and one agent adapter. `cumaru upgrade` replaces the machine-global Cumaru
 snapshot and executable link; it never updates an adopter project.
 
-This specification describes the deprecated Bash distribution, retained for
-reference and legacy regression. The supported native executable is `cumaru`,
-published to `/usr/local/bin/cumaru` by `rust/install.sh`. The separate
+This specification describes the deprecated Bash distribution as shipped before the
+native CLI, retained for reference and legacy regression; its scripts survive only
+in Git history. The supported native executable is `cumaru`, published to
+`/usr/local/bin/cumaru` by `src/install.sh`, which replaced the destructive
+snapshot installer at the same public URL. A legacy Bash `cumaru upgrade` or the
+branding URL now runs the native installer: it leaves `~/.cumaru` and the old
+`~/.local/bin/cumaru` link untouched and warns when that link shadows the new
+executable in PATH. The separate
 [Rust specification](rust.md) records binary-only global installation and the
 [native project-install contract](rust.md#project-installation).
 Native project removal is recorded in the
@@ -34,9 +39,9 @@ cumaru version
 curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh | bash
 ```
 
-The README one-liner `https://pixelpunk.works/cumaru/install.sh` is branding
-only: that hosted script does nothing but delegate to the canonical GitHub URL
-above, and the pixelpunk address appears only in the README.
+The branding URL `https://pixelpunk.works/cumaru/install.sh` does nothing but
+delegate to the canonical GitHub URL above. The surface above is historical; the
+URL now serves the native installer described in [rust.md](rust.md).
 
 ## Invariants
 
@@ -152,12 +157,12 @@ upgrade without an explicit request.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`../../src/cmd_install.sh`](../../src/cmd_install.sh) | Project install parsing, source validation, copy, pruning, and adapter installation. |
-| [`../../src/install.sh`](../../src/install.sh) | Latest-tag resolution, tarball download, `VERSION`, destructive global snapshot replacement, drift check, and symlink. |
+| [`../../src/cmd_install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh) | Project install parsing, source validation, copy, pruning, and adapter installation. |
+| [`../../src/install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/install.sh) | Latest-tag resolution, tarball download, `VERSION`, destructive global snapshot replacement, drift check, and symlink. |
 | [`../../.gitattributes`](../../.gitattributes) | Maintainer-only `export-ignore` paths excluded from GitHub's archive tarballs. |
-| [`../../src/cmd_version.sh`](../../src/cmd_version.sh) | `cumaru version` and the read-only `cumaru upgrade --check` comparison. |
+| [`../../src/cmd_version.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_version.sh) | `cumaru version` and the read-only `cumaru upgrade --check` comparison. |
 | Removed root Bash entry point | Former install/version/upgrade dispatch, retained only through Git history. |
-| [`../../src/agent_adapter.sh`](../../src/agent_adapter.sh) | Native adapter artifact wiring. |
+| [`../../src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh) | Native adapter artifact wiring. |
 
 ## Principal methods
 

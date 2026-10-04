@@ -55,7 +55,7 @@ modify real adopters/home caches, or invoke the real global installer.
 The initial port is implemented in `tests/native/`, selected by `tests/run.sh` and
 CI alongside native Cargo tests. The [complete legacy inventory](../../tests/native/README.md)
 records every legacy file as reused/adapted/retired/unit-covered/remaining,
-including direct source consumers that block issue 140 cleanup. The harness
+including direct source consumers of the removed Bash modules (tag 0.10.0). The harness
 retains ShellSpec 0.28.1 with isolated HOME/projects and closed SHA-pinned cURL
 fixtures. Fifty-seven process cases and 18 artifact cases cover the selected
 contracts. Default TAP and randomized execution passed all 75 cases (20.14

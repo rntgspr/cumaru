@@ -4,7 +4,7 @@
 not as a Bash implementation dependency. It selects `tests/native/` and five
 reviewed source-independent artifact suites. Native unit tests stay beside Rust
 implementations. An absolute `CUMARU_TEST_BINARY` selects the executable; the
-default is `rust/target/release/cumaru`. No native test executes `src/*.sh`.
+default is `target/release/cumaru`. No native test executes `src/*.sh`.
 
 Each process example has a fresh project and HOME. A closed cURL stub serves
 main identity, a complete checkout inventory, and raw files at one fixed SHA;
@@ -59,8 +59,8 @@ behavior that requires later native scenarios; issue 139 stays open.
 
 The source-independent legacy suites test artifact structure/written policies,
 not whether an LLM follows them. Broad wording/duplication cleanup belongs to
-issue 065. Unselected direct `src/` consumers are deletion blockers recorded by
-issue 140; passing this selected suite is not permission to delete those modules.
+issue 065. Unselected legacy suites that source the removed Bash modules no longer
+run; tag 0.10.0 keeps those modules as porting reference.
 
 ## Evidence
 

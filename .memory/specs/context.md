@@ -35,13 +35,13 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 
 | Artifact | Responsibility |
 |---|---|
-| `rust/src/commands/model.rs` | List/push CLI and reporting. |
-| `rust/src/models.rs` | Closed catalog, cache safety, integrity/publication, offline encoder loading and token-aware inference. |
+| `src/commands/model.rs` | List/push CLI and reporting. |
+| `src/models.rs` | Closed catalog, cache safety, integrity/publication, offline encoder loading and token-aware inference. |
 | `models/catalog.json` | Initial pinned BGE package metadata and compatibility inventory. |
-| `rust/src/commands/context.rs` | Safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
-| `rust/src/relevance.rs` | Dependency-free lexical features and compact numerical head. |
-| `rust/src/distribution.rs` | Existing bounded cURL download shared by catalog/package reads. |
-| `rust/src/walk.rs`, `tsv.rs` | Existing guarded traversal and TSV output. |
+| `src/commands/context.rs` | Safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
+| `src/relevance.rs` | Dependency-free lexical features and compact numerical head. |
+| `src/distribution.rs` | Existing bounded cURL download shared by catalog/package reads. |
+| `src/walk.rs`, `tsv.rs` | Existing guarded traversal and TSV output. |
 
 ## Publication and recovery
 
@@ -82,11 +82,11 @@ binary evidence are recorded in [release verification](rust.md#release-verificat
 Those distribution checks do not close the pending ranking-quality evaluation.
 
 ```bash
-cargo test --manifest-path rust/Cargo.toml --locked -- --test-threads=1
-cargo fmt --manifest-path rust/Cargo.toml --check
-cargo build --manifest-path rust/Cargo.toml --release --locked
+cargo test --manifest-path Cargo.toml --locked -- --test-threads=1
+cargo fmt --manifest-path Cargo.toml --check
+cargo build --manifest-path Cargo.toml --release --locked
 CUMARU_TEST_MODEL_ASSETS=/path/to/prepared-pinned-artifacts \
-cargo test --manifest-path rust/Cargo.toml --locked commands::context::tests::cached_encoder_smoke -- --ignored --test-threads=1
+cargo test --manifest-path Cargo.toml --locked commands::context::tests::cached_encoder_smoke -- --ignored --test-threads=1
 ```
 
 ## References

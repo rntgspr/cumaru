@@ -71,9 +71,9 @@ retain their own source-default and source-skill checks.
 
 | Artifact | Responsibility |
 |---|---|
-| [`../../src/cmd_doctor.sh`](../../src/cmd_doctor.sh) | Version routing, config preflight, reporting, and drift checks. |
-| [`../../src/cmd_doctor_checks.sh`](../../src/cmd_doctor_checks.sh) | Direct-tree and installed-tree checks. |
-| [`../../src/common.sh`](../../src/common.sh) | Shared v9 tree resolution. |
+| [`../../src/cmd_doctor.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor.sh) | Version routing, config preflight, reporting, and drift checks. |
+| [`../../src/cmd_doctor_checks.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor_checks.sh) | Direct-tree and installed-tree checks. |
+| [`../../src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Shared v9 tree resolution. |
 | [`../../tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | CLI health and non-mutation contracts. |
 | [`../../tests/spec/integration/tree_resolution_spec.sh`](../../tests/spec/integration/tree_resolution_spec.sh) | Direct-tree contract examples. |
 

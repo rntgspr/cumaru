@@ -102,10 +102,10 @@ checkpoint or the explicit warning that non-Git execution has no recovery.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`src/cmd_migrate.sh`](../../src/cmd_migrate.sh) | Argument parsing, domain/source resolution, frontmatter stripping, and ordered output. |
+| [`src/cmd_migrate.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_migrate.sh) | Argument parsing, domain/source resolution, frontmatter stripping, and ordered output. |
 | [`domains/__base/migration.md`](../../domains/__base/migration.md) | Universal direct N-to-v9 rolling procedure. |
 | `domains/<domain>/migration.md` | Optional domain-specific migration nuance. |
-| [`src/schema.sh`](../../src/schema.sh) | Current typed config reads reused where applicable. |
+| [`src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Current typed config reads reused where applicable. |
 
 ## Principal methods
 
@@ -139,6 +139,6 @@ bash tests/run.sh
 
 ## References
 
-- [`src/cmd_migrate.sh`](../../src/cmd_migrate.sh)
+- [`src/cmd_migrate.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_migrate.sh)
 - [`docs/migrate.md`](../../docs/migrate.md)
 - [`configuration.md`](configuration.md)

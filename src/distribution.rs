@@ -7,7 +7,7 @@ use std::process::{Command, ExitCode, Stdio};
 use crate::release::highest_release;
 
 const REMOTE: &str = "https://github.com/rntgspr/cumaru.git";
-const INSTALL: &str = include_str!("../install.sh");
+const INSTALL: &str = include_str!("install.sh");
 
 pub(crate) struct DomainSource {
     pub revision: String,

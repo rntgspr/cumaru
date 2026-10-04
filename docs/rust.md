@@ -1,6 +1,6 @@
 # Native Rust CLI
 
-The supported executable is `cumaru`, built at `rust/target/release/cumaru`.
+The supported executable is `cumaru`, built at `target/release/cumaru`.
 The former `cuma` name is retired. The root `./cumaru` Bash entry point has been
 removed. Deprecated `src/*.sh` CLI modules and ShellSpec scenarios remain as
 reference for the later test port; that suite cannot run unchanged without its
@@ -50,7 +50,7 @@ These are model packages, not the retired global CLI source snapshot. The binary
 does not embed pretrained weights. List/push require the catalog to be published
 on main; local prepared-package verification does not establish live availability.
 
-The binary installer remains a Bash script at `rust/install.sh`; Bash also
+The binary installer remains a Bash script at `src/install.sh`; Bash also
 runs installed session hooks. Deprecating the Bash CLI does not remove those
 native distribution components.
 

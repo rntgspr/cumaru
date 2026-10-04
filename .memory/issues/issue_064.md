@@ -62,7 +62,7 @@ against the target version.
 
 - [Rolling migration issue](issue_063.md)
 - [Base migration procedure](../../domains/__base/migration.md)
-- [Migration command](../../src/cmd_migrate.sh)
+- [Migration command](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_migrate.sh)
 - [Universal skill source](../../domains/__base/skills)
-- [Agent skill installer](../../src/cmd_install.sh)
-- [Agent skill updater](../../src/cmd_update.sh)
+- [Agent skill installer](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh)
+- [Agent skill updater](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh)

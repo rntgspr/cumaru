@@ -1,4 +1,4 @@
-#[path = "../../../../../rust/src/relevance.rs"]
+#[path = "../../../../../src/relevance.rs"]
 mod relevance;
 
 use relevance::{FEATURE_COUNT, Query, Scorer};

@@ -1,6 +1,6 @@
 //! Fixed project configuration shared by CLI commands.
 //!
-//! Mirrors `src/common.sh`: the framework tree has one fixed location and is
+//! Mirrors the retired Bash `src/common.sh` (tag 0.10.0): the framework tree has one fixed location and is
 //! never read from the environment, so write-capable commands cannot be
 //! redirected by an inherited variable.
 
@@ -47,9 +47,9 @@ pub(crate) fn parse(text: &str) -> Result<Yaml, String> {
 /// Validates the configuration against the embedded schema for its version.
 fn validate(doc: &Yaml) -> Result<(), String> {
     let schema = if doc["version"].as_i64() == Some(8) {
-        include_str!("../../schemas/config.schema.off-9.json")
+        include_str!("../schemas/config.schema.off-9.json")
     } else {
-        include_str!("../../schemas/config.schema.json")
+        include_str!("../schemas/config.schema.json")
     };
     let schema: Value = serde_json::from_str(schema)
         .map_err(|error| format!("cannot parse embedded config schema: {error}"))?;
@@ -115,7 +115,7 @@ pub(crate) fn reconcile(text: &str, source: &Yaml) -> Result<(String, Vec<String
     if docs[0]["version"].as_i64() != source["version"].as_i64() {
         return Err("config reconciliation cannot cross versions; use cumaru migrate".into());
     }
-    let model: Value = serde_json::from_str(include_str!("../../schemas/config.schema.json"))
+    let model: Value = serde_json::from_str(include_str!("../schemas/config.schema.json"))
         .map_err(|e| e.to_string())?;
     let mut candidate = yaml_to_json(&docs[0])?;
     let mut removed = Vec::new();
@@ -205,7 +205,7 @@ mod tests {
     /// Prunes unknown properties, fills missing defaults, and blocks invalid permitted local values.
     #[test]
     fn reconciles_without_overwriting_local_choices() {
-        let source = parse(include_str!("../../domains/__base/config.yaml")).unwrap();
+        let source = parse(include_str!("../domains/__base/config.yaml")).unwrap();
         let mut local = yaml_to_json(&source).unwrap();
         local["extra"] = Value::Bool(true);
         local["meta"]["targets"]["values"] = serde_json::json!(["mine"]);
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn accepts_shipped_config() {
         let docs =
-            YamlLoader::load_from_str(include_str!("../../domains/__base/config.yaml")).unwrap();
+            YamlLoader::load_from_str(include_str!("../domains/__base/config.yaml")).unwrap();
 
         assert!(validate(&docs[0]).is_ok());
     }
@@ -246,7 +246,7 @@ mod tests {
     #[test]
     fn reports_multiple_schema_errors() {
         let mut docs =
-            YamlLoader::load_from_str(include_str!("../../domains/__base/config.yaml")).unwrap();
+            YamlLoader::load_from_str(include_str!("../domains/__base/config.yaml")).unwrap();
         let Yaml::Hash(config) = &mut docs[0] else {
             panic!("the shipped config must be a mapping");
         };
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn rejects_nested_type_and_unsupported_version() {
         let mut docs =
-            YamlLoader::load_from_str(include_str!("../../domains/__base/config.yaml")).unwrap();
+            YamlLoader::load_from_str(include_str!("../domains/__base/config.yaml")).unwrap();
         let Yaml::Hash(config) = &mut docs[0] else {
             panic!("the shipped config must be a mapping");
         };

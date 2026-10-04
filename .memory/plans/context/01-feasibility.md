@@ -46,6 +46,6 @@ summary: Evaluate a compact System1-style scorer against lexical baselines with 
 ## References
 
 - [Acceptance criteria](index.md)
-- [Distribution implementation](../../../rust/src/distribution.rs)
-- [Binary installer](../../../rust/install.sh)
+- [Distribution implementation](../../../src/distribution.rs)
+- [Binary installer](../../../src/install.sh)
 - [System1](https://github.com/steph4n-gh/system1)

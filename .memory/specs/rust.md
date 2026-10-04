@@ -10,9 +10,11 @@ version: 9
 
 ## Purpose
 
-Record the supported Rust CLI under `rust/`. The root Bash entry point has been
-removed; deprecated `src/*.sh` CLI modules and ShellSpec scenarios remain as
-reference for the later test port, without a supported Bash CLI invocation.
+Record the supported Rust CLI, a root Cargo package whose sources live in `src/`.
+The root Bash entry point and deprecated `src/*.sh` CLI modules have been removed;
+tag 0.10.0 keeps them for reference. Legacy ShellSpec scenarios remain as input for
+the later test port, without a supported Bash CLI invocation. `src/install.sh`
+is the native binary installer; its public URL also serves legacy Bash upgrades.
 The Rust CLI implements 16 command families: `version`,
 `tree`, `map`, `fs`, `tag`, `coverage`, `doctor`, `install`, `uninstall`, `bootstrap`, `migrate`, `update`, `upgrade`, `help`, `context`, and `model`, with no claim of complete Bash parity.
 The [context and models contract](context.md) owns optional external encoder
@@ -21,38 +23,38 @@ packages, offline ranking, the lightweight fallback, and their verification limi
 ## Public surface
 
 ```text
-cargo run --manifest-path rust/Cargo.toml -- version
-cargo run --manifest-path rust/Cargo.toml -- help [<command>|domains]
-cargo run --manifest-path rust/Cargo.toml -- install
+cargo run --manifest-path Cargo.toml -- version
+cargo run --manifest-path Cargo.toml -- help [<command>|domains]
+cargo run --manifest-path Cargo.toml -- install
     [agent <none|claude|codex|opencode>] [--domain <name>]
-cargo run --manifest-path rust/Cargo.toml -- uninstall [-y|--yes]
-cargo run --manifest-path rust/Cargo.toml -- bootstrap
-cargo run --manifest-path rust/Cargo.toml -- migrate
-cargo run --manifest-path rust/Cargo.toml -- coverage [--refs|--gaps|--rows] [--strict]
-cargo run --manifest-path rust/Cargo.toml -- doctor [--quiet]
-cargo run --manifest-path rust/Cargo.toml -- update [<path>] [--apply]
-cargo run --manifest-path rust/Cargo.toml -- update config
-cargo run --manifest-path rust/Cargo.toml -- update skills <agent> [--with <skill>...] [--apply|--clear]
-cargo run --manifest-path rust/Cargo.toml -- update commands <agent> [--apply|--clear]
-cargo run --manifest-path rust/Cargo.toml -- update agent <agent> [--apply|--clear]
-cargo run --manifest-path rust/Cargo.toml -- tree [<directory-or-md>...]
+cargo run --manifest-path Cargo.toml -- uninstall [-y|--yes]
+cargo run --manifest-path Cargo.toml -- bootstrap
+cargo run --manifest-path Cargo.toml -- migrate
+cargo run --manifest-path Cargo.toml -- coverage [--refs|--gaps|--rows] [--strict]
+cargo run --manifest-path Cargo.toml -- doctor [--quiet]
+cargo run --manifest-path Cargo.toml -- update [<path>] [--apply]
+cargo run --manifest-path Cargo.toml -- update config
+cargo run --manifest-path Cargo.toml -- update skills <agent> [--with <skill>...] [--apply|--clear]
+cargo run --manifest-path Cargo.toml -- update commands <agent> [--apply|--clear]
+cargo run --manifest-path Cargo.toml -- update agent <agent> [--apply|--clear]
+cargo run --manifest-path Cargo.toml -- tree [<directory-or-md>...]
     [--deep] [--rows|--markdown]
-cargo run --manifest-path rust/Cargo.toml -- map [<directory-or-md>] [--rows|--markdown]
-cargo run --manifest-path rust/Cargo.toml -- fs <src> move|copy <dst>
-cargo run --manifest-path rust/Cargo.toml -- fs <path> create|remove
-cargo run --manifest-path rust/Cargo.toml -- tag [<file>]
-cargo run --manifest-path rust/Cargo.toml -- tag [<file>] get|set <tag> [<content>]
-cargo run --manifest-path rust/Cargo.toml -- tag get|set [<file>] <tag> [<content>]
-cargo run --manifest-path rust/Cargo.toml -- tag all [--body]
-cargo run --manifest-path rust/Cargo.toml -- upgrade [--check]
-rust/build.sh
-curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
+cargo run --manifest-path Cargo.toml -- map [<directory-or-md>] [--rows|--markdown]
+cargo run --manifest-path Cargo.toml -- fs <src> move|copy <dst>
+cargo run --manifest-path Cargo.toml -- fs <path> create|remove
+cargo run --manifest-path Cargo.toml -- tag [<file>]
+cargo run --manifest-path Cargo.toml -- tag [<file>] get|set <tag> [<content>]
+cargo run --manifest-path Cargo.toml -- tag get|set [<file>] <tag> [<content>]
+cargo run --manifest-path Cargo.toml -- tag all [--body]
+cargo run --manifest-path Cargo.toml -- upgrade [--check]
+src/build.sh
+curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh | bash
 /usr/local/bin/cumaru
 ~/.config/cumaru.json
 ```
 
 An invocation without a subcommand runs `doctor`. Package version
-`0.10.2` is baked into development builds; it is separate from adopter config version 9.
+`0.10.3` is baked into development builds; it is separate from adopter config version 9.
 The latest published release is `0.10.2`; the published Homebrew formula pins
 that release (see [Homebrew distribution](#homebrew-distribution)).
 `version` reports both identities inside an adopter; see [Native version](#native-version).
@@ -146,10 +148,11 @@ the native contract.
    results succeed. Missing tags, unavailable Git/network, or invalid binary
    release versions fail with `cannot check` diagnostics. It never installs.
 10. Bare `upgrade` selects the latest release once and executes the embedded
-    `rust/install.sh` with that version as an argument and inherited streams.
+    `src/install.sh` with that version as an argument and inherited streams.
     Direct curl installation uses the same script, which resolves the latest
     plain release through Git when no version argument is supplied. There is
-    no `main` fallback, snapshot download, or call to Bash `src/install.sh`.
+    no `main` fallback or snapshot download. The script ends with a warning when an
+    earlier PATH entry, such as a legacy `~/.local/bin/cumaru` link, shadows it.
     Spawn or installer failures return status 1; Clap rejects extra arguments.
 11. Binary assets are `cumaru-<target>` under
     `https://github.com/rntgspr/cumaru/releases/download/<version>/`.
@@ -345,36 +348,36 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 
 | Artifact | Responsibility |
 |---|---|
-| `rust/src/main.rs` | CLI arguments and dispatch. |
-| `rust/src/commands/version.rs` | Build identity, installed/latest domain config integers, main-HEAD reconciliation drift, and their unit tests. |
-| `rust/src/commands/help.rs` | Local Clap help and read-only pinned-main domain discovery, title rendering, and their unit tests. |
-| `rust/src/commands/upgrade.rs` | Upgrade arguments, coordination, release comparison, and result presentation. |
-| `rust/src/release.rs` | Shared build-time `VERSION`, plain numeric release parsing/selection, and their unit tests. |
-| `rust/src/distribution.rs` | Official repository access, binary release-tag resolution, main-HEAD domain inventories/downloads, and binary installer execution. |
-| `rust/install.sh` | Platform asset download, binary verification, global executable publication, and per-user version JSON. |
-| `rust/src/commands/tree.rs` | CLI coordination, tree-specific entry parsing, index/summary rules, diagnostics, and output. |
-| `rust/src/commands/map.rs` | Exact-file or recursive heading projection, diagnostics, and TSV/Markdown output. |
-| `rust/src/commands/fs.rs` | Guarded create/move/copy/remove inside `.cumaru/`, private fs path resolution and shape checks, and their unit tests. |
-| `rust/src/commands/tag.rs` | Tag CLI parsing, audits, traversal, opaque body reads, and staged host publication. |
-| `rust/src/commands/install.rs` | Main-HEAD domain coordination, complete download/preflight planning, and initial project publication. |
-| `rust/src/commands/uninstall.rs` | Whole-footprint preflight, interactive/non-TTY confirmation, owned-file cleanup, and guarded final tree removal. |
-| `rust/src/commands/update.rs` | Remote preview planning, scoped content/artifact refresh, exact clear, conditional Git recovery, direct publication, and native postchecks. |
-| `rust/src/commands/bootstrap.rs` | Installed-domain resolution, pinned base/domain bootstrap reads, rendering, and their unit tests. |
-| `rust/src/commands/migrate.rs` | Current/legacy installed-domain resolution, pinned base/domain migration reads, checkpoint rendering, `--apply` refusal, and their unit tests. |
-| `rust/src/commands/coverage.rs` | Read-only Git source inventory, exclusions/globs, bucket classification/rendering, and their unit tests. |
-| `rust/src/commands/doctor.rs` | Read-only v9 health inspection, cached Markdown checks, workflow validation, instruction discovery, embedded config drift, and their unit tests. |
-| `rust/src/references.rs` | Shared table-cell extraction from innermost tags and project-source reference resolution for coverage and doctor. |
-| `rust/src/adapter.rs` | Adapter paths, ordered instructions, and preservation-aware JSON hook/instruction merges. |
-| `rust/src/artifacts.rs` | Shared update/uninstall file snapshots, owned namespace inventories and cleanup planning, exact native merges, and direct publication. |
-| `rust/src/tags.rs` | Balanced marker parsing, body extraction, duplicate consolidation, and validated replacement. |
-| `rust/src/config_tree.rs` | V9 selector resolution, effective host frontmatter/tag contracts, remote initial-install selection, logical-to-physical directory lookup, and legacy v8 tag declarations. |
-| `rust/src/walk.rs` | Reusable contained traversal, file filters, path callbacks, deduplication, and filesystem diagnostics. |
-| `rust/src/config.rs` | `CUMARU_DIR`, `CONFIG_FILE`, `load`, private `validate`, and private `yaml_to_json`. |
-| `rust/src/paths.rs` | Normalization, shared `validate_target_syntax` and exact `resolve_target`, symlink checks, containment, and file names; tree alone converts resolved files to their parent. |
-| `rust/src/text.rs` | Shared C0/DEL detection through `is_control` and `has_control`, plus diagnostic string escaping through `shell_quote`. |
-| `rust/src/tsv.rs` | Reusable `write_row` writes caller-selected fields with tab separators and a final newline; callers supply fields without tabs or newlines. |
-| `rust/src/markdown.rs` | Frontmatter extraction, Bash-compatible `strip_frontmatter`, literal heading reading through `read_headings`, and table-cell escaping. |
-| `rust/Cargo.toml`, `rust/Cargo.lock` | Edition 2024 package, dependencies, and locked resolution. |
+| `src/main.rs` | CLI arguments and dispatch. |
+| `src/commands/version.rs` | Build identity, installed/latest domain config integers, main-HEAD reconciliation drift, and their unit tests. |
+| `src/commands/help.rs` | Local Clap help and read-only pinned-main domain discovery, title rendering, and their unit tests. |
+| `src/commands/upgrade.rs` | Upgrade arguments, coordination, release comparison, and result presentation. |
+| `src/release.rs` | Shared build-time `VERSION`, plain numeric release parsing/selection, and their unit tests. |
+| `src/distribution.rs` | Official repository access, binary release-tag resolution, main-HEAD domain inventories/downloads, and binary installer execution. |
+| `src/install.sh` | Platform asset download, binary verification, global executable publication, and per-user version JSON. |
+| `src/commands/tree.rs` | CLI coordination, tree-specific entry parsing, index/summary rules, diagnostics, and output. |
+| `src/commands/map.rs` | Exact-file or recursive heading projection, diagnostics, and TSV/Markdown output. |
+| `src/commands/fs.rs` | Guarded create/move/copy/remove inside `.cumaru/`, private fs path resolution and shape checks, and their unit tests. |
+| `src/commands/tag.rs` | Tag CLI parsing, audits, traversal, opaque body reads, and staged host publication. |
+| `src/commands/install.rs` | Main-HEAD domain coordination, complete download/preflight planning, and initial project publication. |
+| `src/commands/uninstall.rs` | Whole-footprint preflight, interactive/non-TTY confirmation, owned-file cleanup, and guarded final tree removal. |
+| `src/commands/update.rs` | Remote preview planning, scoped content/artifact refresh, exact clear, conditional Git recovery, direct publication, and native postchecks. |
+| `src/commands/bootstrap.rs` | Installed-domain resolution, pinned base/domain bootstrap reads, rendering, and their unit tests. |
+| `src/commands/migrate.rs` | Current/legacy installed-domain resolution, pinned base/domain migration reads, checkpoint rendering, `--apply` refusal, and their unit tests. |
+| `src/commands/coverage.rs` | Read-only Git source inventory, exclusions/globs, bucket classification/rendering, and their unit tests. |
+| `src/commands/doctor.rs` | Read-only v9 health inspection, cached Markdown checks, workflow validation, instruction discovery, embedded config drift, and their unit tests. |
+| `src/references.rs` | Shared table-cell extraction from innermost tags and project-source reference resolution for coverage and doctor. |
+| `src/adapter.rs` | Adapter paths, ordered instructions, and preservation-aware JSON hook/instruction merges. |
+| `src/artifacts.rs` | Shared update/uninstall file snapshots, owned namespace inventories and cleanup planning, exact native merges, and direct publication. |
+| `src/tags.rs` | Balanced marker parsing, body extraction, duplicate consolidation, and validated replacement. |
+| `src/config_tree.rs` | V9 selector resolution, effective host frontmatter/tag contracts, remote initial-install selection, logical-to-physical directory lookup, and legacy v8 tag declarations. |
+| `src/walk.rs` | Reusable contained traversal, file filters, path callbacks, deduplication, and filesystem diagnostics. |
+| `src/config.rs` | `CUMARU_DIR`, `CONFIG_FILE`, `load`, private `validate`, and private `yaml_to_json`. |
+| `src/paths.rs` | Normalization, shared `validate_target_syntax` and exact `resolve_target`, symlink checks, containment, and file names; tree alone converts resolved files to their parent. |
+| `src/text.rs` | Shared C0/DEL detection through `is_control` and `has_control`, plus diagnostic string escaping through `shell_quote`. |
+| `src/tsv.rs` | Reusable `write_row` writes caller-selected fields with tab separators and a final newline; callers supply fields without tabs or newlines. |
+| `src/markdown.rs` | Frontmatter extraction, Bash-compatible `strip_frontmatter`, literal heading reading through `read_headings`, and table-cell escaping. |
+| `Cargo.toml`, `Cargo.lock` | Edition 2024 package, dependencies, and locked resolution. |
 
 ## Regression coverage
 
@@ -998,9 +1001,9 @@ Manual dispatch can rebuild an existing numeric tag using the current workflow.
 Linux ARM64 builds enable `+fp16` for the locked GEMM assembly and require a CPU
 with FP16 instruction support; this asset is not an ARMv8.0 baseline binary.
 
-`rust/build.sh` resolves its own manifest path, builds with `--release --locked`
+`src/build.sh` resolves its own manifest path, builds with `--release --locked`
 from any working directory, and preserves incremental artifacts. The native
-binary remains at `rust/target/release/cumaru`; the root Bash `./cumaru` entry
+binary remains at `target/release/cumaru`; the root Bash `./cumaru` entry
 point has been removed. Routine CI runs on `ubuntu-24.04`: native formatting,
 unit tests, locked release compilation, and a release-binary `--version`/`help`
 smoke, with the existing main-push/pull-request triggers and concurrency
@@ -1041,7 +1044,7 @@ serialized success is not evidence that parallel execution is reliable.
 Local bench on 2026-10-02: the maintainer requested publication of the verified
 binary to `~/.local/bin/cumaru`, replacing only the old Bash symlink and leaving
 its checkout target intact. At the maintainer's follow-up request, the installed
-copy was replaced by a symlink to `rust/target/release/cumaru`, so each successful
+copy was replaced by a symlink to `target/release/cumaru`, so each successful
 local release build is immediately available through PATH. This is a manual development installation, distinct
 from the release installer's `/usr/local/bin` destination. A temporary copy of
 the current checkout exercised sdlc-light/Codex installation, deep tree, map,
@@ -1063,9 +1066,9 @@ fixture snapshot; the focused test and full rerun passed. Its cause remains
 unresolved and is not attributed to the entry-point removal.
 
 ```bash
-cargo test --manifest-path rust/Cargo.toml --locked
-cargo build --manifest-path rust/Cargo.toml --locked
-cargo fmt --manifest-path rust/Cargo.toml --check
+cargo test --manifest-path Cargo.toml --locked
+cargo build --manifest-path Cargo.toml --locked
+cargo fmt --manifest-path Cargo.toml --check
 git diff --check
 ```
 
@@ -1074,7 +1077,7 @@ git diff --check
 - [Configuration contract](configuration.md)
 - [Navigation contract](navigation.md)
 - [Testing contract](testing.md)
-- [Rust config implementation](../../rust/src/config.rs)
-- [Rust tree implementation](../../rust/src/commands/tree.rs)
+- [Rust config implementation](../../src/config.rs)
+- [Rust tree implementation](../../src/commands/tree.rs)
 - [Active schema](../../schemas/config.schema.json)
 - [V8 migration schema](../../schemas/config.schema.off-9.json)

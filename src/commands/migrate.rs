@@ -1,6 +1,6 @@
 //! `cumaru migrate`: print the current rolling migration instructions for this project.
 //!
-//! Mirrors `src/cmd_migrate.sh` without a local checkout: the installed domain
+//! Mirrors the retired Bash `src/cmd_migrate.sh` (tag 0.10.0) without a local checkout: the installed domain
 //! comes from `.cumaru/config.yaml` or, only when it is absent, the legacy
 //! `.cumaru/schema.yaml`; both documents are read from the main HEAD,
 //! pinned to that main commit. Strictly read-only, with no apply mode.

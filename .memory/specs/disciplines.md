@@ -170,7 +170,7 @@ bash tests/run.sh
 
 ## References
 
-- [`../../src/agent_adapter.sh`](../../src/agent_adapter.sh)
+- [`../../src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh)
 - [`../../docs/agent-adapters.md`](../../docs/agent-adapters.md)
 - [`../../docs/architecture.md`](../../docs/architecture.md)
 - [`agent-adapters.md`](agent-adapters.md)

@@ -197,8 +197,8 @@ bash tests/run.sh
 
 - [Design as Code domain contract](design-as-code.md) — six pillars, role boundaries, and evidence-driven delivery.
 
-- [`../../src/cmd_install.sh`](../../src/cmd_install.sh)
-- [`../../src/install.sh`](../../src/install.sh)
+- [`../../src/cmd_install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh)
+- [`../../src/install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/install.sh)
 - [`../../docs/install.md`](../../docs/install.md)
 - [`../../docs/agent-adapters.md`](../../docs/agent-adapters.md)
 - [`install-upgrade.md`](install-upgrade.md)

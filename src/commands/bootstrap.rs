@@ -1,6 +1,6 @@
 //! `cumaru bootstrap`: print the post-install bootstrap steps for this project.
 //!
-//! Mirrors `src/cmd_bootstrap.sh` without a local domain snapshot: the installed
+//! Mirrors the retired Bash `src/cmd_bootstrap.sh` (tag 0.10.0) without a local domain snapshot: the installed
 //! domain comes from `.cumaru/config.yaml`, and both documents are read from the
 //! main HEAD, pinned to that main commit. Read-only.
 

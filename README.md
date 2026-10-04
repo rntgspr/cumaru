@@ -56,7 +56,7 @@ Download the compiled assets from [GitHub Releases](https://github.com/rntgspr/c
 or use the installer below. Linux ARM64 requires FP16 CPU instruction support.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh | bash
 cumaru --version
 cumaru help
 ```

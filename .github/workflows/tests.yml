@@ -28,13 +28,13 @@ jobs:
         run: scripts/sync-domain-kernel.sh --check
 
       - name: Verify formatting
-        run: cargo fmt --manifest-path rust/Cargo.toml --check
+        run: cargo fmt --manifest-path Cargo.toml --check
 
       - name: Run native unit tests
-        run: cargo test --manifest-path rust/Cargo.toml --locked
+        run: cargo test --manifest-path Cargo.toml --locked
 
       - name: Build release binary
-        run: bash rust/build.sh
+        run: bash src/build.sh
 
       - name: Prepare pinned ShellSpec process harness
         run: |
@@ -51,7 +51,7 @@ jobs:
 
       - name: Smoke release binary
         run: |
-          expected="cumaru $(sed -n 's/^version = "\(.*\)"$/\1/p' rust/Cargo.toml | head -n 1)"
-          actual="$(./rust/target/release/cumaru --version)"
+          expected="cumaru $(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)"
+          actual="$(./target/release/cumaru --version)"
           test "$actual" = "$expected" || { echo "expected $expected, got $actual"; exit 1; }
-          ./rust/target/release/cumaru help >/dev/null
+          ./target/release/cumaru help >/dev/null

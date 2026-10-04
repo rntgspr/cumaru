@@ -131,8 +131,8 @@ embedded schema selection, diagnostics, and its current validation boundaries.
 | [`schemas/config.schema.json`](../../schemas/config.schema.json) | Active declarative global model. |
 | [`schemas/schema-validate-v9.jq`](../../schemas/schema-validate-v9.jq) | Operational v9 structural and semantic validator. |
 | [`schemas/config-reconcile.jq`](../../schemas/config-reconcile.jq) | Model-aware pruning and recursive source-default fill. |
-| [`src/schema.sh`](../../src/schema.sh) | Dependency preflight, conversion, validation, typed reads, and reconciliation dispatch. |
-| [`src/cmd_update.sh`](../../src/cmd_update.sh) | Config drift reporting and conditional Git recovery handling. |
+| [`src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Dependency preflight, conversion, validation, typed reads, and reconciliation dispatch. |
+| [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Config drift reporting and conditional Git recovery handling. |
 
 ## Principal methods
 

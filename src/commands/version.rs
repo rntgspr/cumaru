@@ -154,7 +154,7 @@ mod tests {
     /// Distinguishes version boundaries, formatting, missing defaults, and preserved local choices against main config.
     #[test]
     fn compares_main_config_without_inventing_versions() {
-        let source = include_str!("../../../domains/__base/config.yaml");
+        let source = include_str!("../../domains/__base/config.yaml");
         assert!(
             compare(source, source)
                 .unwrap()
@@ -235,7 +235,7 @@ mod tests {
         let base = project("valid");
         let cumaru = base.join(CUMARU_DIR);
         fs::create_dir_all(&cumaru).unwrap();
-        let text = include_str!("../../../domains/__base/config.yaml");
+        let text = include_str!("../../domains/__base/config.yaml");
         fs::write(cumaru.join(CONFIG_FILE), text).unwrap();
 
         let found = installed(&cumaru).unwrap().unwrap();
@@ -320,7 +320,7 @@ mod tests {
     /// Keeps every shipped domain config at the base contract version, named after its domain.
     #[test]
     fn shipped_configs_match_base_version() {
-        let domains = Path::new(env!("CARGO_MANIFEST_DIR")).join("../domains");
+        let domains = Path::new(env!("CARGO_MANIFEST_DIR")).join("domains");
         let base = identity(&fs::read_to_string(domains.join("__base").join(CONFIG_FILE)).unwrap())
             .unwrap();
         assert_eq!(base.version, 9);

@@ -140,11 +140,11 @@ explicit warning and no framework-created recovery point.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`src/cmd_update.sh`](../../src/cmd_update.sh) | Parsing, planning, conditional Git recovery check, direct mutation, and post-check. |
-| [`src/schema.sh`](../../src/schema.sh) | Config/domain validation, typed reads, and reconciliation planning. |
-| [`src/common.sh`](../../src/common.sh) | Balanced tag merge used by Markdown reconstruction. |
-| [`src/agent_adapter.sh`](../../src/agent_adapter.sh) | Adapter paths, instructions, hooks, and scoped cleanup. |
-| [`src/cmd_doctor.sh`](../../src/cmd_doctor.sh) | Post-write structural health check. |
+| [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Parsing, planning, conditional Git recovery check, direct mutation, and post-check. |
+| [`src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Config/domain validation, typed reads, and reconciliation planning. |
+| [`src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Balanced tag merge used by Markdown reconstruction. |
+| [`src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh) | Adapter paths, instructions, hooks, and scoped cleanup. |
+| [`src/cmd_doctor.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor.sh) | Post-write structural health check. |
 
 ## Principal methods
 
@@ -178,7 +178,7 @@ bash tests/run.sh
 
 ## References
 
-- [`src/cmd_update.sh`](../../src/cmd_update.sh)
+- [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh)
 - [`docs/update.md`](../../docs/update.md)
 - [`configuration.md`](configuration.md)
 - [`tags.md`](tags.md)

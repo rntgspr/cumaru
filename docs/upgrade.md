@@ -8,7 +8,7 @@ cumaru upgrade [--check]
 ```
 
 Bare `upgrade` resolves the highest plain `X.Y.Z` release tag once with
-`git ls-remote`, then runs the embedded `rust/install.sh` with that version.
+`git ls-remote`, then runs the embedded `src/install.sh` with that version.
 The installer downloads the `cumaru-<target>` asset for the detected platform,
 verifies that its `--version` equals `cumaru <version>`, publishes it to
 `/usr/local/bin/cumaru` (using sudo only for destination writes when needed),
@@ -69,7 +69,7 @@ in CI rather than at upgrade or install time; see
 Upgrading the binary does not migrate or refresh any project. A legacy
 `~/.cumaru` snapshot, another PATH entry, or a former `cuma` binary is neither
 removed nor replaced; resolve PATH precedence deliberately. A local development
-symlink to `rust/target/release/cumaru` is managed by rebuilding, not by
+symlink to `target/release/cumaru` is managed by rebuilding, not by
 `upgrade`; see the [native CLI guide](rust.md).
 
 ## Related

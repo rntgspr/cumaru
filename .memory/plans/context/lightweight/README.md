@@ -1,6 +1,6 @@
 # Lightweight relevance experiment
 
-The isolated dependency-free crate exercises [relevance.rs](../../../../rust/src/relevance.rs)
+The isolated dependency-free crate exercises [relevance.rs](../../../../src/relevance.rs)
 without registering a production `context` command or introducing default weights.
 The Rust source is included directly by path; no duplicate implementation exists.
 

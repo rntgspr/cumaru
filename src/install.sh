@@ -1,99 +1,75 @@
 #!/usr/bin/env bash
-# Deprecated snapshot installer, retained for legacy regression; use rust/install.sh for native binary installation.
 set -euo pipefail
 
 REPO="https://github.com/rntgspr/cumaru"
-DEST="$HOME/.cumaru"
-BIN="$HOME/.local/bin"
+BIN_DIR="/usr/local/bin"
+EXECUTABLE="cumaru"
+CONFIG_DIR="$HOME/.config"
+VERSION="${1:-}"
 
-# $DEST is treated as a plain framework snapshot, not a working tree the
-# user maintains. Every run replaces it wholesale with GitHub's tarball of the
-# highest plain `X.Y.Z` release tag (or `main` while no tag exists). GitHub's
-# archive honors .gitattributes `export-ignore`, so maintainer-only paths never
-# ship. No clone: Git is needed only for `ls-remote`. This is the upgrade path —
-# no prompt before overwrite by design.
+# Resolve the latest plain release when invoked directly through curl.
+if [[ -z "$VERSION" ]]; then
+  TAGS="$(git ls-remote --tags --refs "$REPO.git")"
+  VERSION="$(printf '%s\n' "$TAGS" | sed -n 's#^.*refs/tags/##p' |
+    grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1 || true)"
+fi
+
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "cumaru install: no valid X.Y.Z release selected" >&2
+  exit 1
+fi
+
+case "$(uname -s)/$(uname -m)" in
+  Darwin/arm64) TARGET="aarch64-apple-darwin" ;;
+  Darwin/x86_64) TARGET="x86_64-apple-darwin" ;;
+  Linux/aarch64|Linux/arm64) TARGET="aarch64-unknown-linux-musl" ;;
+  Linux/x86_64) TARGET="x86_64-unknown-linux-musl" ;;
+  *) echo "cumaru install: unsupported operating system or architecture" >&2; exit 1 ;;
+esac
+
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
-
-if ! TAGS="$(git ls-remote --tags --refs "$REPO.git")"; then
-  echo "✗ cannot list release tags at $REPO.git; $DEST left untouched" >&2
-  exit 1
-fi
-
-VERSION="$(printf '%s\n' "$TAGS" | sed -n 's#^.*refs/tags/##p' |
-  grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1 || true)"
-if [[ -n "$VERSION" ]]; then
-  URL="$REPO/archive/refs/tags/$VERSION.tar.gz"
-else
-  VERSION="main"
-  URL="$REPO/archive/refs/heads/main.tar.gz"
-fi
-
-echo "Installing cumaru $VERSION to $DEST..."
-
-# Download and unpack into the temporary directory first, so a network or
-# archive failure leaves the existing $DEST untouched.
-mkdir "$TMP_DIR/snapshot"
-if ! curl -fsSL "$URL" -o "$TMP_DIR/cumaru.tar.gz" ||
-   ! tar -xzf "$TMP_DIR/cumaru.tar.gz" -C "$TMP_DIR/snapshot" --strip-components=1; then
-  echo "✗ download failed: $URL; $DEST left untouched" >&2
-  exit 1
-fi
-printf '%s\n' "$VERSION" > "$TMP_DIR/snapshot/VERSION"
-
-rm -rf "$DEST"
-mkdir -p "$(dirname "$DEST")"
-mv "$TMP_DIR/snapshot" "$DEST"
-
-# Kernel integrity check: index.md, every universal skill under skills/, every
-# command under commands/cumaru/, and every universal discipline under
-# disciplines/ are authored once in domains/__base and propagated verbatim into
-# every domain. A snapshot where any domain's copy of a universal artifact
-# diverges from __base's is a broken distribution — refuse it.
-#
-# Exception: skills/cumaru-install/ is DOMAIN-OWNED — its post-install recipe
-# hands off to the domain's durable-pillar skill (cumaru-specs / cumaru-topology /
-# cumaru-coverage), so each domain ships its own tuned copy.
-#
-# Exception: disciplines/index.md is DOMAIN-OWNED — it carries that domain's own
-# trigger table, which lists domain-specific disciplines alongside the universal ones.
-BASE_DIR="$DEST/domains/__base"
-
-# 1) index.md — single file at the domain root.
-for domain_index in "$DEST"/domains/*/index.md; do
-  [[ "$domain_index" == "$BASE_DIR/index.md" ]] && continue
-  if ! cmp -s "$BASE_DIR/index.md" "$domain_index"; then
-    echo "✗ kernel drift: $domain_index differs from domains/__base/index.md" >&2
-    echo "  The snapshot is inconsistent — report this upstream. Aborting." >&2
-    exit 1
+URL="$REPO/releases/download/$VERSION/cumaru-$TARGET"
+if ! HTTP_STATUS="$(curl -fsSL "$URL" -o "$TMP_DIR/cumaru" -w '%{http_code}' 2> "$TMP_DIR/download-error")"; then
+  if [[ "$HTTP_STATUS" == "404" ]]; then
+    echo "$EXECUTABLE upgrade: binary file for version $VERSION was not found (HTTP 404): cumaru-$TARGET" >&2
+    echo "Download: $URL" >&2
+  else
+    echo "$EXECUTABLE upgrade: failed to download version $VERSION from $URL" >&2
+    cat "$TMP_DIR/download-error" >&2
   fi
-done
+  exit 1
+fi
+chmod 755 "$TMP_DIR/cumaru"
 
-# 2) Universal skills + commands + disciplines — every file under __base/skills/,
-# __base/commands/ and __base/disciplines/ must exist byte-identical in each domain.
-while IFS= read -r src; do
-  rel="${src#"$BASE_DIR"/}"
-  case "$rel" in
-    skills/cumaru-install/*) continue ;;   # domain-owned — see the exception note above
-    disciplines/index.md)    continue ;;   # domain-owned — see the exception note above
-  esac
-  for domain_dir in "$DEST"/domains/*/; do
-    domain_dir="${domain_dir%/}"
-    [[ "$domain_dir" == "$BASE_DIR" ]] && continue
-    dest="$domain_dir/$rel"
-    if [[ ! -f "$dest" ]]; then
-      echo "✗ kernel drift: $dest missing (must mirror domains/__base/$rel verbatim)" >&2
-      exit 1
-    fi
-    if ! cmp -s "$src" "$dest"; then
-      echo "✗ kernel drift: $dest differs from domains/__base/$rel" >&2
-      exit 1
-    fi
-  done
-done < <(find "$BASE_DIR"/skills "$BASE_DIR"/commands "$BASE_DIR"/disciplines -type f 2>/dev/null)
+if [[ "$("$TMP_DIR/cumaru" --version)" != "cumaru $VERSION" ]]; then
+  echo "cumaru install: downloaded binary does not report the selected version" >&2
+  exit 1
+fi
 
-mkdir -p "$BIN"
-ln -sf "$DEST/cumaru" "$BIN/cumaru"
+mkdir -p "$CONFIG_DIR"
+CONFIG_TMP="$(mktemp "$CONFIG_DIR/.cumaru.json.XXXXXX")"
+trap 'rm -rf "$TMP_DIR"; rm -f "$CONFIG_TMP"' EXIT
+printf '{"version":"%s"}\n' "$VERSION" > "$CONFIG_TMP"
+chmod 600 "$CONFIG_TMP"
 
-echo "Done. Make sure $BIN is on your PATH."
-echo "  cumaru help"
+PRIVILEGE=(env)
+if [[ ! -d "$BIN_DIR" || ! -w "$BIN_DIR" ]]; then
+  PRIVILEGE=(sudo)
+fi
+
+# Stage beside the installed binary so publication replaces it without truncating a running executable.
+"${PRIVILEGE[@]}" mkdir -p "$BIN_DIR"
+BIN_TMP="$("${PRIVILEGE[@]}" mktemp "$BIN_DIR/.cumaru.XXXXXX")"
+trap 'rm -rf "$TMP_DIR"; rm -f "$CONFIG_TMP"; "${PRIVILEGE[@]}" rm -f "$BIN_TMP"' EXIT
+"${PRIVILEGE[@]}" install -m 755 "$TMP_DIR/cumaru" "$BIN_TMP"
+"${PRIVILEGE[@]}" mv -f "$BIN_TMP" "$BIN_DIR/$EXECUTABLE"
+mv -f "$CONFIG_TMP" "$CONFIG_DIR/cumaru.json"
+
+echo "Installed $EXECUTABLE $VERSION to $BIN_DIR/$EXECUTABLE"
+
+# Warn when an earlier PATH entry, such as a legacy ~/.local/bin link, shadows this install.
+ACTIVE="$(command -v "$EXECUTABLE" 2>/dev/null || true)"
+if [[ -n "$ACTIVE" && "$ACTIVE" != "$BIN_DIR/$EXECUTABLE" ]]; then
+  echo "Warning: $ACTIVE precedes $BIN_DIR/$EXECUTABLE in PATH; remove it or reorder PATH to use this install." >&2
+fi

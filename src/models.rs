@@ -13,7 +13,7 @@ use std::{
 };
 use tokenizers::Tokenizer;
 
-const CATALOG: &str = include_str!("../../models/catalog.json");
+const CATALOG: &str = include_str!("../models/catalog.json");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

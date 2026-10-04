@@ -21,9 +21,9 @@ if [[ $# -gt 1 ]]; then
   exit 2
 fi
 
-binary=${CUMARU_TEST_BINARY:-"$REPO_DIR/rust/target/release/cumaru"}
+binary=${CUMARU_TEST_BINARY:-"$REPO_DIR/target/release/cumaru"}
 if [[ ! -x "$binary" || "$binary" != /* ]]; then
-  printf 'Native binary must be an absolute executable path: %s. Build with bash rust/build.sh.\n' "$binary" >&2
+  printf 'Native binary must be an absolute executable path: %s. Build with bash src/build.sh.\n' "$binary" >&2
   exit 1
 fi
 export CUMARU_TEST_BINARY="$binary"
