@@ -61,6 +61,17 @@ cumaru --version
 cumaru help
 ```
 
+With Homebrew on macOS or Linux, install from the maintainer tap instead. Brew
+then owns upgrade and removal, and bare `cumaru upgrade` is blocked:
+
+```bash
+brew install rntgspr/tap/cumaru
+brew upgrade rntgspr/tap/cumaru
+```
+
+Keep one installation reachable first on `PATH`; `type -a cumaru` shows an
+earlier `/usr/local/bin` copy or development symlink that would shadow brew.
+
 The installer needs Bash, cURL, and Git. Source-reading commands use cURL;
 coverage and release checks use Git. Ordinary Markdown navigation and ranking
 need no runtime jq, yq, rg, Python, server, or GPU.

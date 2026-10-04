@@ -53,8 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/rust/install.sh
 
 An invocation without a subcommand runs `doctor`. Package version
 `0.10.2` is baked into development builds; it is separate from adopter config version 9.
-The latest published release remains `0.10.0`; the prepared Homebrew formula
-pins that release until a newer complete asset/checksum set is published.
+The latest published release is `0.10.2`; the published Homebrew formula pins
+that release (see [Homebrew distribution](#homebrew-distribution)).
 `version` reports both identities inside an adopter; see [Native version](#native-version).
 
 ## Port status
@@ -952,6 +952,39 @@ returned BGE Micro. No global installer or real home model installation was run.
 The [main CI run](https://github.com/rntgspr/cumaru/actions/runs/37160244499) passed
 with checkout v7.0.1 and no Node.js 20/deprecation warning in its logs, resolving
 [GitHub issue 16](https://github.com/rntgspr/cumaru/issues/16).
+
+Release [0.10.2](https://github.com/rntgspr/cumaru/releases/tag/0.10.2) was published
+on 2026-10-04 by the tag-push [release run](https://github.com/rntgspr/cumaru/actions/runs/37165891780)
+from `cbb6c3c`; all four target jobs and publication passed. Public downloads of
+the four executables and `LICENSE` matched `SHA256SUMS`, and the macOS ARM64
+binary reported `cumaru 0.10.2`.
+
+## Homebrew distribution
+
+`brew install rntgspr/tap/cumaru` installs one pinned, SHA-256-verified release
+executable into Homebrew's prefix. The published formula lives in
+[rntgspr/homebrew-tap](https://github.com/rntgspr/homebrew-tap/blob/main/Formula/cumaru.rb)
+and is the installed formula's canonical source; the reviewed candidate and
+maintenance procedure live in [`packaging/homebrew`](../../packaging/homebrew/README.md).
+Changing this repository never updates the tap.
+
+1. The formula selects the asset for macOS ARM64/Intel and Linux ARM64/Intel and
+   declares MIT. Linux declares cURL and Git; macOS supplies both.
+2. Linux ARM64 installation refuses CPUs that do not report both `fphp` and
+   `asimdhp`, matching the asset's FP16 requirement.
+3. The executable lives in `libexec`; the `bin` launcher rejects bare
+   `cumaru upgrade` so the global installer never replaces a brew-managed binary.
+   `upgrade --check` stays read-only; brew owns upgrade and removal.
+4. Installation and removal never download models, run the global installer, or
+   touch `~/.cumaru`, `~/.config/cumaru.json`, or adopter projects.
+5. A formula bump follows a complete published release: all four URLs and
+   checksums change together and must match the release `SHA256SUMS`.
+
+The 0.10.2 formula was published on 2026-10-04 (tap commit `38990e0`) after
+`brew style` passed. Actual install, `brew test`, and audit evidence exists only
+for the 0.10.0 candidate on macOS ARM64 in an isolated prefix; macOS Intel and
+Linux installation remain unverified and are tracked by
+[issue 142](../issues/issue_142.md).
 
 ## Verification
 

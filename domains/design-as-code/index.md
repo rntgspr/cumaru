@@ -82,6 +82,8 @@ reference route for its full current contract.
 | `cumaru coverage` | Report durable-specification references and uncovered repository source. | `cumaru coverage --help` |
 | `cumaru tree` | List filesystem candidates and summaries without loading their bodies. | `cumaru tree --help` |
 | `cumaru map` | List literal H1-H6 headings, with their `#` markers and source lines, under a directory or exact Markdown file. | `cumaru map --help` |
+| `cumaru context` | Rank visible `.cumaru/` Markdown against an English query as path/score TSV, offline and read-only; a cached encoder is used when present, otherwise a lightweight fallback. Scores are uncalibrated. | `cumaru context --help` |
+| `cumaru model` | List the closed model catalog or explicitly download a supported encoder into `~/.cumaru/<name>/`; never runs automatically. | `cumaru model --help` |
 | `cumaru update` | Preview or apply framework-owned content and adapter artifact updates. | `cumaru update --help` |
 | `cumaru upgrade` | Replace the global `cumaru` binary with the latest release. Never invoke it for discovery or as part of a project update. Only `cumaru upgrade --check` is read-only: it compares the CLI build version with the latest release tag. | `cumaru upgrade --help` |
 | `cumaru fs` | Create, move, copy, or remove paths inside `.cumaru/` under guardrails. | `cumaru fs --help` |

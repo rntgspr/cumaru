@@ -1,13 +1,11 @@
-# Homebrew formula candidate
+# Homebrew formula
 
-[`Formula/cumaru.rb`](Formula/cumaru.rb) is a reviewable candidate for the existing
-[rntgspr/homebrew-tap](https://github.com/rntgspr/homebrew-tap). It has not been
-published there. No repository creation or remote mutation is part of this work.
-The maintainer selected MIT for Cumaru; the [project license](../../LICENSE),
-Rust package, and formula declare it explicitly. Publish these changes before
-publishing the package. Dependency and model licenses remain their own contracts.
+[`Formula/cumaru.rb`](Formula/cumaru.rb) is the reviewed source of the formula
+published in [rntgspr/homebrew-tap](https://github.com/rntgspr/homebrew-tap/blob/main/Formula/cumaru.rb).
+Cumaru is MIT; the [project license](../../LICENSE), Rust package, and formula
+declare it explicitly. Dependency and model licenses remain their own contracts.
 
-## Installation after publication
+## Installation
 
 ```bash
 brew install rntgspr/tap/cumaru
@@ -34,7 +32,7 @@ and installed session hooks; no Rust compiler or Python is required.
 
 ## Platforms
 
-macOS ARM64/Intel and Linux ARM64/Intel select their respective 0.10.0 assets.
+macOS ARM64/Intel and Linux ARM64/Intel select their respective 0.10.2 assets.
 Linux assets are static musl executables. Linux ARM64 requires `fphp` and
 `asimdhp` CPU features; the formula rejects missing or unsupported CPU feature
 reports before installation. This is a package gate for the current binary's
@@ -70,11 +68,15 @@ An actual formula-install invocation with mocked Linux ARM64 CPU metadata
 rejected missing `asimdhp` before attempting binary installation. A subsequent
 isolated `brew uninstall` preserved byte-identical scratch model/legacy cache,
 user version JSON, and project knowledge sentinels.
-Full platform installation tests and tap publication remain open.
+The 0.10.2 formula was published to the tap on 2026-10-04 (commit `38990e0`) after
+its checksums matched the release `SHA256SUMS` and `brew style` passed; the
+0.10.0 install, test, and audit evidence above was not repeated for 0.10.2.
+Installation on macOS Intel and Linux remains open in
+[issue 142](../../.memory/issues/issue_142.md).
 
 ## References
 
-- [Published release and checksums](https://github.com/rntgspr/cumaru/releases/tag/0.10.0)
+- [Published release and checksums](https://github.com/rntgspr/cumaru/releases/tag/0.10.2)
 - [Homebrew formula cookbook](https://docs.brew.sh/Formula-Cookbook)
 - [Homebrew tap maintenance](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap)
 - [Native upgrade ownership](../../docs/upgrade.md)

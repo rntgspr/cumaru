@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 142.
+from 143.
 
 ## Open issues
 
@@ -17,7 +17,7 @@ from 142.
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
 | [139](issue_139.md) | high | Reuse legacy Bash regression scenarios for the native Rust CLI |
 | [140](issue_140.md) | medium | Review deprecated src files and prepare an evidence-backed deletion manifest |
-| [141](issue_141.md) | medium | Ship Homebrew distribution and define package-manager ownership |
+| [142](issue_142.md) | medium | Verify Homebrew installation on every supported platform |
 
 ## Notes
 
@@ -28,5 +28,7 @@ from 142.
   [`../specs/migration.md`](../specs/migration.md).
 - [065](issue_065.md) is the known limit recorded in
   [`../specs/testing.md`](../specs/testing.md).
+- [142](issue_142.md) is the known limit recorded in
+  [`../specs/rust.md`](../specs/rust.md#homebrew-distribution).
 - The completed native skill/README review is recorded in
   [`../specs/skill-cli-contracts.md`](../specs/skill-cli-contracts.md).

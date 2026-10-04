@@ -17,6 +17,11 @@ and records `{"version":"X.Y.Z"}` in the invoking user's
 Bare `upgrade` does not compare versions first: it installs the latest release
 tag even when the running build is newer, so run `upgrade --check` before it.
 
+A Homebrew installation is managed by brew: its launcher rejects bare
+`cumaru upgrade`; run `brew upgrade rntgspr/tap/cumaru` instead. `upgrade --check`
+remains read-only there, and its suggested command applies only to unmanaged
+installations.
+
 Supported targets are `aarch64-apple-darwin`, `x86_64-apple-darwin`,
 `aarch64-unknown-linux-musl`, and `x86_64-unknown-linux-musl`. Compiled assets
 are available from [GitHub Releases](https://github.com/rntgspr/cumaru/releases).
