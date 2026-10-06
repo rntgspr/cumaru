@@ -28,6 +28,8 @@ is active, honor its boundaries before changing roles.
    the outcome contract. Accumulate dated evidence and corrections without
    double-counting; distinguish artificial value, recorded versus estimated
    time, and accepted versus implemented feedback. Unknown values stay unknown.
+   Maintain each ledger row's `Kudos` count under the same contract; initialize
+   new rows to `0` and preserve existing counts without duplicating recognition.
 4. Read existing provenance with `cumaru tag outcomes/<area>/<slug>.md get threads`.
    Merge all applicable source rows without duplicates or loss of earlier
    provenance. Write the complete table with `cumaru tag ... set threads`,
@@ -35,8 +37,10 @@ is active, honor its boundaries before changing roles.
    a relative link to the current active or yearly archived thread path and
    explains the contribution.
 5. Verify every linked thread exists and supports the result, and that at least
-   one row exists. Run `cumaru doctor` and inspect the outcome with `cumaru tag`.
-   Doctor validates the tag declaration, not custom-link existence or meaning.
+   one row exists. Check every new ledger row has a valid `Kudos` count and every
+   increase has evidence. Run `cumaru doctor` and inspect the outcome with
+   `cumaru tag`. Doctor validates the tag declaration; kudos and custom-link
+   existence or meaning require separate inspection.
 
 ## Reclassify or rename
 

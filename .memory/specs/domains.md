@@ -96,6 +96,10 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
 14. `focus` ships `templates/directive.md` carrying every field and section
     the directive contract requires; `directives/index.md` and
     `cumaru-directives` reference it instead of restating its sections.
+15. Each `focus` outcome ledger item carries a kudos count. The
+    [outcome contract](../../domains/focus/outcomes/index.md#kudos-per-item) owns
+    initialization, evidence, deduplication, and preservation; the outcome
+    template and skill expose it without changing value, work, or policy totals.
 
 ## Inputs and ownership
 

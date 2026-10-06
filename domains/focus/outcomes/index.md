@@ -40,6 +40,19 @@ scans must not add the same contribution again. Later updates can increase or
 decrease totals; preserve the original entry and record a linked correction.
 Unknown is not zero. Outcomes stay updateable after source threads are archived.
 
+### Kudos per item
+
+Every row added to the value, work, or policy ledger has a `Kudos` count,
+initialized to `0`. Award kudos in increments of `10`, allowing `5` for smaller
+contributions; totals are nonnegative multiples of `5`. Increase the count only
+for explicit recognition of that item, retaining the source and award rationale
+in its existing evidence field. Deduplicate repeated observations of the same
+recognition. Preserve counts when editing,
+correcting, or reclassifying entries; a new correction row starts at `0` and does
+not inherit the original row's kudos. Existing entries without a count remain
+unknown until their recognition history is checked. Kudos do not change value
+deltas, work minutes, or feedback dispositions.
+
 ### Value
 
 Describe the benefit to the product or tool and who benefits. Assess it against

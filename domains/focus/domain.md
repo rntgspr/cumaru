@@ -159,6 +159,7 @@ tracks accumulated effort without confusing elapsed waiting time with work.
 Policy tracks how feedback and comments were received, decided, and acted on,
 including disagreement and reversals. Keep evidence, assumptions, unknowns, and
 updates visible; never invent acceptance, time records, or measured value.
+Each ledger item also retains its own kudos count under that contract.
 
 ## Entry
 
