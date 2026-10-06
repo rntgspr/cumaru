@@ -126,7 +126,7 @@ pub(crate) fn inspect(root: &Path) -> Result<Report, String> {
         deep: true,
     }
     .run(
-        &[root.clone()],
+        std::slice::from_ref(&root),
         |path| path.extension().is_some_and(|extension| extension == "md"),
         |entry| {
             let host = entry
@@ -183,10 +183,11 @@ pub(crate) fn inspect(root: &Path) -> Result<Report, String> {
                 if let Err(error) = markdown::validate_summary(&frontmatter["summary"]) {
                     navigation.push(format!("{host}: {error}"));
                 }
-                if host.starts_with("disciplines/") && host != "disciplines/index.md" {
-                    if let Err(error) = markdown::validate_strictness(&frontmatter["strictness"]) {
-                        navigation.push(format!("{host}: {error}"));
-                    }
+                if host.starts_with("disciplines/")
+                    && host != "disciplines/index.md"
+                    && let Err(error) = markdown::validate_strictness(&frontmatter["strictness"])
+                {
+                    navigation.push(format!("{host}: {error}"));
                 }
                 let fields: BTreeMap<String, bool> = contract
                     .map(|contract| contract.frontmatter.clone())
@@ -270,14 +271,13 @@ pub(crate) fn inspect(root: &Path) -> Result<Report, String> {
                     } else {
                         file_reference(&root, host, &target)
                     };
-                    if let Some((status, target)) = verdict {
-                        if status != references::Status::Ok
-                            && !(name == "touched"
-                                && status == references::Status::Missing
-                                && description.to_ascii_lowercase().contains("removed"))
-                        {
-                            retained.push(format!("{host}: {name} {status:?}: {target}"));
-                        }
+                    if let Some((status, target)) = verdict
+                        && status != references::Status::Ok
+                        && !(name == "touched"
+                            && status == references::Status::Missing
+                            && description.to_ascii_lowercase().contains("removed"))
+                    {
+                        retained.push(format!("{host}: {name} {status:?}: {target}"));
                     }
                 }
             }
@@ -500,10 +500,10 @@ fn drift(text: &str, local: &Yaml) -> Result<Vec<String>, String> {
     .contains(&domain)
     {
         for key in ["domain", "root", "rules", "meta", "workflows"] {
-            if local[key] != Yaml::BadValue {
-                if let Yaml::Hash(values) = &mut source {
-                    values.insert(Yaml::String(key.into()), local[key].clone());
-                }
+            if local[key] != Yaml::BadValue
+                && let Yaml::Hash(values) = &mut source
+            {
+                values.insert(Yaml::String(key.into()), local[key].clone());
             }
         }
     }

@@ -163,10 +163,6 @@ fn specification_dir(config: &Yaml) -> Result<String, String> {
     if declared.is_empty() {
         return Ok(DEFAULT_SPEC_DIR.into());
     }
-    if config["version"].as_i64() != Some(9) {
-        return Ok(declared.into());
-    }
-
     config_tree::directory_path(config, declared)?.ok_or_else(|| {
         format!("meta.specification_dir '{declared}' is not a configured literal directory")
     })
@@ -422,11 +418,7 @@ fn render(mode: Mode, b: &Buckets) -> String {
 fn report(out: &mut Vec<u8>, b: &Buckets, stale: &[&Row], invalid: &[&Row]) {
     let n_source = b.sources.len();
     let n_covered = n_source - b.uncovered.len();
-    let pct = if n_source > 0 {
-        n_covered * 100 / n_source
-    } else {
-        0
-    };
+    let pct = (n_covered * 100).checked_div(n_source).unwrap_or(0);
     let hosts: BTreeSet<&str> = b.refs.iter().map(|row| row.host.as_str()).collect();
 
     let _ = writeln!(
@@ -704,10 +696,6 @@ mod tests {
         assert_eq!(
             specification_dir(&load("version: 9\nmeta: {}\n")).unwrap(),
             "specs"
-        );
-        assert_eq!(
-            specification_dir(&load("version: 8\nmeta: {specification_dir: topology}\n")).unwrap(),
-            "topology"
         );
         assert_eq!(
             specification_dir(&load(

@@ -176,7 +176,7 @@ fn execute(
         deep: true,
     }
     .run(
-        &[root.clone()],
+        std::slice::from_ref(&root),
         |path| crate::paths::file_name(path).ends_with(".md"),
         |entry| {
             if entry.is_dir {

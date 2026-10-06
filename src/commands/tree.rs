@@ -139,10 +139,10 @@ impl TreeParser {
     fn parse(&mut self, entry: Entry<'_>, deep: bool) -> Result<(), String> {
         let rel = self.rel(entry.path);
         if !entry.is_dir {
-            if file_name(entry.path) != "index.md" {
-                if let Some(summary) = self.summary(entry.path, &rel) {
-                    self.records.push(format!("{rel}\t{summary}"));
-                }
+            if file_name(entry.path) != "index.md"
+                && let Some(summary) = self.summary(entry.path, &rel)
+            {
+                self.records.push(format!("{rel}\t{summary}"));
             }
             return Ok(());
         }
@@ -176,10 +176,10 @@ impl TreeParser {
                 || canonical_inside(&self.root, &index).is_none()
             {
                 self.diag(&index_rel, "file does not resolve safely inside .cumaru/");
-            } else if let Some(summary) = self.summary(&index, &index_rel) {
-                if !target {
-                    self.records.push(format!("{rel}/\t{summary}"));
-                }
+            } else if let Some(summary) = self.summary(&index, &index_rel)
+                && !target
+            {
+                self.records.push(format!("{rel}/\t{summary}"));
             }
         } else if deep {
             self.diag(&index_rel, "directory is missing a regular index.md");

@@ -44,14 +44,9 @@ pub(crate) fn parse(text: &str) -> Result<Yaml, String> {
     Ok(doc)
 }
 
-/// Validates the configuration against the embedded schema for its version.
+/// Validates the configuration against the single embedded v9 schema.
 fn validate(doc: &Yaml) -> Result<(), String> {
-    let schema = if doc["version"].as_i64() == Some(8) {
-        include_str!("../schemas/config.schema.off-9.json")
-    } else {
-        include_str!("../schemas/config.schema.json")
-    };
-    let schema: Value = serde_json::from_str(schema)
+    let schema: Value = serde_json::from_str(include_str!("../schemas/config.schema.json"))
         .map_err(|error| format!("cannot parse embedded config schema: {error}"))?;
     let validator = jsonschema::validator_for(&schema)
         .map_err(|error| format!("cannot compile config schema: {error}"))?;
@@ -157,11 +152,11 @@ fn prune(value: &mut Value, schema: &Value, model: &Value, path: &str, removed: 
                 removed.push(pointer);
             }
         }
-    } else if let Some(array) = value.as_array_mut() {
-        if let Some(items) = schema.get("items") {
-            for (index, child) in array.iter_mut().enumerate() {
-                prune(child, items, model, &format!("{path}/{index}"), removed);
-            }
+    } else if let Some(array) = value.as_array_mut()
+        && let Some(items) = schema.get("items")
+    {
+        for (index, child) in array.iter_mut().enumerate() {
+            prune(child, items, model, &format!("{path}/{index}"), removed);
         }
     }
 }
@@ -227,17 +222,6 @@ mod tests {
     fn accepts_shipped_config() {
         let docs =
             YamlLoader::load_from_str(include_str!("../domains/__base/config.yaml")).unwrap();
-
-        assert!(validate(&docs[0]).is_ok());
-    }
-
-    /// Keeps installed v8 configurations valid against their migration schema.
-    #[test]
-    fn accepts_legacy_config() {
-        let docs = YamlLoader::load_from_str(
-            "version: 8\ndomain: legacy\nrules:\n  markdown: {required_heading: h1, frontmatter: []}\n  index_md: {frontmatter: []}\n  pillar_index: {frontmatter: []}\nroot: {entities: {}}\nmeta:\n  targets: {values: [platform]}\n  tags: {}\n  compatibility: {framework_version_field: version, framework_version_location: index.md, rule: [match]}\n",
-        )
-        .unwrap();
 
         assert!(validate(&docs[0]).is_ok());
     }

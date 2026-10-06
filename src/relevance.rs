@@ -51,7 +51,7 @@ impl Query {
     }
 
     /// Extract independent features from one bounded fragment without corpus statistics.
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub(crate) fn features(&self, text: &str) -> [f64; FEATURE_COUNT] {
         self.word_features(&words(text))
     }

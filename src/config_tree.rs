@@ -282,10 +282,10 @@ pub(crate) fn install_files(
                 return Err(format!("release is missing directory index: {host}"));
             }
             let signature = (wildcard(&row.physical), row.owned);
-            if let Some(previous) = contracts.insert(host.clone(), signature) {
-                if !previous.0 || !signature.0 || previous.1 != signature.1 {
-                    return Err(format!("release config destination collision: {host}"));
-                }
+            if let Some(previous) = contracts.insert(host.clone(), signature)
+                && (!previous.0 || !signature.0 || previous.1 != signature.1)
+            {
+                return Err(format!("release config destination collision: {host}"));
             }
             if ["skills", "commands"]
                 .iter()
@@ -477,10 +477,10 @@ pub(crate) fn legacy_tags(config: &Yaml, host: &str) -> (BTreeSet<String>, BTree
     let mut allowed = BTreeSet::new();
     let node = if host == "index.md" {
         Some(&config["root"]["tags"])
-    } else if let Some(pillar) = host.strip_suffix("/index.md").filter(|s| !s.contains('/')) {
-        Some(&config["root"]["entities"][pillar]["tags"])
     } else {
-        None
+        host.strip_suffix("/index.md")
+            .filter(|s| !s.contains('/'))
+            .map(|pillar| &config["root"]["entities"][pillar]["tags"])
     };
     if let Some(tags) = node.and_then(Yaml::as_hash) {
         expected.extend(tags.keys().filter_map(Yaml::as_str).map(String::from));

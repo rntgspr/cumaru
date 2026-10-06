@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 143.
+from 146.
 
 ## Open issues
 
@@ -17,6 +17,9 @@ from 143.
 | [132](issue_132.md) | medium | Ship bootstrap.md for the remaining domains |
 | [139](issue_139.md) | high | Reuse legacy Bash regression scenarios for the native Rust CLI |
 | [142](issue_142.md) | medium | Verify Homebrew installation on every supported platform |
+| [143](issue_143.md) | low | Remove the unreachable legacy v8 tag resolution path |
+| [144](issue_144.md) | medium | Port the wildcard selector conflict check from the retired jq validator to Rust |
+| [145](issue_145.md) | medium | Realign specifications with the native Rust implementation |
 
 ## Notes
 

@@ -162,20 +162,20 @@ pub(crate) fn clear_plan(
     if matches!(mode, Surface::Skills | Surface::Agent) {
         prune_namespace(project, target.skills(), true, &BTreeSet::new(), changes)?;
     }
-    if matches!(mode, Surface::Commands | Surface::Agent) {
-        if let Some(commands) = target.commands().or(if target == Adapter::Claude {
+    if matches!(mode, Surface::Commands | Surface::Agent)
+        && let Some(commands) = target.commands().or(if target == Adapter::Claude {
             Some(".claude/commands")
         } else {
             None
-        }) {
-            prune_namespace(
-                project,
-                &format!("{commands}/cumaru"),
-                false,
-                &BTreeSet::new(),
-                changes,
-            )?;
-        }
+        })
+    {
+        prune_namespace(
+            project,
+            &format!("{commands}/cumaru"),
+            false,
+            &BTreeSet::new(),
+            changes,
+        )?;
     }
     if *mode == Surface::Agent {
         if let Some(path) = target.instructions() {

@@ -88,10 +88,10 @@ the native contract.
    and schema validation belong to `config.rs`.
 3. `config::load` requires a regular, non-symlink `config.yaml` containing
    exactly one YAML document and returns a validated `yaml_rust2::Yaml` value.
-4. Schema validation is private and runs before the loader returns. Version 8
-   selects `config.schema.off-9.json`; all other values select the active
-   `config.schema.json`, whose version constraint rejects unsupported versions.
-5. Both schemas are embedded with `include_str!`; changes require rebuilding.
+4. Schema validation is private and runs before the loader returns. The single
+   active `config.schema.json` is used for every config; its `version: 9`
+   constant rejects older trees, which `cumaru migrate` routes to v9.
+5. The schema is embedded with `include_str!`; changes require rebuilding.
    Validation uses `jsonschema` without its default features, plus `serde_json`,
    and requires no runtime `jq`, `yq`, or schema-file lookup.
 6. YAML conversion rejects non-string mapping keys, non-finite numbers, and
@@ -1086,4 +1086,3 @@ git diff --check
 - [Rust config implementation](../../src/config.rs)
 - [Rust tree implementation](../../src/commands/tree.rs)
 - [Active schema](../../schemas/config.schema.json)
-- [V8 migration schema](../../schemas/config.schema.off-9.json)

@@ -148,107 +148,6 @@ fn regular_bytes(path: &Path) -> Result<Vec<u8>, String> {
     fs::read(path).map_err(|e| e.to_string())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Create an isolated canonical scratch directory without changing HOME or process environment.
-    pub(crate) fn scratch(label: &str) -> PathBuf {
-        let nonce = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let root = fs::canonicalize(std::env::temp_dir())
-            .unwrap()
-            .join(format!(
-                "cumaru-model-{label}-{}-{nonce}",
-                std::process::id()
-            ));
-        fs::create_dir(&root).unwrap();
-
-        root
-    }
-
-    /// Require the closed package metadata and reject unknown names, changed profiles, and duplicate rows.
-    #[test]
-    fn catalog_is_closed() {
-        assert!(parse_catalog(CATALOG.as_bytes()).is_ok());
-        assert!(known("../../escape").is_err());
-        assert!(
-            parse_catalog(
-                CATALOG
-                    .replace("bert-mean-v1", "arbitrary-runtime")
-                    .as_bytes()
-            )
-            .is_err()
-        );
-        let mut value: serde_json::Value = serde_json::from_str(CATALOG).unwrap();
-        let entry = value["models"][0].clone();
-        value["models"].as_array_mut().unwrap().push(entry);
-        assert!(parse_catalog(&serde_json::to_vec(&value).unwrap()).is_err());
-    }
-
-    /// Preserve a legacy root and create nothing on absence or failed download/checksum.
-    #[test]
-    fn failed_download_preserves_cache() {
-        let parent = scratch("failure");
-        let root = parent.join("cache");
-        let entry = known("bge-micro-v2").unwrap();
-        assert!(local(&root).unwrap().is_none());
-        assert!(!root.exists());
-        assert!(install(&root, &entry, |_| Err("offline".into())).is_err());
-        assert!(install(&root, &entry, |_| Ok(b"wrong checksum".to_vec())).is_err());
-        assert!(!root.exists());
-        fs::create_dir(&root).unwrap();
-        fs::write(root.join("legacy.txt"), "keep").unwrap();
-        assert!(local(&root).unwrap().is_none());
-        assert_eq!(fs::read_to_string(root.join("legacy.txt")).unwrap(), "keep");
-        fs::remove_dir_all(parent).unwrap();
-    }
-
-    /// Publish only a complete verified package, then make identical installation a no-download no-op.
-    #[test]
-    fn verified_publication_is_idempotent() {
-        let parent = scratch("publication");
-        let root = parent.join("cache");
-        let mut entry = known("bge-micro-v2").unwrap();
-        let bytes = b"fixture";
-
-        for artifact in &mut entry.artifacts {
-            artifact.bytes = bytes.len();
-            artifact.sha256 = format!("{:x}", Sha256::digest(bytes));
-        }
-
-        assert!(install(&root, &entry, |_| Ok(bytes.to_vec())).unwrap());
-        assert!(!install(&root, &entry, |_| panic!("no second download")).unwrap());
-        assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
-        fs::write(root.join(&entry.name).join("tokenizer.json"), "changed").unwrap();
-        assert!(install(&root, &entry, |_| panic!("preserve damaged package")).is_err());
-        assert_eq!(
-            fs::read_to_string(root.join(&entry.name).join("tokenizer.json")).unwrap(),
-            "changed"
-        );
-        fs::remove_dir_all(parent).unwrap();
-    }
-
-    /// Refuse root/package symlinks and malformed packages rather than silently selecting fallback.
-    #[test]
-    #[cfg(unix)]
-    fn unsafe_or_invalid_packages_fail() {
-        let parent = scratch("unsafe");
-        let root = parent.join("cache");
-        std::os::unix::fs::symlink(&parent, &root).unwrap();
-        assert!(local(&root).is_err());
-        fs::remove_file(&root).unwrap();
-        fs::create_dir(&root).unwrap();
-        fs::create_dir(root.join("bge-micro-v2")).unwrap();
-        assert!(local(&root).is_err());
-        fs::write(root.join("bge-micro-v2/manifest.json"), "{}").unwrap();
-        assert!(local(&root).is_err());
-        fs::remove_dir_all(parent).unwrap();
-    }
-}
-
 /// Validate size and SHA-256 before package publication or offline inference.
 fn verify(artifact: &Artifact, bytes: &[u8]) -> Result<(), String> {
     if bytes.len() != artifact.bytes || format!("{:x}", Sha256::digest(bytes)) != artifact.sha256 {
@@ -459,5 +358,106 @@ impl Encoder {
         })();
 
         result.map_err(|e| e.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Create an isolated canonical scratch directory without changing HOME or process environment.
+    pub(crate) fn scratch(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = fs::canonicalize(std::env::temp_dir())
+            .unwrap()
+            .join(format!(
+                "cumaru-model-{label}-{}-{nonce}",
+                std::process::id()
+            ));
+        fs::create_dir(&root).unwrap();
+
+        root
+    }
+
+    /// Require the closed package metadata and reject unknown names, changed profiles, and duplicate rows.
+    #[test]
+    fn catalog_is_closed() {
+        assert!(parse_catalog(CATALOG.as_bytes()).is_ok());
+        assert!(known("../../escape").is_err());
+        assert!(
+            parse_catalog(
+                CATALOG
+                    .replace("bert-mean-v1", "arbitrary-runtime")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+        let mut value: serde_json::Value = serde_json::from_str(CATALOG).unwrap();
+        let entry = value["models"][0].clone();
+        value["models"].as_array_mut().unwrap().push(entry);
+        assert!(parse_catalog(&serde_json::to_vec(&value).unwrap()).is_err());
+    }
+
+    /// Preserve a legacy root and create nothing on absence or failed download/checksum.
+    #[test]
+    fn failed_download_preserves_cache() {
+        let parent = scratch("failure");
+        let root = parent.join("cache");
+        let entry = known("bge-micro-v2").unwrap();
+        assert!(local(&root).unwrap().is_none());
+        assert!(!root.exists());
+        assert!(install(&root, &entry, |_| Err("offline".into())).is_err());
+        assert!(install(&root, &entry, |_| Ok(b"wrong checksum".to_vec())).is_err());
+        assert!(!root.exists());
+        fs::create_dir(&root).unwrap();
+        fs::write(root.join("legacy.txt"), "keep").unwrap();
+        assert!(local(&root).unwrap().is_none());
+        assert_eq!(fs::read_to_string(root.join("legacy.txt")).unwrap(), "keep");
+        fs::remove_dir_all(parent).unwrap();
+    }
+
+    /// Publish only a complete verified package, then make identical installation a no-download no-op.
+    #[test]
+    fn verified_publication_is_idempotent() {
+        let parent = scratch("publication");
+        let root = parent.join("cache");
+        let mut entry = known("bge-micro-v2").unwrap();
+        let bytes = b"fixture";
+
+        for artifact in &mut entry.artifacts {
+            artifact.bytes = bytes.len();
+            artifact.sha256 = format!("{:x}", Sha256::digest(bytes));
+        }
+
+        assert!(install(&root, &entry, |_| Ok(bytes.to_vec())).unwrap());
+        assert!(!install(&root, &entry, |_| panic!("no second download")).unwrap());
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
+        fs::write(root.join(&entry.name).join("tokenizer.json"), "changed").unwrap();
+        assert!(install(&root, &entry, |_| panic!("preserve damaged package")).is_err());
+        assert_eq!(
+            fs::read_to_string(root.join(&entry.name).join("tokenizer.json")).unwrap(),
+            "changed"
+        );
+        fs::remove_dir_all(parent).unwrap();
+    }
+
+    /// Refuse root/package symlinks and malformed packages rather than silently selecting fallback.
+    #[test]
+    #[cfg(unix)]
+    fn unsafe_or_invalid_packages_fail() {
+        let parent = scratch("unsafe");
+        let root = parent.join("cache");
+        std::os::unix::fs::symlink(&parent, &root).unwrap();
+        assert!(local(&root).is_err());
+        fs::remove_file(&root).unwrap();
+        fs::create_dir(&root).unwrap();
+        fs::create_dir(root.join("bge-micro-v2")).unwrap();
+        assert!(local(&root).is_err());
+        fs::write(root.join("bge-micro-v2/manifest.json"), "{}").unwrap();
+        assert!(local(&root).is_err());
+        fs::remove_dir_all(parent).unwrap();
     }
 }

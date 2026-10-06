@@ -14,12 +14,11 @@ pub(crate) fn cells(
             .iter()
             .filter(|block| block.body_start <= offset && offset < block.body_end)
             .max_by_key(|block| block.depth);
-        if let Some(block) = innermost.filter(|block| names.contains(&block.name.as_str())) {
-            if let Some((link, description, target)) =
+        if let Some(block) = innermost.filter(|block| names.contains(&block.name.as_str()))
+            && let Some((link, description, target)) =
                 table_row(line.trim_end_matches(['\n', '\r']))
-            {
-                cells.push((block.name.clone(), link, description, target));
-            }
+        {
+            cells.push((block.name.clone(), link, description, target));
         }
         offset += line.len();
     }

@@ -50,6 +50,7 @@ mandatory framework order.
 - [Coverage](specs/coverage.md) — source-reference coverage modes, buckets, and strict gate.
 - [Testing](specs/testing.md) — ShellSpec suite, CI, isolation, manual bench, and upgrade exception.
 - [Skill CLI contracts](specs/skill-cli-contracts.md) — native compatibility review, shipped recipe inventory, and verification boundaries.
+- [Sync domain kernel](specs/sync-domain-kernel.md) — maintenance script that mirrors universal `__base` artifacts into every shipped domain.
 
 ## Operational Disciplines
 

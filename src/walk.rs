@@ -195,7 +195,7 @@ mod tests {
         let mut parsed = Vec::new();
         let diagnostics = walk
             .run(
-                &[fixture.0.clone()],
+                std::slice::from_ref(&fixture.0),
                 |_| true,
                 |entry| {
                     parsed.push(entry.path.to_path_buf());

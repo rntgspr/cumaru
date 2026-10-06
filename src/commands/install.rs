@@ -273,88 +273,6 @@ fn add_skills(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Rejects invalid command arguments and resolves the base alias and explicit adapter.
-    #[test]
-    fn validates_install_arguments() {
-        let args = InstallArgs {
-            domain: "base".into(),
-            adapter: vec!["agent".into(), "claude".into()],
-        };
-        assert_eq!(
-            arguments(&args).unwrap(),
-            ("__base".into(), Adapter::Claude)
-        );
-        for domain in ["../outside", "", "UPPER"] {
-            assert!(
-                arguments(&InstallArgs {
-                    domain: domain.into(),
-                    adapter: Vec::new()
-                })
-                .is_err()
-            );
-        }
-        assert!(
-            arguments(&InstallArgs {
-                domain: "__base".into(),
-                adapter: vec!["codex".into()]
-            })
-            .is_err()
-        );
-    }
-
-    /// Enforces discipline metadata without interpreting unrelated Markdown content.
-    #[test]
-    fn validates_source_disciplines() {
-        let mut files = BTreeMap::from([
-            ("disciplines/index.md".into(), Vec::new()),
-            (
-                "disciplines/a.md".into(),
-                b"---\nstrictness: 9/10\n---\nbody".to_vec(),
-            ),
-        ]);
-        assert!(validate_disciplines(&files).is_ok());
-        files.insert(
-            "disciplines/a.md".into(),
-            b"---\nstrictness: 11/10\n---\nbody".to_vec(),
-        );
-        assert!(validate_disciplines(&files).is_err());
-    }
-
-    /// Refuses existing installations and unsafe destinations before creating any planned file.
-    #[test]
-    fn protects_project_preflight() {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let project =
-            std::env::temp_dir().join(format!("cumaru-install-{}-{nonce}", std::process::id()));
-        fs::create_dir(&project).unwrap();
-        let project = fs::canonicalize(project).unwrap();
-        fs::write(project.join("AGENTS.md"), "mine").unwrap();
-        let writes = [Write {
-            path: "AGENTS.md".into(),
-            content: b"new".to_vec(),
-            original: Some(b"stale".to_vec()),
-            executable: false,
-        }];
-        assert!(preflight(&project, &writes).is_err());
-        assert!(!project.join(".cumaru").exists());
-        assert_eq!(fs::read(project.join("AGENTS.md")).unwrap(), b"mine");
-        assert!(safe_destination(&project, "../escape").is_err());
-        #[cfg(unix)]
-        {
-            std::os::unix::fs::symlink("missing", project.join(".cumaru")).unwrap();
-            assert!(refuse_existing(&project).is_err());
-        }
-        fs::remove_dir_all(project).unwrap();
-    }
-}
-
 /// Rejects unsafe or symlinked destination paths and existing non-directory parents.
 fn safe_destination(project: &Path, rel: &str) -> Result<PathBuf, String> {
     paths::project_destination(project, rel)
@@ -436,4 +354,86 @@ fn apply(project: &Path, writes: &[Write]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Rejects invalid command arguments and resolves the base alias and explicit adapter.
+    #[test]
+    fn validates_install_arguments() {
+        let args = InstallArgs {
+            domain: "base".into(),
+            adapter: vec!["agent".into(), "claude".into()],
+        };
+        assert_eq!(
+            arguments(&args).unwrap(),
+            ("__base".into(), Adapter::Claude)
+        );
+        for domain in ["../outside", "", "UPPER"] {
+            assert!(
+                arguments(&InstallArgs {
+                    domain: domain.into(),
+                    adapter: Vec::new()
+                })
+                .is_err()
+            );
+        }
+        assert!(
+            arguments(&InstallArgs {
+                domain: "__base".into(),
+                adapter: vec!["codex".into()]
+            })
+            .is_err()
+        );
+    }
+
+    /// Enforces discipline metadata without interpreting unrelated Markdown content.
+    #[test]
+    fn validates_source_disciplines() {
+        let mut files = BTreeMap::from([
+            ("disciplines/index.md".into(), Vec::new()),
+            (
+                "disciplines/a.md".into(),
+                b"---\nstrictness: 9/10\n---\nbody".to_vec(),
+            ),
+        ]);
+        assert!(validate_disciplines(&files).is_ok());
+        files.insert(
+            "disciplines/a.md".into(),
+            b"---\nstrictness: 11/10\n---\nbody".to_vec(),
+        );
+        assert!(validate_disciplines(&files).is_err());
+    }
+
+    /// Refuses existing installations and unsafe destinations before creating any planned file.
+    #[test]
+    fn protects_project_preflight() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let project =
+            std::env::temp_dir().join(format!("cumaru-install-{}-{nonce}", std::process::id()));
+        fs::create_dir(&project).unwrap();
+        let project = fs::canonicalize(project).unwrap();
+        fs::write(project.join("AGENTS.md"), "mine").unwrap();
+        let writes = [Write {
+            path: "AGENTS.md".into(),
+            content: b"new".to_vec(),
+            original: Some(b"stale".to_vec()),
+            executable: false,
+        }];
+        assert!(preflight(&project, &writes).is_err());
+        assert!(!project.join(".cumaru").exists());
+        assert_eq!(fs::read(project.join("AGENTS.md")).unwrap(), b"mine");
+        assert!(safe_destination(&project, "../escape").is_err());
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink("missing", project.join(".cumaru")).unwrap();
+            assert!(refuse_existing(&project).is_err());
+        }
+        fs::remove_dir_all(project).unwrap();
+    }
 }

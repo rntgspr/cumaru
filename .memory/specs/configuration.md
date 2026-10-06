@@ -33,8 +33,8 @@ cumaru update config [--from <source>]
 ## Invariants
 
 1. `schemas/config.schema.json` is the only active global v9 model; runtime
-   never falls back to `schema.yaml`. The archived v8 model is selected only
-   for installed `version: 8` trees during the migration window.
+   never falls back to `schema.yaml` and embeds no older schema. A config that
+   does not satisfy it is reshaped into v9 by the agent through `cumaru migrate`.
 2. The direct `root` tree is the structural extension point. Its reserved
    attributes are `path`, `optional`, `framework`, `frontmatter`, and
    `tags`; every other key is a literal or glob path selector.
@@ -158,11 +158,6 @@ embedded schema selection, diagnostics, and its current validation boundaries.
 | [`tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | Wildcard index exemption, glob stand-in acceptance, and named review diagnostics. |
 | [`tests/spec/integration/agent_adapters_spec.sh`](../../tests/spec/integration/agent_adapters_spec.sh) | Adapter switching without persisted selection. |
 | [`tests/spec/integration/workflow_graph_spec.sh`](../../tests/spec/integration/workflow_graph_spec.sh) | Optional workflow graph shape, skill availability, and stable order. |
-
-The v8 model is archived at
-[`schemas/config.schema.off-9.json`](../../schemas/config.schema.off-9.json).
-The v8 validator remains selected for installed `version: 8` trees until
-their domain configurations migrate; the active unsuffixed schema is v9.
 
 ## Verification
 

@@ -480,6 +480,74 @@ fn artifact_plan(
     Ok(())
 }
 
+/// Requires a clean committed tracked Cumaru baseline inside Git, otherwise reports absent recovery.
+fn recovery(project: &Path) -> Result<(), String> {
+    let probe = Command::new("git")
+        .current_dir(project)
+        .args(["rev-parse", "--is-inside-work-tree"])
+        .output();
+    let probe = match probe {
+        Ok(probe) => probe,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            eprintln!("warning: Git unavailable; proceeding without a Git recovery point");
+            return Ok(());
+        }
+        Err(e) => return Err(e.to_string()),
+    };
+    if !probe.status.success() {
+        eprintln!("warning: non-Git project; proceeding without a Git recovery point");
+        return Ok(());
+    }
+    if probe.stdout != b"true\n" {
+        return Err("project is not a Git work tree".into());
+    }
+    let status = Command::new("git")
+        .current_dir(project)
+        .args(["status", "--porcelain", "--untracked-files=all"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !status.status.success() || !status.stdout.is_empty() {
+        return Err("Git work tree must be clean before update mutation".into());
+    }
+    for args in [
+        vec!["rev-parse", "--verify", "HEAD"],
+        vec![
+            "ls-files",
+            "--error-unmatch",
+            ".cumaru/config.yaml",
+            ".cumaru/index.md",
+        ],
+    ] {
+        if !Command::new("git")
+            .current_dir(project)
+            .args(args)
+            .output()
+            .map_err(|e| e.to_string())?
+            .status
+            .success()
+        {
+            return Err("update requires a committed tracked Cumaru baseline".into());
+        }
+    }
+    Ok(())
+}
+
+/// Maps the selected update mode to the shared owned-artifact cleanup planner.
+fn clear_plan(
+    project: &Path,
+    mode: &Mode,
+    target: Adapter,
+    changes: &mut BTreeMap<String, Change>,
+) -> Result<(), String> {
+    let surface = match mode {
+        Mode::Skills => Surface::Skills,
+        Mode::Commands => Surface::Commands,
+        Mode::Agent => Surface::Agent,
+        _ => return Err("clear requires an artifact mode".into()),
+    };
+    artifacts::clear_plan(project, &surface, target, changes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -554,72 +622,4 @@ mod tests {
         );
         fs::remove_dir_all(project).unwrap();
     }
-}
-
-/// Requires a clean committed tracked Cumaru baseline inside Git, otherwise reports absent recovery.
-fn recovery(project: &Path) -> Result<(), String> {
-    let probe = Command::new("git")
-        .current_dir(project)
-        .args(["rev-parse", "--is-inside-work-tree"])
-        .output();
-    let probe = match probe {
-        Ok(probe) => probe,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            eprintln!("warning: Git unavailable; proceeding without a Git recovery point");
-            return Ok(());
-        }
-        Err(e) => return Err(e.to_string()),
-    };
-    if !probe.status.success() {
-        eprintln!("warning: non-Git project; proceeding without a Git recovery point");
-        return Ok(());
-    }
-    if probe.stdout != b"true\n" {
-        return Err("project is not a Git work tree".into());
-    }
-    let status = Command::new("git")
-        .current_dir(project)
-        .args(["status", "--porcelain", "--untracked-files=all"])
-        .output()
-        .map_err(|e| e.to_string())?;
-    if !status.status.success() || !status.stdout.is_empty() {
-        return Err("Git work tree must be clean before update mutation".into());
-    }
-    for args in [
-        vec!["rev-parse", "--verify", "HEAD"],
-        vec![
-            "ls-files",
-            "--error-unmatch",
-            ".cumaru/config.yaml",
-            ".cumaru/index.md",
-        ],
-    ] {
-        if !Command::new("git")
-            .current_dir(project)
-            .args(args)
-            .output()
-            .map_err(|e| e.to_string())?
-            .status
-            .success()
-        {
-            return Err("update requires a committed tracked Cumaru baseline".into());
-        }
-    }
-    Ok(())
-}
-
-/// Maps the selected update mode to the shared owned-artifact cleanup planner.
-fn clear_plan(
-    project: &Path,
-    mode: &Mode,
-    target: Adapter,
-    changes: &mut BTreeMap<String, Change>,
-) -> Result<(), String> {
-    let surface = match mode {
-        Mode::Skills => Surface::Skills,
-        Mode::Commands => Surface::Commands,
-        Mode::Agent => Surface::Agent,
-        _ => return Err("clear requires an artifact mode".into()),
-    };
-    artifacts::clear_plan(project, &surface, target, changes)
 }
