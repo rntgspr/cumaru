@@ -90,6 +90,8 @@ A domain is discoverable once `domains/<name>/config.yaml` exists on `main`;
 ## Available skills
 
 **Universal** (authored in `__base/skills/`, mirrored verbatim into every domain):
+- `cumaru-search` — discover relevant knowledge when its owning file is unknown;
+  [the canonical recipe](../domains/__base/skills/cumaru-search/SKILL.md) owns search routing and evidence selection.
 - `cumaru-doctor`, `cumaru-flow`, `cumaru-update`, `cumaru-summarize`, and `cumaru-role` —
   multi-step orchestration carried by `SKILL.md`.
 - `cumaru-refs` — spec↔code reference coverage: closes the gaps `cumaru coverage` reports by wiring source files into spec `reference` tables.
@@ -127,7 +129,7 @@ Generic (`none`) and OpenCode receive command launchers; Claude and Codex invoke
 the skills directly.
 
 **Universal** (authored in `__base/commands/cumaru/`, mirrored verbatim into every domain):
-- `/cumaru:doctor`, `/cumaru:flow`, `/cumaru:update`, `/cumaru:refs`, `/cumaru:summarize`, `/cumaru:role <role>` — universal launchers with no domain-specific recipe content. In OpenCode, use `/cumaru/role <role>`.
+- `/cumaru:doctor`, `/cumaru:flow`, `/cumaru:update`, `/cumaru:refs`, `/cumaru:search`, `/cumaru:summarize`, `/cumaru:role <role>` — universal launchers with no domain-specific recipe content. In OpenCode, use `/cumaru/role <role>`.
 
 Every command requires `skills/cumaru-<name>/SKILL.md`. Its body places
 `$ARGUMENTS` before the skill invocation and contains no workflow recipe;

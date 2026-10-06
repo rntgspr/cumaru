@@ -18,17 +18,11 @@ Cumaru mandatory for unrelated work, and loading it grants no new mutation autho
 
 ## Discover knowledge
 
-Start from the eager kernel, domain, and disciplines; then load bodies only as the task needs them.
-
-1. `cumaru tree [<dir-or-md>...] [--deep]`: path/summary TSV for bounded traversal by summary.
-2. `cumaru context "<english query>"`: path/score TSV ranking visible `.cumaru/` Markdown when
-   summaries do not settle which hosts matter. Read the top paths, not every row.
-3. `cumaru map [<dir-or-md>]`: literal H1-H6 headings with line numbers, to read one section of a
-   large host instead of the whole file.
-
-`context` is offline and read-only. It uses a valid cached encoder or the lightweight fallback; a
-present but invalid model fails instead of falling back. Scores are experimental, backend-specific
-orderings, never proof that requirements or acceptance are satisfied.
+After the eager bootstrap, when the task needs Cumaru knowledge and its owning file is unknown,
+load the installed `cumaru-search` skill (`cumaru-search/SKILL.md` in the agent's skill directory)
+and follow its discovery workflow. It owns search routing, candidate selection, and verification.
+Known files can be read directly. Resolve the skill through the native skill directory,
+not through `.cumaru/skills/`.
 
 ## Surface map
 

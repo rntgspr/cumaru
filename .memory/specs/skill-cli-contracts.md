@@ -38,6 +38,14 @@ skills own semantic workflows and do not imply additional command capabilities.
 
 ## Review coverage
 
+The universal `cumaru-search` recipe owns read-only knowledge discovery when
+the owning file is unknown. `cumaru-first` routes that need to the installed
+skill; the [canonical recipe](../../domains/__base/skills/cumaru-search/SKILL.md)
+defines tool selection and content verification without duplicating the policy
+in the discipline. Every domain receives the skill and its Generic/OpenCode
+launcher through universal synchronization. The inventory below is the earlier
+review snapshot, before this addition.
+
 The 2026-10-03 review accounts for 99 SKILL.md files: 91 domain files and eight
 optional files. Six universal recipes are reviewed at base and verified across
 eight domains (48 files); the other 43 domain recipes and eight optional recipes
