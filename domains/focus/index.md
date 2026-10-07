@@ -38,13 +38,15 @@ when the user explicitly requests one.
 The whole `.cumaru/` tree is described under `config.yaml`'s `root:` key. **`root` is the top node** (the `.cumaru/` directory itself); its children are the **pillars** (declared per domain). Every node shares one shape:
 
 ```
-{ path?, frontmatter?, tags?, entities? }
+{ path?, optional?, framework?, frontmatter?, tags?, <selector>: <node>, ... }
 ```
 
 - **`path`** — the node's dir/file, relative to its parent (implicit = the key).
-- **`frontmatter`** — the node's `index.md` frontmatter contract (`!` = required).
-- **`tags`** — adopter-owned semantic marker blocks in the node's `index.md`. They express relations or durable records; they never inventory directory children.
-- **`entities`** — child nodes, recursive, same shape.
+- **`optional`** — `true` makes a literal entry optional; glob selectors may match no entries.
+- **`framework`** — only explicit `true` marks an entry as framework-owned; ownership never inherits.
+- **`frontmatter`** — field contracts for a file or a directory's `index.md`: `{}` requires presence; `{optional: true}` makes a field optional.
+- **`tags`** — required semantic marker names for that host. Their bodies are adopter-owned; they express relations or durable records, never directory inventories.
+- **Child selectors** — literal or glob keys declared directly inside the node, each mapping to another node. There is no `entities` wrapper.
 
 A node's `index.md` states the directory's purpose and rules. The filesystem is the structural source of truth; `cumaru tree <directory>` is the shallow index and reads each candidate's `summary:` without loading its body.
 
@@ -97,7 +99,11 @@ Domain skills are separate from CLI subcommands. A workflow such as
 `cumaru-intake`, when shipped by the installed domain, is invoked through the
 active agent's skill surface; `cumaru intake` is not a command.
 
-Paths are always relative to `.cumaru/`. Absolute paths, `..` segments, and symlinks that escape the tree are refused.
+`tree`, `map`, and `fs` take paths relative to `.cumaru/`; absolute paths and
+`..` segments are refused. `tag` also accepts absolute paths and `.cumaru/`-prefixed
+paths when contained in the current tree. `tree`, `map`, and `tag` refuse symlinks;
+`fs` resolves symlinked roots and parents but refuses direct symlink targets and
+paths escaping the tree. Consult each command's help for its full path contract.
 
 ```bash
 # Navigate: start shallow, prune by summary, recurse only into survivors.
@@ -122,7 +128,7 @@ All content authored under `.cumaru/` is written in **English** — indexes, spe
 
 ## This Domain
 
-The pillars, roles, entry points, and domain conventions for this domain are declared in [`domain.md`](domain.md), pulled in as this index's `depends-on`. To build a new domain: declare your pillars in `config.yaml` under `root.entities`, create each `<pillar>/index.md`, write your `domain.md`, and run `cumaru doctor`.
+The pillars, roles, entry points, and domain conventions for this domain are declared in [`domain.md`](domain.md), pulled in as this index's `depends-on`. To build a new domain: declare your pillars as direct child keys under `config.yaml`'s `root`, create each `<pillar>/index.md`, write your `domain.md`, and run `cumaru doctor`.
 
 ## Project context
 
