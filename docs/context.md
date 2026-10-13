@@ -14,15 +14,18 @@ paths for ties. A Markdown `index.md` is evaluated like every other visible host
 
 ## Backend selection
 
-- Valid `~/.cumaru/bge-micro-v2/`: verify the local manifest, sizes, and checksums,
+- Enabled, valid `~/.cumaru/bge-micro-v2/`: verify the local manifest, sizes, and checksums,
   then load the encoder with Candle on CPU.
-- No supported package: use the original compact lexical/numerical scorer.
-- Present invalid, damaged, unsafe, or incompatible package: fail explicitly;
+- No supported package or an explicitly released package: use the original compact lexical/numerical scorer.
+- Present invalid, damaged, or incompatible enabled package, unsafe cache paths,
+  or an invalid release marker: fail explicitly;
   never silently switch to fallback.
 
 The selected backend is reported on stderr. `context` downloads nothing and does
 not create a cache. Install an optional encoder explicitly with
-[`cumaru model push`](model.md). Other commands do not initialize inference.
+[`cumaru model pull`](model.md). `cumaru model release` restores lightweight ranking
+without deleting cached files; pull verifies and re-enables them. Other commands
+do not initialize inference.
 
 The fallback uses experimental coefficients trained on disclosed synthetic examples;
 it does not understand arbitrary paraphrases. The encoder uses normalized mean-pooled

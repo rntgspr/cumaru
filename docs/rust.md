@@ -47,8 +47,10 @@ the installed identity; no files are changed. Without an adopter it stays offlin
 encoder or the lightweight fallback. [`cumaru model`](model.md) separately lists
 the closed GitHub catalog and explicitly installs a model in `~/.cumaru/<name>/`.
 These are model packages, not the retired global CLI source snapshot. The binary
-does not embed pretrained weights. List/push require the catalog to be published
+does not embed pretrained weights. List/pull require the catalog to be published
 on main; local prepared-package verification does not establish live availability.
+`model release` works offline and restores lightweight ranking while retaining
+cached files; `model pull` validates and re-enables an existing package.
 
 The binary installer remains a Bash script at `src/install.sh`; Bash also
 runs installed session hooks. Deprecating the Bash CLI does not remove those

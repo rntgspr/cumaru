@@ -54,7 +54,7 @@ adapter instructions and SessionStart hook
    does not bind unrelated work or create a separate delivery path. It is
    also the compact agent manual for all 16 native command families: bounded
    discovery through `tree`, `context`, and `map`; explicit, user-approved
-   `model push` downloads; and the mutation distinctions of install, update,
+   `model pull` downloads and `model release` deactivation without deleting cached files; and the mutation distinctions of install, update,
    uninstall, and upgrade. It points to `cumaru help <command>` for flags
    instead of duplicating command documentation, and grants no new authority.
 9. Discipline guidance is bounded by task ownership and observed evidence.

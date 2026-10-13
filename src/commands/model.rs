@@ -15,14 +15,30 @@ pub struct ModelArgs {
 enum Action {
     /// Read the fixed supported-model catalog from GitHub main.
     List,
-    /// Download a catalog model into ~/.cumaru/<name>/; never upload.
-    Push { name: String },
+    /// Download and enable a catalog model, reusing a verified local package.
+    Pull { name: String },
+    /// Disable the cached encoder without deleting its files; use lightweight ranking.
+    Release,
 }
 
 /// Dispatches explicit model operations without initializing context or modifying adopter data.
 pub fn run(args: ModelArgs) -> ExitCode {
     let result = (|| {
-        if let Action::Push { name } = &args.action {
+        if let Action::Release = &args.action {
+            let released = models::release(&models::cache_root()?)?;
+            println!(
+                "{}; context uses lightweight ranking",
+                if released {
+                    "model released"
+                } else {
+                    "no model enabled"
+                }
+            );
+
+            return Ok(());
+        }
+
+        if let Action::Pull { name } = &args.action {
             models::known(name)?;
         }
 
@@ -42,7 +58,7 @@ pub fn run(args: ModelArgs) -> ExitCode {
                     );
                 }
             }
-            Action::Push { name } => {
+            Action::Pull { name } => {
                 let entry = catalog
                     .models
                     .iter()
@@ -55,11 +71,12 @@ pub fn run(args: ModelArgs) -> ExitCode {
                     if installed {
                         "installed"
                     } else {
-                        "already installed"
+                        "enabled cached model"
                     },
                     root.join(name).display()
                 );
             }
+            Action::Release => unreachable!("release returns before remote catalog access"),
         }
 
         Ok::<_, String>(())
@@ -71,5 +88,39 @@ pub fn run(args: ModelArgs) -> ExitCode {
             eprintln!("cumaru model: {error}");
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[derive(Parser)]
+    struct Cli {
+        #[command(flatten)]
+        args: ModelArgs,
+    }
+
+    /// Require a name for pull, no arguments for release, and reject the retired push spelling.
+    #[test]
+    fn model_command_arguments() {
+        assert!(matches!(
+            Cli::try_parse_from(["model", "pull", "bge-micro-v2"])
+                .unwrap()
+                .args
+                .action,
+            Action::Pull { .. }
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["model", "release"])
+                .unwrap()
+                .args
+                .action,
+            Action::Release
+        ));
+        assert!(Cli::try_parse_from(["model", "pull"]).is_err());
+        assert!(Cli::try_parse_from(["model", "release", "bge-micro-v2"]).is_err());
+        assert!(Cli::try_parse_from(["model", "push", "bge-micro-v2"]).is_err());
     }
 }

@@ -134,11 +134,12 @@ matching. Install a supported model explicitly:
 
 ```bash
 cumaru model list
-cumaru model push bge-micro-v2
+cumaru model pull bge-micro-v2
 ```
 
 Models live under `~/.cumaru/<name>/`, outside the binary and project knowledge.
-After download, queries work offline. See [context](docs/context.md) and
+After download, queries work offline. `cumaru model release` restores lightweight
+ranking while retaining the package; pull verifies and re-enables it. See [context](docs/context.md) and
 [model management](docs/model.md) for limits and score interpretation.
 
 ## Core commands
@@ -153,7 +154,7 @@ After download, queries work offline. See [context](docs/context.md) and
 | `cumaru tree` | List filesystem-backed candidates and their summaries |
 | `cumaru map` | List literal H1-H6 headings with markers and source lines under a selected scope |
 | `cumaru context "query"` | Rank local Markdown offline with a cached encoder or lightweight fallback; [guide](docs/context.md) |
-| `cumaru model list` / `cumaru model push <name>` | Read the closed GitHub catalog or download an optional model into `~/.cumaru/<name>/`; [guide](docs/model.md) |
+| `cumaru model list` / `pull <name>` / `release` | Read the closed catalog, download/enable an optional encoder, or restore lightweight ranking while retaining the cache; [guide](docs/model.md) |
 | `cumaru fs` | Perform guarded file operations inside `.cumaru/` |
 | `cumaru update` | Preview or directly refresh framework content at the installed integer version |
 | `cumaru upgrade` | Replace the native binary; `--check` only compares build identity with the latest GitHub tag |

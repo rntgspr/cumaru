@@ -13,13 +13,15 @@ outside this task; the work below records the implementation scope.
 
 ```text
 cumaru model list
-cumaru model push <catalog-name>
+cumaru model pull <catalog-name>
+cumaru model release
 cumaru context "query"
 ~/.cumaru/<catalog-name>/
 ```
 
-`push` means download and install locally, not upload. Model management is a
-top-level command family, not a context subcommand. It works without an adopter
+`pull` downloads and enables a local model; `release` disables it without deleting
+its package. Model management is a top-level command family, not a context
+subcommand. It works without an adopter
 tree and creates no project knowledge, adapter files, or global CLI installation.
 
 ## Ownership and boundaries
@@ -33,7 +35,7 @@ tree and creates no project knowledge, adapter files, or global CLI installation
    an arbitrary architecture. Resolve catalog reads to one main commit.
 3. `list` reads the remote catalog without loading inference, installing files,
    or requiring `.cumaru/`. Failure reports no invented model inventory.
-4. `push <name>` accepts only a catalog name and explicitly downloads its complete
+4. `pull <name>` accepts only a catalog name and explicitly downloads its complete
    verified package into the invoking user's `~/.cumaru/<name>/`. Other models,
    legacy snapshots, symlinks, and unrelated files must not be overwritten.
 5. This user's `~/.cumaru` was absent when inspected on 2026-10-03. The implementation
@@ -42,7 +44,7 @@ tree and creates no project knowledge, adapter files, or global CLI installation
 6. Download and verification precede publication. Failed downloads/checksums must
    leave any existing usable model intact. Retain a local validated manifest so
    inference is offline and can verify the installed package without a catalog fetch.
-7. Only explicit `model push` performs model downloads. Neither `context` nor
+7. Only explicit `model pull` performs model downloads. Neither `context` nor
    ordinary Cumaru commands install or refresh weights automatically. No pretrained
    encoder bytes belong in the distributed executable.
 
@@ -52,8 +54,8 @@ Start with the BGE Micro candidate already exercised in the comparison; its exac
 catalog name and approved packaging belong to implementation. Keep the initial
 catalog deliberately small. Optional models must be verified locally before use.
 
-`context` uses a compatible installed encoder or, when none is installed, the
-original lightweight scorer. A present but invalid package returns an explicit
+`context` uses a compatible enabled encoder or, when absent or released, the
+original lightweight scorer. A present but invalid enabled package returns an explicit
 error. The backend name may be reported on stderr, leaving ranking TSV unchanged.
 The two scoring scales still need calibration; identical formatting does not imply
 identical numerical meaning.
@@ -64,7 +66,7 @@ directory iteration order nor an arbitrary downloaded folder selects a backend.
 
 ## Implementation shape
 
-- `commands/model.rs` owns CLI list/push orchestration.
+- `commands/model.rs` owns CLI list/pull/release orchestration.
 - A shared model module owns catalog validation, safe cache paths, verified
   artifact publication, local discovery, and supported runtime profiles.
 - `commands/context.rs` owns query collection and ranking; it consumes the shared

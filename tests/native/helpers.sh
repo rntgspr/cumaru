@@ -1,6 +1,7 @@
 # Runs the real binary in a private project with an isolated home and closed source stub.
 native_setup() {
   NATIVE_TMP=$(mktemp -d "${TMPDIR:-/tmp}/cumaru-native.XXXXXX")
+  NATIVE_TMP=$(cd "$NATIVE_TMP" && pwd -P)
   PROJECT="$NATIVE_TMP/project"
   FS_PROJECT="$PROJECT"
   mkdir -p "$PROJECT" "$NATIVE_TMP/home" "$NATIVE_TMP/bin"

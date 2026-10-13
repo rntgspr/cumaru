@@ -111,6 +111,26 @@ mod tests {
             "Beat two eggs. Melt butter in a pan and stir the eggs until cooked.",
         )
         .unwrap();
+        assert!(
+            execute(
+                "look for egg recipes",
+                &root.join("project"),
+                &Ok(cache.clone())
+            )
+            .unwrap()
+        );
+        assert!(models::release(&cache).unwrap());
+        assert!(models::local(&cache).unwrap().is_none());
+        assert!(
+            execute(
+                "look for egg recipes",
+                &root.join("project"),
+                &Ok(cache.clone())
+            )
+            .unwrap()
+        );
+        assert!(!models::install(&cache, &catalog, |_| panic!("reuse cached weights")).unwrap());
+        assert!(models::local(&cache).unwrap().is_some());
         assert!(execute("look for egg recipes", &root.join("project"), &Ok(cache)).unwrap());
         fs::remove_dir_all(root).unwrap();
     }

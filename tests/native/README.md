@@ -8,7 +8,10 @@ default is `target/release/cumaru`. No native test executes `src/*.sh`.
 
 Each process example has a fresh project and HOME. A closed cURL stub serves
 main identity, a complete checkout inventory, and raw files at one fixed SHA;
-unknown URLs fail instead of reaching the network. Model downloads, inference,
+unknown URLs fail instead of reaching the network. `model_spec.sh` checks offline
+release, retained artifacts/lightweight fallback, invalid-state preservation, and
+CLI arguments. Fixtures use canonical temporary paths so cache safety does not
+encounter macOS's `/var` symlink. Model downloads, encoder inference,
 global installation, and real adopter mutations are outside this suite.
 Git recovery/coverage cases initialize only their disposable project repositories.
 
@@ -63,6 +66,14 @@ issue 065. Unselected legacy suites that source the removed Bash modules no long
 run; tag 0.10.0 keeps those modules as porting reference.
 
 ## Evidence
+
+On 2026-10-05, the seven model activation/release cases brought the selected suite
+to 64 native process cases and 18 artifact cases. Default and randomized execution
+passed all 82 cases (24.29 and 26.93 seconds respectively). The initial model
+fixture failures on macOS's `/var` alias were resolved by canonicalizing the
+temporary root; production cache symlink protection remains unchanged. Real BGE
+inference and retained-package reactivation were verified separately in disposable
+caches as recorded in [the model specification](../../.memory/specs/context.md).
 
 On macOS ARM, ShellSpec 0.28.1 with Bash 3.2 executes 57 native process cases plus
 18 reused artifact cases. Default TAP and randomized execution passed all 75

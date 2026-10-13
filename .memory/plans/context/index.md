@@ -20,8 +20,9 @@ summary: Deliver local relevance ranking with an optional cached encoder and an 
    explicit error, not a silent fallback. Queries download nothing automatically.
    Invocation requires no Python, server, or GPU.
 5. Model management is independent: `cumaru model list` reads a closed catalog
-   from GitHub; `cumaru model push <name>` downloads an allowed model into
-   `~/.cumaru/<name>/`. Weights are not embedded in the CLI. Model resources can
+   from GitHub; `cumaru model pull <name>` downloads and enables an allowed model in
+   `~/.cumaru/<name>/`. `cumaru model release` restores the fallback while retaining
+   cached files. Weights are not embedded in the CLI. Model resources can
    serve future commands; existing unrelated commands do not initialize inference.
 6. Ranking preserves code, headings, and links as input signals. Oversized files
    are evaluated through bounded text fragments, without silent truncation.

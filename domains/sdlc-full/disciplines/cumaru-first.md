@@ -39,10 +39,11 @@ not through `.cumaru/skills/`.
 | Check CLI identity and config drift | `cumaru version`. |
 | Remove a project installation | `cumaru uninstall`; it deletes adopter knowledge and needs confirmation or `--yes`. |
 | Replace the global CLI | `cumaru upgrade`; `--check` only compares release tags. |
-| Enable encoder ranking | `cumaru model list`, then `cumaru model push <catalog-name>`. |
+| Enable encoder ranking | `cumaru model list`, then `cumaru model pull <catalog-name>`. |
+| Restore lightweight ranking | `cumaru model release`; cached model files remain available for the next pull. |
 | Learn exact flags | `cumaru help <command>`. |
 
-`model push` downloads, never uploads: one closed catalog entry into `~/.cumaru/<name>/`, verified by
+`model pull` downloads and enables one closed catalog entry in `~/.cumaru/<name>/`, verified by
 size and checksum. Only run it when the user asked for a model or approved the download; queries never
 download. Project update, model download, and global upgrade are independent operations.
 

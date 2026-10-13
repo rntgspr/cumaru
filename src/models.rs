@@ -14,6 +14,7 @@ use std::{
 use tokenizers::Tokenizer;
 
 const CATALOG: &str = include_str!("../models/catalog.json");
+const RELEASED: &str = ".released";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -181,7 +182,42 @@ fn package(directory: &Path, entry: &Model) -> Result<Vec<Vec<u8>>, String> {
         .collect()
 }
 
-/// Download and verify all artifacts first, then publish a new complete directory without replacing existing data.
+/// Validate the empty release marker without accepting symlinks, special files, or unrelated content.
+fn released(directory: &Path) -> Result<bool, String> {
+    let path = directory.join(RELEASED);
+
+    match fs::symlink_metadata(&path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error.to_string()),
+        Ok(metadata) if metadata.is_file() && metadata.len() == 0 => Ok(true),
+        Ok(_) => Err(format!("invalid model release marker: {}", path.display())),
+    }
+}
+
+/// Disable the supported cached encoder offline, retaining every package file and creating no absent cache.
+pub(crate) fn release(root: &Path) -> Result<bool, String> {
+    let directory = root.join(known("bge-micro-v2")?.name);
+    safe_directory(&directory)?;
+
+    if !directory.exists() || released(&directory)? {
+        return Ok(false);
+    }
+
+    match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join(RELEASED))
+    {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            released(&directory)?;
+            Ok(false)
+        }
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+/// Enable a verified cached package or download and publish a complete new directory without replacing data.
 pub(crate) fn install(
     root: &Path,
     entry: &Model,
@@ -193,6 +229,11 @@ pub(crate) fn install(
 
     if directory.exists() {
         package(&directory, entry)?;
+
+        if released(&directory)? {
+            fs::remove_file(directory.join(RELEASED)).map_err(|e| e.to_string())?;
+        }
+
         return Ok(false);
     }
 
@@ -244,7 +285,7 @@ pub(crate) fn install(
     result
 }
 
-/// Discover the one supported cached encoder offline; absence permits fallback, invalid packages fail.
+/// Discover the enabled cached encoder offline; absence or explicit release permits fallback, invalid active packages fail.
 pub(crate) fn local(root: &Path) -> Result<Option<Encoder>, String> {
     safe_directory(root)?;
     let entry = known("bge-micro-v2")?;
@@ -254,6 +295,12 @@ pub(crate) fn local(root: &Path) -> Result<Option<Encoder>, String> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error.to_string()),
         Ok(_) => {}
+    }
+
+    safe_directory(&directory)?;
+
+    if released(&directory)? {
+        return Ok(None);
     }
 
     let files = package(&directory, &entry)?;
@@ -419,7 +466,7 @@ mod tests {
         fs::remove_dir_all(parent).unwrap();
     }
 
-    /// Publish only a complete verified package, then make identical installation a no-download no-op.
+    /// Publish and reactivate only verified packages without redownloading or changing retained artifacts.
     #[test]
     fn verified_publication_is_idempotent() {
         let parent = scratch("publication");
@@ -435,12 +482,69 @@ mod tests {
         assert!(install(&root, &entry, |_| Ok(bytes.to_vec())).unwrap());
         assert!(!install(&root, &entry, |_| panic!("no second download")).unwrap());
         assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
+
+        let directory = root.join(&entry.name);
+        let manifest = fs::read(directory.join("manifest.json")).unwrap();
+        assert!(release(&root).unwrap());
+        assert!(!release(&root).unwrap());
+        assert!(local(&root).unwrap().is_none());
+        assert_eq!(fs::read(directory.join("manifest.json")).unwrap(), manifest);
+
+        for artifact in &entry.artifacts {
+            assert_eq!(fs::read(directory.join(&artifact.file)).unwrap(), bytes);
+        }
+
+        assert!(!install(&root, &entry, |_| panic!("reactivate cached package")).unwrap());
+        assert!(!directory.join(RELEASED).exists());
+        assert_eq!(fs::read(directory.join("manifest.json")).unwrap(), manifest);
+
+        assert!(release(&root).unwrap());
         fs::write(root.join(&entry.name).join("tokenizer.json"), "changed").unwrap();
         assert!(install(&root, &entry, |_| panic!("preserve damaged package")).is_err());
+        assert!(released(&directory).unwrap());
+        assert!(local(&root).unwrap().is_none());
         assert_eq!(
             fs::read_to_string(root.join(&entry.name).join("tokenizer.json")).unwrap(),
             "changed"
         );
+        fs::remove_dir_all(parent).unwrap();
+    }
+
+    /// Make release a no-write no-op without a package and reject unsafe markers without changing their targets.
+    #[test]
+    #[cfg(unix)]
+    fn release_preserves_absent_and_unsafe_state() {
+        let parent = scratch("release");
+        let root = parent.join("cache");
+        assert!(!release(&root).unwrap());
+        assert!(!root.exists());
+        fs::create_dir(&root).unwrap();
+        fs::write(root.join("legacy.txt"), "keep").unwrap();
+        assert!(!release(&root).unwrap());
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
+
+        let directory = root.join("bge-micro-v2");
+        std::os::unix::fs::symlink(&parent, &directory).unwrap();
+        assert!(release(&root).is_err());
+        assert!(!parent.join(RELEASED).exists());
+        fs::remove_file(&directory).unwrap();
+        fs::create_dir(&directory).unwrap();
+        let marker = directory.join(RELEASED);
+        let unrelated = root.join("legacy.txt");
+        std::os::unix::fs::symlink(&unrelated, &marker).unwrap();
+        assert!(release(&root).is_err());
+        assert!(local(&root).is_err());
+        assert_eq!(fs::read_to_string(&unrelated).unwrap(), "keep");
+        fs::remove_file(&marker).unwrap();
+
+        fs::write(&marker, "unrelated content").unwrap();
+        assert!(release(&root).is_err());
+        assert!(local(&root).is_err());
+        assert_eq!(fs::read_to_string(&marker).unwrap(), "unrelated content");
+        fs::remove_file(&marker).unwrap();
+        fs::create_dir(&marker).unwrap();
+        assert!(release(&root).is_err());
+        assert!(local(&root).is_err());
         fs::remove_dir_all(parent).unwrap();
     }
 

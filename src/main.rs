@@ -30,7 +30,7 @@ struct Cli {
 /// Supported subcommands.
 #[derive(Subcommand)]
 enum Command {
-    /// List the closed model catalog or explicitly download a supported model.
+    /// List, download and enable, or release optional cached models.
     Model(commands::model::ModelArgs),
 
     /// Rank local Markdown by query relevance using a cached encoder or lightweight fallback.

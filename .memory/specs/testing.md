@@ -141,9 +141,9 @@ through `cargo test`; selected native process scenarios exercise actual CLI
 streams/status, safe partial output, four adapters, preview/config non-mutation,
 update/clear ownership and opaque body preservation, Git recovery and source
 failures. Retained unselected scenarios still require a deliberate port.
-The current native suite has 81 routine unit tests and one ignored prepared-model
+The current native suite has 82 routine unit tests and one ignored prepared-model
 smoke, separately exercised as recorded in [context and models](context.md).
-The selected harness has 57 process cases and 18 artifact cases. Local macOS ARM
+The selected harness has 64 process cases and 18 artifact cases. Local macOS ARM
 verification uses ShellSpec 0.28.1/Bash 3.2. Disposable mutation wrappers for wrong
 status, stream routing, unsafe acceptance and copy source loss each fail the
 reused fs regressions. No production binary was changed. Default/random execution
@@ -153,6 +153,7 @@ parity, Linux behavior or permission to delete unselected `src/` consumers.
 
 | Test | Covered behavior |
 |---|---|
+| [`../../tests/native/model_spec.sh`](../../tests/native/model_spec.sh) | Offline release, retained artifacts and lightweight fallback, failed pull preservation, unsafe markers, and CLI arguments. Encoder inference remains an opt-in smoke. |
 | [`../../tests/spec/cli/`](../../tests/spec/cli/) | Tree, doctor, fs, and coverage public CLI contracts. |
 | [`../../tests/spec/contracts/`](../../tests/spec/contracts/) | Help, migration, and shipped artifact contracts. |
 | [`../../tests/spec/integration/`](../../tests/spec/integration/) | Global config model and agent adapters. |
