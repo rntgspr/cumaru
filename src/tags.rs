@@ -189,6 +189,66 @@ pub(crate) fn merge(source: &str, local: &str) -> Result<String, String> {
     Ok(output)
 }
 
+/// Replaces frontmatter and adds absent scaffolds while preserving the complete local body.
+pub(crate) fn merge_keep_prose(source: &str, local: &str) -> Result<String, String> {
+    let source_blocks = parse(source)?;
+    let local_blocks = parse(local)?;
+    let names: BTreeSet<_> = local_blocks
+        .iter()
+        .map(|block| block.name.as_str())
+        .collect();
+    let mut missing = String::new();
+    let mut added = BTreeSet::new();
+    for block in source_blocks.iter().filter(|block| block.depth == 1) {
+        if names.contains(block.name.as_str()) || !added.insert(block.name.as_str()) {
+            continue;
+        }
+        if source_blocks.iter().any(|child| {
+            child.start > block.start
+                && child.end < block.end
+                && names.contains(child.name.as_str())
+        }) {
+            return Err(format!(
+                "missing scaffold {} contains an existing local nested tag; reconcile its placement explicitly",
+                block.name
+            ));
+        }
+        missing.push_str(&source[block.start..block.end]);
+    }
+
+    let source_end = frontmatter_end(source)?;
+    let local_end = frontmatter_end(local)?;
+    let mut output = source[..source_end].to_string();
+    output.push_str(&local[local_end..]);
+    if !missing.is_empty() {
+        if !output.ends_with('\n') {
+            output.push('\n');
+        }
+        output.push_str(&missing);
+    }
+    parse(&output)?;
+    Ok(output)
+}
+
+/// Finds the complete leading frontmatter fence without normalizing body bytes.
+fn frontmatter_end(text: &str) -> Result<usize, String> {
+    let mut lines = text.split_inclusive('\n');
+    let Some(first) = lines.next() else {
+        return Ok(0);
+    };
+    if first.trim_end_matches(['\r', '\n']) != "---" {
+        return Ok(0);
+    }
+    let mut offset = first.len();
+    for line in lines {
+        offset += line.len();
+        if line.trim_end_matches(['\r', '\n']) == "---" {
+            return Ok(offset);
+        }
+    }
+    Err("frontmatter was never closed".into())
+}
+
 /// Builds and validates a replacement before publication, inserting missing blocks after frontmatter.
 pub(crate) fn replace(text: &str, name: &str, content: &str) -> Result<String, String> {
     if !valid_name(name) {
@@ -246,6 +306,44 @@ pub(crate) fn replace(text: &str, name: &str, content: &str) -> Result<String, S
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Keeps local body bytes and duplicates, adds scaffolds idempotently, and refuses ambiguous nesting.
+    #[test]
+    fn preserves_prose_and_adds_missing_scaffolds() {
+        let source = "---\nsummary: New\n---\n# Canonical\n<!-- cumaru:a -->\ndefault\n<!-- /cumaru:a -->\n<!-- cumaru:new -->\nscaffold\n<!-- /cumaru:new -->\n";
+        let local = "---\r\nsummary: Old\r\n---\r\n# Local\r\n<!-- cumaru:a -->\r\nlocal\r\n<!-- /cumaru:a -->\r\nTail";
+        let merged = merge_keep_prose(source, local).unwrap();
+        assert!(merged.starts_with("---\nsummary: New\n---\n# Local\r\n"));
+        assert!(merged.contains("local\r\n<!-- /cumaru:a -->\r\nTail"));
+        assert!(!merged.contains("# Canonical"));
+        assert!(merged.contains("scaffold"));
+        let extended = format!(
+            "{local}\n<!-- cumaru:a -->\nsecond\n<!-- /cumaru:a -->\n<!-- cumaru:orphan -->\n<!-- cumaru:nested -->\nretained\n<!-- /cumaru:nested -->\n<!-- /cumaru:orphan -->\n"
+        );
+        let extended_merge = merge_keep_prose(source, &extended).unwrap();
+        assert!(extended_merge.contains(&extended[frontmatter_end(&extended).unwrap()..]));
+        assert_eq!(
+            parse(&extended_merge)
+                .unwrap()
+                .iter()
+                .filter(|block| block.name == "a")
+                .count(),
+            2
+        );
+        let duplicate_source =
+            format!("{source}<!-- cumaru:new -->\nduplicate\n<!-- /cumaru:new -->\n");
+        assert_eq!(merge_keep_prose(&duplicate_source, local).unwrap(), merged);
+        assert_eq!(merge_keep_prose(source, &merged).unwrap(), merged);
+        assert_eq!(
+            merge_keep_prose("---\nsummary: New\n---\n", local).unwrap(),
+            format!(
+                "---\nsummary: New\n---\n{}",
+                &local[frontmatter_end(local).unwrap()..]
+            )
+        );
+        assert!(merge_keep_prose("<!-- cumaru:outer -->\n<!-- cumaru:a -->\nx\n<!-- /cumaru:a -->\n<!-- /cumaru:outer -->\n", local).is_err());
+        assert!(merge_keep_prose(source, "<!-- cumaru:a -->\n").is_err());
+    }
 
     /// Preserves opaque duplicates, nested bodies, and local-only tags through an idempotent merge.
     #[test]

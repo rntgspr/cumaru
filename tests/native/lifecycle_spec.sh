@@ -87,6 +87,57 @@ Describe 'native preservation regressions adapted from legacy update transaction
     The contents of file "$PROJECT/AGENTS.md" should include 'Keep this policy.'
   End
 
+  It 'preserves prose in a content selector preview and apply'
+    sed 's/^summary:.*/summary: Locally changed metadata retains a valid navigation summary./' "$PROJECT/.cumaru/domain.md" > "$PROJECT/domain.tmp"
+    mv "$PROJECT/domain.tmp" "$PROJECT/.cumaru/domain.md"
+    printf '\nLocally retained prose.\n' >> "$PROJECT/.cumaru/domain.md"
+    before=$(snapshot)
+    cli update domain.md --skip-prose >/dev/null
+    preview_after=$(snapshot)
+    When call cli update domain.md --skip-prose --apply
+    The status should be success
+    The output should include 'updated:'
+    The error should include 'without a Git recovery point'
+    The value "$preview_after" should equal "$before"
+    The contents of file "$PROJECT/.cumaru/domain.md" should include 'Locally retained prose.'
+    The contents of file "$PROJECT/.cumaru/domain.md" should not include 'Locally changed metadata'
+  End
+
+  It 'refreshes integration alone without modifying local Markdown'
+    printf '\nLocally retained prose.\n' >> "$PROJECT/.cumaru/domain.md"
+    printf '\nStale skill prose.\n' >> "$PROJECT/.agents/skills/cumaru-role/SKILL.md"
+    domain_before=$(cat "$PROJECT/.cumaru/domain.md")
+    When call cli update agent codex --skills --apply
+    The status should be success
+    The output should include 'updated:'
+    The error should include 'without a Git recovery point'
+    The contents of file "$PROJECT/.cumaru/domain.md" should equal "$domain_before"
+    The contents of file "$PROJECT/.agents/skills/cumaru-role/SKILL.md" should not include 'Stale skill prose.'
+  End
+
+  It 'combines canonical prose and complete integration in one apply'
+    printf '\nLocally replaced prose.\n' >> "$PROJECT/.cumaru/domain.md"
+    printf '\nStale skill prose.\n' >> "$PROJECT/.agents/skills/cumaru-role/SKILL.md"
+    When call cli update agent codex --prose --skills --apply
+    The status should be success
+    The output should include 'updated:'
+    The error should include 'without a Git recovery point'
+    The contents of file "$PROJECT/.cumaru/domain.md" should not include 'Locally replaced prose.'
+    The contents of file "$PROJECT/.agents/skills/cumaru-role/SKILL.md" should not include 'Stale skill prose.'
+    The contents of file "$PROJECT/.codex/hooks.json" should include 'SessionStart'
+  End
+
+  It 'rejects conflicting content selectors before source reads or mutation'
+    before=$(snapshot)
+    : > "$CUMARU_TEST_REQUESTS"
+    When call cli update --prose --skip-prose
+    The status should equal 2
+    The output should be blank
+    The error should include 'cannot be used with'
+    The value "$(snapshot)" should equal "$before"
+    The contents of file "$CUMARU_TEST_REQUESTS" should be blank
+  End
+
   It 'clears owned adapter artifacts offline while retaining adopter skills and instructions'
     mkdir -p "$PROJECT/.agents/skills/adopter"
     printf 'custom\n' > "$PROJECT/.agents/skills/adopter/SKILL.md"

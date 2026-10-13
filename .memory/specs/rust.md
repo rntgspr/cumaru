@@ -54,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh 
 ```
 
 An invocation without a subcommand runs `doctor`. Package version
-`0.10.5` is baked into development builds; it is separate from adopter config version 9.
+`0.10.6` is baked into development builds; it is separate from adopter config version 9.
 The latest published release is `0.10.5`; the published Homebrew formula pins
 that release (see [Homebrew distribution](#homebrew-distribution)).
 `version` reports both identities inside an adopter; see [Native version](#native-version).
@@ -665,6 +665,27 @@ domain validation retain the native declarative-schema boundary.
 7. Every changed apply/clear runs native doctor in quiet mode after publication.
    Blocking checks return status 1 with already-published changes left for review
    and recovery. Reference, instruction, and drift warnings remain nonblocking.
+
+8. Explicit `--prose` selects the normal content merge. `--skip-prose` replaces
+   leading frontmatter and appends absent source top-level tag scaffolds while
+   retaining the complete local body. Missing scaffolds containing an already
+   present local nested tag fail for explicit placement reconciliation. These
+   selectors conflict. `agent <name> --skills` selects the complete native
+   integration and combines with either content selector in one preview/apply
+   plan. Selectors reject config/skills/commands modes, clear, and opt-ins.
+   Without selectors, every existing mode retains its prior behavior. The
+   [public guide](../../docs/update.md#selectors) owns the selector examples.
+
+Selector verification on 2026-10-13: 83 native unit tests passed with one
+external-model smoke ignored; formatting, locked release compilation, and diff
+checks passed. Focused coverage includes CRLF/body-byte preservation, duplicate
+and orphan tags, nested-tag placement refusal, idempotent scaffold addition,
+explicit adapter requirements, and selector mode boundaries. Native process
+cases exercise preview preservation, skip-prose publication, integration-only
+preservation, combined refresh, and conflicting selector refusal before network.
+All 86 selected process/artifact cases passed in default TAP and randomized
+execution; the randomized run completed in 25.66 seconds. No real adopter,
+global installation, model cache, or Git history was changed.
 
 Verification on 2026-10-02: 44 native tests passed, including six added tests for
 opaque preservation/idempotence, explicit ownership and path mapping, schema

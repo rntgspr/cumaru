@@ -8,6 +8,8 @@ that transition.
 
 ```text
 cumaru update [<path>] [--apply]
+cumaru update [<path>] --prose|--skip-prose [--apply]
+cumaru update agent <agent> [--prose|--skip-prose] [--skills] [--apply]
 cumaru update config
 cumaru update skills <agent> [--with <skill>...] [--apply|--clear]
 cumaru update commands <agent> [--apply|--clear]
@@ -21,6 +23,30 @@ exception: it removes the selected Cumaru artifacts immediately after the Git
 recovery check and does not require `--apply`. With an agent it is scoped to
 that adapter; without one it clears that artifact surface across every
 supported adapter. `--apply` and `--clear` are mutually exclusive.
+
+## Selectors
+
+With no selectors, existing modes retain their behavior. `--prose` selects the
+existing canonical Markdown refresh. `--skip-prose` selects Markdown refresh
+while preserving the complete local body, including outside-tag prose and tag
+bodies: only leading frontmatter is replaced, and absent source top-level tag
+scaffolds are appended. Existing tags, including duplicates, remain unchanged.
+If an absent scaffold contains a nested tag already present locally, planning
+fails for explicit reconciliation rather than duplicating or moving local data.
+Malformed tags or unclosed leading frontmatter fail before publication.
+
+`--skills` requires `agent <agent>` and selects the complete integration: domain
+skills, supported commands, instructions, and hooks. Combine it with `--prose`
+or `--skip-prose` to refresh Markdown and the integration in one plan. A prose
+selector alone in agent mode refreshes only Markdown. `--prose` and
+`--skip-prose` conflict; selectors cannot combine with config/skills/commands
+modes, `--with`, or `--clear`. Preview remains the default.
+
+```bash
+cumaru update --skip-prose
+cumaru update agent codex --skills
+cumaru update agent codex --skip-prose --skills --apply
+```
 
 ## Source
 

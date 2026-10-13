@@ -19,7 +19,7 @@ use crate::{
 
 #[derive(Args)]
 #[command(
-    override_usage = "cumaru update [<path>|config|skills <agent>|commands <agent>|agent <agent>] [--apply|--clear] [--with <skill>...]"
+    override_usage = "cumaru update [<path>|config|skills <agent>|commands <agent>|agent <agent>] [--prose|--skip-prose] [--skills] [--apply|--clear] [--with <skill>...]"
 )]
 pub struct UpdateArgs {
     /// Optional content scope or named mode followed by an explicit adapter.
@@ -34,9 +34,18 @@ pub struct UpdateArgs {
     /// Adds or refreshes only these top-level opt-in skills; repeatable in skills mode.
     #[arg(long = "with")]
     with: Vec<String>,
+    /// Refreshes canonical Markdown prose, preserving local tag bodies.
+    #[arg(long, conflicts_with = "skip_prose")]
+    prose: bool,
+    /// Refreshes frontmatter and missing tag scaffolds while retaining local prose.
+    #[arg(long)]
+    skip_prose: bool,
+    /// Refreshes the complete explicit agent integration, including instructions and hooks.
+    #[arg(long)]
+    skills: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Mode {
     Content(String),
     Config,
@@ -79,6 +88,17 @@ fn arguments(args: &UpdateArgs) -> Result<(Mode, Option<Adapter>), String> {
             })
         })
         .transpose()?;
+    if args.prose || args.skip_prose || args.skills {
+        if args.clear || !args.with.is_empty() || !matches!(mode, Mode::Content(_) | Mode::Agent) {
+            return Err(
+                "selectors require content or agent mode and cannot combine with --clear or --with"
+                    .into(),
+            );
+        }
+        if args.skills && (mode != Mode::Agent || adapter.is_none()) {
+            return Err("--skills requires agent <name>".into());
+        }
+    }
     if matches!(mode, Mode::Content(_) | Mode::Config) && args.clear {
         return Err("--clear requires skills, commands, or agent mode".into());
     }
@@ -189,7 +209,12 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
         }
         config_tree::install_files(&canonical, &source.files.keys().cloned().collect())?;
         println!("source: main ({})", source.revision);
-        match &mode {
+        let content_mode = if mode == Mode::Agent && (args.prose || args.skip_prose) {
+            Mode::Content(".".into())
+        } else {
+            mode.clone()
+        };
+        match &content_mode {
             Mode::Config => {
                 let (candidate, removed) = config::reconcile(&original_config, &canonical)?;
                 for pointer in removed {
@@ -216,7 +241,12 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
                     let before = read(&project, &path)?
                         .ok_or_else(|| format!("missing update target: {host}"))?;
                     let source_bytes = source.read(&origin)?;
-                    let expected = tags::merge(
+                    let merge = if args.skip_prose {
+                        tags::merge_keep_prose
+                    } else {
+                        tags::merge
+                    };
+                    let expected = merge(
                         std::str::from_utf8(&source_bytes).map_err(|e| e.to_string())?,
                         std::str::from_utf8(&before).map_err(|e| e.to_string())?,
                     )?;
@@ -253,6 +283,17 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
                 &mut changes,
             )?,
         }
+        if content_mode != Mode::Agent && args.skills {
+            artifact_plan(
+                &project,
+                &root,
+                &source,
+                &Mode::Agent,
+                adapter.unwrap(),
+                &[],
+                &mut changes,
+            )?;
+        }
     }
     changes.retain(|_, change| change.content != change.original);
     for change in changes.values() {
@@ -267,7 +308,7 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
             },
             change.path
         );
-        if matches!(mode, Mode::Content(_)) {
+        if matches!(mode, Mode::Content(_)) || args.prose || args.skip_prose {
             println!(
                 "--- current: {}\n{}\n+++ expected: {}\n{}",
                 change.path,
@@ -560,8 +601,24 @@ mod tests {
             apply: false,
             clear: false,
             with: vec![],
+            prose: false,
+            skip_prose: false,
+            skills: false,
         };
         assert_eq!(arguments(&args).unwrap(), (Mode::Content(".".into()), None));
+        args.skills = true;
+        assert!(arguments(&args).is_err());
+        args.target = vec!["agent".into(), "codex".into()];
+        args.skip_prose = true;
+        assert_eq!(
+            arguments(&args).unwrap(),
+            (Mode::Agent, Some(Adapter::Codex))
+        );
+        args.clear = true;
+        assert!(arguments(&args).is_err());
+        args.clear = false;
+        args.skills = false;
+        args.skip_prose = false;
         args.target = vec!["skills".into()];
         assert!(arguments(&args).is_err());
         args.clear = true;
