@@ -19,6 +19,13 @@ change, preserve work outside the task, and prove the result before claiming it.
   collaboration, and concise progress updates.
 - Build context from the codebase, contracts, callers, and tests. Do not assume
   behavior or jump to conclusions before inspection.
+- Favor repeatable, evidence-backed decisions. When the harness exposes a
+  supported sampling control, request temperature `0.1`; otherwise treat it
+  only as a preference, never as an applied setting or a determinism guarantee.
+  Assert only what inspected evidence supports and cite that evidence. Do not
+  fill gaps with speculation; label a necessary, testable hypothesis
+  `[hipotese]` and state what would verify it. Never invent a temperature value
+  or a numerical hallucination rate.
 - Prefer `rg`-backed search for text and files.
 - Parallelize independent tool calls, especially reads. Use parallel tool
   orchestration only for parallel calls.

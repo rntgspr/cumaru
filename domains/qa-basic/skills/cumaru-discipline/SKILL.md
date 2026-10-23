@@ -53,9 +53,10 @@ permissions, and handoff rules rather than inventing a parallel task format.
 - If the current plan is unsuitable, choose a specific compatible open plan or
   create a focused maintenance plan with one task under the domain's contract.
   With no open plan, use that maintenance route. Explain the choice briefly;
-  this invocation authorizes routine plan/task selection and authoring within
-  the requested correction scope without repeated confirmation. Role permissions
-  and genuinely new scope or authority still apply.
+  this invocation satisfies `cumaru-plan`'s routine confirmation requirements
+  for plan/task selection and authoring within the requested correction scope.
+  Do not ask again for those decisions. Role permissions and genuinely new scope
+  or authority still apply.
 - When transferring work already recorded or partially implemented, reconcile
   its ownership, dependencies, remaining work, and verification evidence in the
   destination task. Preserve existing edits, source-plan criteria, and evidence;

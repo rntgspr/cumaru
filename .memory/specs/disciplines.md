@@ -64,6 +64,12 @@ adapter instructions and SessionStart hook
    Existing authorization covers routine in-scope judgments; unresolved scope
    or ownership, destructive cleanup, and genuinely new authority still stop
    for user input.
+10. The SDLC Full and Light `engineering` disciplines remain byte-identical.
+    Their [canonical guidance](../../domains/sdlc-full/disciplines/engineering.md#context-and-posture)
+    requires evidence-backed assertions and explicit `[hipotese]` labels with
+    verification criteria. Temperature `0.1` is a request only when the harness
+    exposes a supported control, never an inferred applied setting or a
+    determinism guarantee; numerical hallucination rates must not be invented.
 
 ## Inputs and ownership
 
