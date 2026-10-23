@@ -999,6 +999,11 @@ on 2026-10-06 by the tag-push [release run](https://github.com/rntgspr/cumaru/ac
 from `c915123`; all four target jobs and publication passed, and GitHub marks it
 Latest. Downloaded executables and `LICENSE` matched `SHA256SUMS`.
 
+Release [0.10.7](https://github.com/rntgspr/cumaru/releases/tag/0.10.7) was published
+on 2026-10-22 by the tag-push [release run](https://github.com/rntgspr/cumaru/actions/runs/39889491162)
+from `83b2876`; all four target jobs and publication passed. Downloaded
+executables matched `SHA256SUMS`.
+
 ## Homebrew distribution
 
 `brew install rntgspr/tap/cumaru` installs one pinned, SHA-256-verified release
@@ -1020,7 +1025,7 @@ Changing this repository never updates the tap.
 5. A formula bump follows a complete published release: all four URLs and
    checksums change together and must match the release `SHA256SUMS`.
 
-The 0.10.5 formula was published on 2026-10-06 (tap commit `e354d63`) after
+The 0.10.7 formula was published on 2026-10-22 (tap commit `e24f769`) after
 `brew style` and `brew audit --strict` passed. Actual install, `brew test`, and audit evidence exists only
 for the 0.10.0 candidate on macOS ARM64 in an isolated prefix; macOS Intel and
 Linux installation remain unverified and are tracked by

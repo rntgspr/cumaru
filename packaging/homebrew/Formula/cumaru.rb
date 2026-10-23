@@ -5,12 +5,12 @@ class Cumaru < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/rntgspr/cumaru/releases/download/0.10.5/cumaru-aarch64-apple-darwin", using: :nounzip
-      sha256 "2d4b6eb42281a96b5b066ccaeffddfe75faf4e2b53eb366725201dc46a7915dc"
+      url "https://github.com/rntgspr/cumaru/releases/download/0.10.7/cumaru-aarch64-apple-darwin", using: :nounzip
+      sha256 "d4babc217f2338b0d7dd16e88c10c8f5d0eaa6dab910516f8f54481f366cfc06"
     end
     on_intel do
-      url "https://github.com/rntgspr/cumaru/releases/download/0.10.5/cumaru-x86_64-apple-darwin", using: :nounzip
-      sha256 "dc1af111ee7c803adb4363c741da127b1ed7f2769520f93c3ef028010522e99b"
+      url "https://github.com/rntgspr/cumaru/releases/download/0.10.7/cumaru-x86_64-apple-darwin", using: :nounzip
+      sha256 "6424cd4bce3ed4abaf61fdeddf9626e2266c59f91fe4018f0d4db696116e5277"
     end
   end
 
@@ -19,12 +19,12 @@ class Cumaru < Formula
     depends_on "git"
 
     on_arm do
-      url "https://github.com/rntgspr/cumaru/releases/download/0.10.5/cumaru-aarch64-unknown-linux-musl", using: :nounzip
-      sha256 "752c5d0c25aded766d72cde8b5e0d83576d6b4ce8049443b0e51f378f988d805"
+      url "https://github.com/rntgspr/cumaru/releases/download/0.10.7/cumaru-aarch64-unknown-linux-musl", using: :nounzip
+      sha256 "a5db2d821441f709e4ff3c3662fadda6b190330c0763bdb0d49f62acb815e7da"
     end
     on_intel do
-      url "https://github.com/rntgspr/cumaru/releases/download/0.10.5/cumaru-x86_64-unknown-linux-musl", using: :nounzip
-      sha256 "11c0340ce9c28f9edec99b19ebf6685e62dcfd82f31e156fdb5d752972dffc2e"
+      url "https://github.com/rntgspr/cumaru/releases/download/0.10.7/cumaru-x86_64-unknown-linux-musl", using: :nounzip
+      sha256 "6f1d68aed9fd58bb990e53141941f612ab9fed2b0298635f82acf399dc18be51"
     end
   end
 
