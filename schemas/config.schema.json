@@ -25,7 +25,7 @@
       "type": "object",
       "properties": {
         "path": {"type": "string", "minLength": 1, "x-cumaru-ownership": "framework"},
-        "optional": {"type": "boolean", "x-cumaru-ownership": "framework"},
+        "optional": {"type": "boolean", "x-cumaru-ownership": "adopter"},
         "framework": {"type": "boolean", "x-cumaru-ownership": "framework"},
         "frontmatter": {"$ref": "#/$defs/frontmatter", "x-cumaru-ownership": "framework"},
         "tags": {"$ref": "#/$defs/tags", "x-cumaru-ownership": "framework"}

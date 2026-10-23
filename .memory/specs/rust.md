@@ -54,8 +54,8 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh 
 ```
 
 An invocation without a subcommand runs `doctor`. Package version
-`0.10.6` is baked into development builds; it is separate from adopter config version 9.
-The latest published release is `0.10.5`; the published Homebrew formula pins
+`0.10.7` is baked into development builds; it is separate from adopter config version 9.
+The latest published release is `0.10.7`; the published Homebrew formula pins
 that release (see [Homebrew distribution](#homebrew-distribution)).
 `version` reports both identities inside an adopter; see [Native version](#native-version).
 

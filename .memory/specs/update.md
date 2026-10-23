@@ -60,7 +60,10 @@ cumaru update agent [<none|claude|codex|opencode>] [--apply|--clear]
    installed archive skills and launchers without deleting or migrating them.
 7. General update resolves only entries explicitly marked `framework: true`
    in the v9 source tree. `path` overrides select their physical destinations;
-   adopter-owned paths and tag bodies remain untouched.
+   adopter-owned paths and tag bodies remain untouched. A missing
+   framework-owned file is created from source unless its effective local
+   entry declares `optional: true`; an existing one is refreshed regardless
+   of `optional`.
 8. `update skills <agent> --with <skill>` validates and installs only the
    selected top-level opt-ins. It never reinstalls the domain or refreshes
    unrelated framework/adopter skills.
@@ -71,7 +74,7 @@ cumaru update agent [<none|claude|codex|opencode>] [--apply|--clear]
 |---|---|---|
 | `.cumaru/config.yaml` | adopter | Selects domain; validated in all modes and edited only by the agent. |
 | `domains/<domain>/` | framework | Canonical source selected from the active checkout, local `--from`, or temporary Git source. |
-| Explicitly framework-owned Markdown frontmatter and outside-tag prose | framework | Rebuilt from source. |
+| Explicitly framework-owned Markdown frontmatter and outside-tag prose | framework | Rebuilt from source; created when missing and not `optional: true` locally. |
 | `<!-- cumaru:NAME -->` bodies | adopter | Preserved by canonical name with fail-closed balanced parsing. |
 | Local-only files and directories | adopter | Never changed. |
 | `cumaru-*` skills, supported commands, instructions, hooks | framework | Refreshed deterministically in their adapter-native paths. |
@@ -106,8 +109,8 @@ cumaru update agent [<none|claude|codex|opencode>] [--apply|--clear]
 1. After the conditional Git recovery check passes or reports that no work tree
    exists, mutate only the requested managed surfaces directly; create no
    project-local lock, staging, backup, or recovery directory.
-2. Full update refreshes Markdown; scoped update changes only the named source
-   path. Dedicated modes change only their named surface. Agent mode installs
+2. Full update refreshes Markdown and creates missing required framework-owned
+   files; scoped update changes only the named source path. Dedicated modes change only their named surface. Agent mode installs
    the target adapter artifacts.
 3. Run `cumaru doctor --quiet` after mutation. Config mode has no live mutation.
 4. `--clear` immediately removes the requested skills, commands, or complete

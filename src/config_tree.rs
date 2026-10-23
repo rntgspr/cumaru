@@ -150,10 +150,27 @@ pub(crate) fn update_pairs(
             canonical.physical.clone()
         };
         let pattern = Pattern::new(&host_selector).map_err(|e| e.to_string())?;
-        for host in local_files
+        let mut hosts: BTreeSet<&String> = local_files
             .iter()
             .filter(|host| pattern.matches_with(host, options))
-        {
+            .collect();
+
+        // Missing required hosts come from source so update can create them.
+        if !row.optional {
+            if wildcard(&row.physical) {
+                if row.physical == canonical.physical {
+                    hosts.extend(
+                        source_files
+                            .iter()
+                            .filter(|origin| pattern.matches_with(origin, options)),
+                    );
+                }
+            } else if source_files.contains(&source_selector) {
+                hosts.insert(&host_selector);
+            }
+        }
+
+        for host in hosts {
             if wildcard(&row.physical)
                 && local_rows.iter().any(|entry| {
                     !wildcard(&entry.physical)
@@ -538,6 +555,32 @@ mod tests {
         assert_eq!(pairs["renamed/index.md"], "area/index.md");
         assert!(!pairs.contains_key("renamed/b.md"));
         assert!(!pairs.contains_key("renamed/local.md"));
+    }
+
+    /// Plans missing required owned files for creation while honoring local optional opt-outs.
+    #[test]
+    fn plans_missing_required_owned_files() {
+        let source = YamlLoader::load_from_str("root:\n  area:\n    framework: true\n    fixed.md: {framework: true}\n    '*.md': {framework: true}\n").unwrap().remove(0);
+        let local = YamlLoader::load_from_str("root:\n  area:\n    framework: true\n    fixed.md: {framework: true}\n    skip.md: {framework: true, optional: true}\n    '*.md': {framework: true}\n").unwrap().remove(0);
+        let source_files = BTreeSet::from(
+            [
+                "index.md",
+                "area/index.md",
+                "area/fixed.md",
+                "area/new.md",
+                "area/skip.md",
+                "area/kept.md",
+            ]
+            .map(String::from),
+        );
+        let local_files = BTreeSet::from(["area/kept.md", "area/mine.md"].map(String::from));
+        let pairs = update_pairs(&local, &source, &local_files, &source_files).unwrap();
+        assert_eq!(pairs["area/index.md"], "area/index.md");
+        assert_eq!(pairs["area/fixed.md"], "area/fixed.md");
+        assert_eq!(pairs["area/new.md"], "area/new.md");
+        assert_eq!(pairs["area/kept.md"], "area/kept.md");
+        assert!(!pairs.contains_key("area/skip.md"));
+        assert!(!pairs.contains_key("area/mine.md"));
     }
 
     struct Fixture(std::path::PathBuf);

@@ -75,6 +75,12 @@ destination; wildcard matches require equal physical selectors and a matching
 source file. If a former canonical path still exists, update reports it for
 review and never moves or deletes it.
 
+A framework-owned target missing locally is created verbatim from source,
+unless its effective local entry declares `optional: true`. To keep a removed
+framework file from returning, declare its literal selector as optional, for
+example `kiss.md: {framework: true, optional: true}`; a literal sibling wins
+over the wildcard. Existing targets are refreshed regardless of `optional`.
+
 Before replacement, update captures every local `<!-- cumaru:NAME -->` body.
 It then restores each body at the first corresponding source tag. If a local tag
 has no source marker, update inserts it immediately after frontmatter. Thus

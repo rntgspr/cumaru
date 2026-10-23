@@ -238,18 +238,26 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
                     }
                     matched = true;
                     let path = format!(".cumaru/{host}");
-                    let before = read(&project, &path)?
-                        .ok_or_else(|| format!("missing update target: {host}"))?;
                     let source_bytes = source.read(&origin)?;
-                    let merge = if args.skip_prose {
-                        tags::merge_keep_prose
-                    } else {
-                        tags::merge
+                    let source_text =
+                        std::str::from_utf8(&source_bytes).map_err(|e| e.to_string())?;
+
+                    // A missing required target is created verbatim from source.
+                    let expected = match read(&project, &path)? {
+                        Some(before) => {
+                            let merge = if args.skip_prose {
+                                tags::merge_keep_prose
+                            } else {
+                                tags::merge
+                            };
+                            merge(
+                                source_text,
+                                std::str::from_utf8(&before).map_err(|e| e.to_string())?,
+                            )?
+                        }
+                        None => source_text.to_string(),
                     };
-                    let expected = merge(
-                        std::str::from_utf8(&source_bytes).map_err(|e| e.to_string())?,
-                        std::str::from_utf8(&before).map_err(|e| e.to_string())?,
-                    )?;
+
                     add(
                         &project,
                         &mut changes,

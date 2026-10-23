@@ -46,6 +46,11 @@ cumaru update config [--from <source>]
    `optional: true` makes it optional. `tags` is an array of marker names.
    A `path` value replaces the parent-relative selector location. Only
    `framework: true` is framework-owned; ownership never inherits.
+   `framework` and `optional` are independent and may combine on one entry:
+   `framework` decides who owns the content, `optional` decides whether the
+   file must exist. An adopter that removes a framework-owned file declares
+   its literal selector with `optional: true` so doctor accepts the absence
+   and update does not recreate it.
 5. Recursive `**` selectors are forbidden. Undeclared entries receive only
    global rules. Overlapping wildcard rules compose; a contradictory reserved
    attribute declaration is a configuration error.
