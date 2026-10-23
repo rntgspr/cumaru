@@ -106,6 +106,7 @@ YAGNI / SOLID) are authored in-house and carry no `source:`.
 | kiss | choosing how to implement, when a simpler option exists | `disciplines/kiss.md` |
 | yagni | tempted to build beyond a present, stated requirement | `disciplines/yagni.md` |
 | solid | designing / refactoring structure — responsibilities, extension, coupling | `disciplines/solid.md` |
+| separation-of-concerns | implementing, reviewing, or refactoring responsibilities, module boundaries, or dependency direction | `disciplines/separation-of-concerns.md` |
 | blast-radius | fixing scope:/files: for a change whose reach the spec graph doesn't already describe | `disciplines/blast-radius.md` |
 
 New disciplines are produced with the repo's `skill-to-discipline` skill (distill an external

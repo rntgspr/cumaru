@@ -40,7 +40,10 @@ adapter instructions and SessionStart hook
    the code-oriented domains `sdlc-full`, `sdlc-light`, `iac-basic`, and
    `qa-basic`, whose copies stay byte-identical (contract-tested against
    `sdlc-full`); `__base`, `design-as-code`, `focus`, and `vault-memory` do not
-   ship it.
+   ship it. `separation-of-concerns` ships only in `sdlc-full` and `sdlc-light`,
+   with byte-identical bodies: cohesive ownership, explicit boundaries, and
+   deliberate dependency direction without speculative layers. Its testing
+   guidance references the existing TDD and verification disciplines.
 5. Every discipline except `disciplines/index.md` declares `strictness:` from
    `0/10` through `10/10`. Missing is effective `0/10` but invalid metadata.
    External adaptations also carry source URL and license metadata.

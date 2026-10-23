@@ -31,13 +31,26 @@ existing path in the working tree.
 
 ## Work
 
-1. Rewrite the implementation tables in `domains.md`, `update.md`, `tags.md`,
-   `coverage.md`, `agent-adapters.md`, and `configuration.md`, mapping each row
-   to the `src/**/*.rs` module that now owns it; drop rows with no native owner
-   and record any behavior that lost its owner as an open issue.
+1. Rewrite the implementation tables in the fourteen specs that still reference
+   retired Bash modules — `absorb.md`, `agent-adapters.md`, `architecture.md`,
+   `configuration.md`, `coverage.md`, `disciplines.md`, `doctor.md`,
+   `domains.md`, `install-upgrade.md`, `migration.md`, `navigation.md`,
+   `tags.md`, `update.md`, and `workflows.md` — mapping each row to the
+   `src/**/*.rs` module that now owns it; drop rows with no native owner
+   and record any behavior that lost its owner as an open issue. `rust.md`
+   is exempt: it intentionally retains Bash-era narration as documented port
+   reference. Each spec is tracked as one child issue: 147 (`navigation`),
+   148 (`update`), 149 (`tags`), 150 (`configuration`), 151 (`absorb`),
+   152 (`agent-adapters`), 153 (`architecture`), 154 (`coverage`),
+   155 (`disciplines`), 156 (`doctor`), 157 (`domains`),
+   158 (`install-upgrade`), 159 (`migration`), and 160 (`workflows`).
 2. Replace the `configuration.md` preflight that requires `yq` and `jq` with the
    native embedded-schema validation described in `rust.md`.
-3. After issue 144 lands, remove `schemas/schema-validate-v9.jq`,
+3. Task order through the four user-facing command specs first, one spec at a
+   time against its Rust owner: `navigation.md`, `update.md`, `tags.md`,
+   `configuration.md`; then the remaining ten. Each spec is verified against
+   the code it now names before the next spec begins.
+4. After issue 144 lands, remove `schemas/schema-validate-v9.jq`,
    `schemas/config-reconcile.jq`, their spec rows in `configuration.md` and
    `workflows.md`, and the legacy `tests/spec/integration/schema_spec.sh`
    references to them.
@@ -52,7 +65,9 @@ existing path in the working tree.
 
 ## References
 
-- `.memory/specs/domains.md`, `update.md`, `tags.md`, `coverage.md`,
-  `agent-adapters.md`, `configuration.md`, `workflows.md`
+- `.memory/specs/absorb.md`, `agent-adapters.md`, `architecture.md`,
+  `configuration.md`, `coverage.md`, `disciplines.md`, `doctor.md`,
+  `domains.md`, `install-upgrade.md`, `migration.md`, `navigation.md`,
+  `tags.md`, `update.md`, `workflows.md`
 - `.memory/specs/rust.md` module boundaries
 - Issue 144 (jq removal dependency)

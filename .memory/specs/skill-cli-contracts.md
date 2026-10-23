@@ -38,6 +38,16 @@ skills own semantic workflows and do not imply additional command capabilities.
 
 ## Review coverage
 
+The universal [cumaru-discipline recipe](../../domains/__base/skills/cumaru-discipline/SKILL.md)
+applies a named installed discipline starting from one selected project file.
+It owns argument resolution, applicability, scoped corrections, and evidence reporting.
+Where the domain supports plans, the recipe assigns exactly one owning task,
+honors explicit destinations, and allows agent-selected current or maintenance
+plan routing within scope. It preserves evidence during transfers and references
+the domain's plan and handoff contracts; domains without plans apply directly.
+It neither imports disciplines nor adds a native CLI subcommand. Every domain
+receives its skill and Generic/OpenCode launcher through universal synchronization.
+
 The universal `cumaru-search` recipe owns read-only knowledge discovery when
 the owning file is unknown. `cumaru-first` routes that need to the installed
 skill; the [canonical recipe](../../domains/__base/skills/cumaru-search/SKILL.md)

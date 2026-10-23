@@ -33,6 +33,7 @@ not through `.cumaru/skills/`.
 | Measure or reconcile source-reference coverage | `cumaru coverage` (read-only), then the `cumaru-refs` skill. |
 | Validate an installed tree or adapter | `cumaru doctor` (read-only) and its remediation skill when needed. |
 | Plan, execute, or close domain lifecycle work | The matching domain role and absorb workflow. |
+| Apply a named installed discipline to one file | The `cumaru-discipline` skill with the discipline name and project-relative file path. |
 | Adopt Cumaru in a project | `cumaru help domains`, then `cumaru install [agent <name>] [--domain <name>]`, which writes after preflight; then `cumaru bootstrap` prints steps for the agent. |
 | Refresh framework-owned project artifacts | `cumaru update`: preview by default, `--apply` writes, `--clear` removes immediately after the conditional Git recovery check. `update config` is read-only. |
 | Cross a config-version boundary | `cumaru migrate`, which prints read-only instructions for LLM execution. |
