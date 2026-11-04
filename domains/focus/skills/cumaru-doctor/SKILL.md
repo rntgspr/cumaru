@@ -33,6 +33,24 @@ workflow completion, acceptance, and prose quality require separate review.
    `summary:` value. A summary is a stable selection signal, never progress.
 5. Re-run `cumaru doctor` after an explicitly approved correction.
 
+## Semantic review
+
+`cumaru doctor` checks structure, not meaning. After it passes, review the
+focus contracts it cannot check, and report each finding with its file:
+
+- Directives: an `active` leaf has a positive integer `priority`; `proposed`
+  and `paused` leaves have `null`; the directives tag ranks match the leaf
+  fields and sort by ascending priority; every `parent` exists without cycles.
+- Sources: `status` is `active` or `paused`, and the body sections appear in
+  the contract order.
+- Threads: active threads carry a valid `group`, archived ones carry none; no
+  template placeholder text survives; evidence rows carry a confidence value;
+  no fact is repeated across sections.
+- Outcomes: the `threads` tag links resolve, and kudos are nonnegative
+  multiples of `5`.
+
+Propose fixes as for any other finding; this review changes nothing by itself.
+
 ## Hard rules
 
 - A malformed-tag error blocks lifecycle cleanup. A green doctor result does

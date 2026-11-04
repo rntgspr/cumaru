@@ -100,6 +100,15 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
     [outcome contract](../../domains/focus/outcomes/index.md#kudos-per-item) owns
     initialization, evidence, deduplication, and preservation; the outcome
     template and skill expose it without changing value, work, or policy totals.
+16. Each `focus` thread separates `Next action`, `Context`, `Waiting on`, and
+    `Evidence` without repeating a fact, records material claims as evidence
+    rows with occurrence and observation dates, author, excerpt, source, and
+    confidence, and appends one `Coverage` row per source-reading run. The
+    [thread contract](../../domains/focus/threads/index.md#evidence-per-claim)
+    owns placeholder removal, deduplication, and provenance-preserving
+    compaction; `cumaru-thread` and `cumaru-sources` apply it, and the focus
+    `cumaru-doctor` skill adds a semantic review of what `cumaru doctor`
+    cannot check structurally.
 
 ## Inputs and ownership
 

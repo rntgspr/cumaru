@@ -32,6 +32,8 @@ domain is canonical for directive authority, ranking, and queue evaluation;
    Create or update threads through the `cumaru-thread` workflow, including
    its deduplication, history, archive-restore, and queue re-evaluation
    rules. Rank and queue by the domain rules against the loaded directives.
+   Append each touched thread's `Coverage` row for this run, as the thread
+   contract defines, including what was revalidated and what was unavailable.
 5. A record outside every active directive's scope is not accepted work:
    list it as unmatched for scope review instead of creating a thread for it,
    unless the user asks to capture it.

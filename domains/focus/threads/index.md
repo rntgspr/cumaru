@@ -37,6 +37,44 @@ targets: [meta]
 Use [the thread template](../templates/thread.md) for new entries and
 `cumaru tree threads` for discovery. Capture does not itself assert completion.
 
+## Sections without repetition
+
+Each fact lives in exactly one section. `Next action` holds the single next
+step with owner and date; `Waiting on` holds external dependencies with their
+start date and expected signal; `Evidence` holds sourced claims; `Context`
+holds the remaining background and open points. Other sections and the
+`summary` refer to an evidence row by its claim ID instead of restating it.
+Instantiating the template replaces every instruction paragraph; a section with
+nothing known says so in one line, and no placeholder text, sample row, or
+invented value survives.
+
+## Evidence per claim
+
+Record every material claim as one `Evidence` row: a stable claim ID, the claim,
+the source occurrence time, the observation time, the author, a short verbatim
+excerpt, the source link, and a confidence of `confirmed`, `reported`, or
+`inferred`. A claim without a verifiable source is `reported` or `inferred`,
+never `confirmed`. Unknown dates or authors remain unknown. A newer source that
+contradicts a claim adds a row referring to the earlier claim ID; it does not
+edit the earlier row away.
+
+## Growth and compaction
+
+Deduplicate evidence and history by source event ID or canonical link before
+appending; re-reading the same source adds nothing. When a thread grows beyond
+easy reading, compact settled rows into one dated summary row per period that
+keeps every original source link and event or claim ID it covers, so
+provenance stays traceable. Never compact open claims, unresolved
+contradictions, or the rows that justify the current queue.
+
+## Coverage per run
+
+Every collection or capture run that reads sources for a thread appends one
+`Coverage` row: the run date, the window read, the sources read, the sources
+that were unavailable or only partially read with the reason, and the claims or
+states revalidated in that run. A missing row means coverage is unknown, not
+complete.
+
 ## History and queue re-entry
 
 Maintain a State history table with event identity, source occurrence time,

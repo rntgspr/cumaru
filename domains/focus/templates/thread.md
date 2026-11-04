@@ -6,18 +6,37 @@ group: follow
 
 # Thread title
 
+Replace every instruction paragraph in this template when instantiating it; a
+section with nothing known yet says so in one line. Follow the thread contract
+for naming, sections, evidence, growth, queue evaluation, and archival.
+
+## Next action
+
+State the single next action, its owner, and its date when known.
+
 ## Context
 
-Record the relevant conversation, known facts, and open points. Follow the
-thread contract for naming, queue evaluation, and archival.
+Record the background and open points that are not a next action, a wait, or a
+claim already listed under Evidence.
+
+## Waiting on
+
+List each external dependency: who or what, since when, and the expected signal.
+
+## Evidence
+
+| Claim ID | Claim | Occurred at | Observed at | Author | Excerpt | Source | Confidence |
+|---|---|---|---|---|---|---|---|
 
 ## State history
 
 | Event ID | Occurred at | Observed at | Source | Previous state | New state or feedback | Reason | Queue |
 |---|---|---|---|---|---|---|---|
 
-Append verified events and corrections in every direction. Unknown history is
-unknown, not reconstructed. Follow the thread contract for archive and restore.
+## Coverage
+
+| Run | Window | Sources read | Unavailable or partial | Revalidated |
+|---|---|---|---|---|
 
 ## Sources
 

@@ -22,8 +22,11 @@ before changing roles.
    subject; otherwise select an unused uppercase hexadecimal ID of the
    default six-character width. Follow the naming contract and use
    `cumaru fs templates/thread.md copy threads/<name>.md`. Update the summary,
-   title, context, and source links. For an existing thread, merge new evidence
-   without discarding earlier decisions or unresolved contradictions.
+   title, sections, and source links, replacing every template placeholder.
+   Record sourced claims as `Evidence` rows and keep each fact in one section,
+   as the thread contract defines. For an existing thread, merge new evidence
+   without discarding earlier decisions or unresolved contradictions, and
+   compact only under the contract's growth rules.
    Append deduplicated state-history events, including reversals and feedback,
    and re-evaluate the queue on material changes. Restore an archived match
    instead of creating a duplicate. Follow the thread contract for yearly
