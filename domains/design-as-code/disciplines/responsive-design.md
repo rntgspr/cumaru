@@ -3,7 +3,7 @@ human_revised: false
 name: responsive-design
 applies-when: adapting or reviewing layouts across viewport sizes or input modes
 strictness: 9/10
-summary: For layouts across viewports or input modes, resolve the relevant ranges, content, and input modes from the project and task, then adapt hierarchy by content priority while keeping text readable and controls usable. Inspect representative narrow and wide widths and transitions with long labels and safe areas, defining wrapping, truncation, and scrolling deliberately so essential identifiers stay accessible. Record inspected widths, apply visual-verification, and report unverified ranges.
+summary: "For layouts across viewports, resolve the ranges and input modes first. Adapt hierarchy by content priority, keep text readable and controls usable, and define wrapping and truncation. Inspect narrow, wide, and transition widths and report the ranges you did not verify."
 source:
   - plugin: nextlevelbuilder/ui-ux-pro-max-skill
     skill: ui-ux-pro-max

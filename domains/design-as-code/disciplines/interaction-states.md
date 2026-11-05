@@ -3,7 +3,7 @@ human_revised: false
 name: interaction-states
 applies-when: designing or reviewing interactive components and feedback
 strictness: 9/10
-summary: For interactive components and feedback, make each relevant state distinguishable under the supported input modes, including selection, hover, press, focus, and disabled, so hover or press never hides selection. Keep keyboard focus visible and give touch feedback without relying on hover. Represent the loading, success, empty, and error states the flow can reach, keeping existing state names. Use motion to explain change with reduced-motion support, and keep state requirements in the spec contract.
+summary: "For interactive components, make selection, hover, press, focus, and disabled states distinct for each input mode. Keep focus visible. Cover the loading, success, empty, and error states that the flow can reach. Support reduced motion and keep existing state names."
 source:
   - plugin: vercel-labs/web-interface-guidelines
     skill: web-interface-guidelines

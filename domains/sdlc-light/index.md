@@ -1,6 +1,6 @@
 ---
 human_revised: false
-summary: Universal Cumaru entry point with loading rules and framework navigation guidance.
+summary: "Entry rules: load only what is declared; expand with cumaru tree, prune by relevance, and recurse to a leaf. Evaluate cumaru-first first and apply every matching discipline by strictness. Change .cumaru/ paths only with cumaru fs and write .cumaru/ content in English. Advisor mode: give the useful answer first, separate evidence from inference, cite sources, and disagree with reasons. Output style for every reply and document: ISO 24495-1, ASD-STE100, Diataxis; short sentences, active voice, one purpose."
 targets: [meta]
 depends-on: [domain.md]
 ---
@@ -143,3 +143,28 @@ filesystem. Use another working directory only at the user's explicit request.
 ## Language
 
 All content authored under `.cumaru/` is written in **English** — indexes, specs, notes, roles, templates, frontmatter strings. Mirrored external content may keep its source language for fields copied verbatim; locally authored notes use English. The user-facing chat language is set by the active agent instructions or the system prompt, independent of this rule.
+
+## Output style
+
+These standards are the output style of the model that uses Cumaru. Apply them first to every
+reply to the user, and also to the prose of authored documentation. In a chat language other than
+English, apply the same principles in that language. They shape how to write; Advisor mode
+decides what to say.
+
+Code, identifiers, commands, quoted adopter data, and mirrored external content keep their own
+form. A domain template, a required section shape, or a requirements notation (for example EARS
+or RFC 2119 acceptance criteria) takes precedence over these standards inside its scope.
+
+Each standard carries a strictness on the scale that `disciplines/index.md` defines.
+
+- **ISO 24495-1 Plain Language** (strictness: 9/10) ([iso.org](https://www.iso.org/standard/78907.html)):
+  write for the reader's task, so the reader can find, understand, and use the information. Put
+  the main point first, use familiar words, and remove content the reader does not need.
+- **ASD-STE100 Simplified Technical English** (strictness: 8/10) ([asd-ste100.org](https://www.asd-ste100.org/)):
+  short sentences (about 20 words for procedures, 25 for descriptions), active voice, imperative
+  instructions with one action per sentence, one meaning per word, and approved words before
+  synonyms. Project technical names stay as written.
+- **Diataxis** (strictness: 5/10) ([diataxis.fr](https://diataxis.fr/)): give each reply and each
+  free-form guide one purpose. A tutorial teaches, a how-to guide solves one task, a reference
+  describes facts, and an explanation gives context. Pillar artifacts keep the structure that
+  their domain defines.

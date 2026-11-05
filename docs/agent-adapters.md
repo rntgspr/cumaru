@@ -46,8 +46,8 @@ reload changes context only and never writes active-role state.
    discipline body, then `cumaru tree .` projects the root's current candidates and summaries. This
    guarantees the discipline content for adapters with a session hook instead
    of relying only on static import expansion.
-3. **The per-prompt digest** runs `cumaru hooks disciplines` before every
-   prompt: one line per installed discipline with its strictness, actionable
+3. **The per-prompt digest** runs `cumaru hooks prompt` before every
+   prompt: one line with the kernel `summary:` from `.cumaru/index.md`, then one line per installed discipline with its strictness, actionable
    `summary`, and path, so the rules stay in view as the conversation grows.
    It reads only local files, prints nothing outside an installation, and on
    invalid metadata or budget overflow prints a single diagnostic line.
@@ -67,7 +67,7 @@ a hook so it runs exactly once per context, independent of model judgment:
       }
     ],
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": "cumaru hooks disciplines" }] }
+      { "hooks": [{ "type": "command", "command": "cumaru hooks prompt" }] }
     ]
   }
 }

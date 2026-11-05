@@ -8,7 +8,7 @@ source:
   skill: acceptance-testing
   url: https://github.com/xhyqaq/superpowers-plus/blob/main/skills/acceptance-testing/SKILL.md
   license: MIT
-summary: Before closing or absorbing a plan, source every EARS / RFC 2119 acceptance criterion from intake/<KEY>.md and the touched spec areas, writing any missing one first. Prove each with a deterministic check and record exactly PASS, FAIL, or Blocked with evidence. Any FAIL is a blocker, so add fix tasks and re-prove until green; defer a Blocked criterion only with explicit user approval. Never weaken or delete a criterion to pass, and never accept passing unit tests or should-be-fine as acceptance.
+summary: "Before you close or absorb a plan, source every EARS or RFC 2119 criterion from intake/<KEY>.md and the touched specs. Prove each with a deterministic check as PASS, FAIL, or Blocked. A FAIL blocks. Never weaken a criterion, and unit tests alone are not acceptance."
 ---
 
 # Acceptance testing

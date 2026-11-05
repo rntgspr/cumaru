@@ -3,7 +3,7 @@ human_revised: false
 name: kiss
 applies-when: choosing how to implement anything — a function, module, abstraction, dependency, or config — whenever a simpler option would also solve the stated problem
 strictness: 9/10
-summary: When choosing how to implement anything, ship the simplest thing that fully solves the stated problem; the burden of proof is on complexity. Every added layer, abstraction, indirection, dependency, or config knob must justify itself against a real, present requirement, and you must be able to name the problem shape that machinery solves. Prefer a plain function, flat structure, or inline value, and reject cleverness that needs a second read and flags or extension points added just in case.
+summary: "When you choose an implementation, ship the simplest thing that fully solves the stated problem. Each added layer, abstraction, dependency, or config knob must answer a real, present requirement. Prefer plain functions and flat structure, and reject cleverness."
 ---
 
 # Keep it simple (KISS)

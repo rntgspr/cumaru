@@ -3,7 +3,7 @@ human_revised: false
 name: solid
 applies-when: designing or refactoring the structure of code — classes, modules, interfaces, and their dependencies — where responsibilities, extension, or coupling are in play
 strictness: 7/10 # SRP and Open/Closed held at 9/10 — see body
-summary: When shaping classes, modules, interfaces, or their dependencies, apply SOLID per scenario, not as a checklist. Hold Single Responsibility and Open/Closed near-mandatory at 9/10, so split units that change for unrelated reasons and extend stable tested code instead of editing it to bolt on variants. Weigh Liskov, Interface Segregation, and Dependency Inversion only when polymorphism, fat interfaces, or genuinely varying seams exist; applying all five everywhere is abstraction for its own sake.
+summary: "When you shape classes, modules, or interfaces, apply SOLID per scenario, not as a checklist. Treat Single Responsibility and Open/Closed as near-mandatory. Use Liskov, Interface Segregation, and Dependency Inversion only where real polymorphism or varying seams exist."
 ---
 
 # SOLID (object / module design)

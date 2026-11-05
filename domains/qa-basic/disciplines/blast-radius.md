@@ -3,7 +3,7 @@ human_revised: false
 name: blast-radius
 applies-when: "fixing a plan's scope: or a task's files: for a change whose reach the spec graph does not already describe — a shared capability/surface/flow not yet a node with edges in specs/ (or topology/)"
 strictness: 9/10
-summary: Before fixing a plan's scope or a task's files, read the change's reach from the depends-on / relates graph in specs/ (or topology/) instead of rediscovering it. If the touched shared capability, surface, or flow has no node, or its edges stop at the direct caller, stop and complete the graph first by bootstrapping its index.md and declaring its edges. This is domain reach, not code imports; never scope from one call site, a shared flag, or an assumed identity, nor change a shared default wholesale.
+summary: "Before you fix a plan's scope or a task's files, read the change's reach from the depends-on and relates graph in specs/ or topology/. If a node or edge is missing, complete the graph first. Never scope from one call site or change a shared default wholesale."
 ---
 
 # Blast radius (keep the impact graph complete before planning)

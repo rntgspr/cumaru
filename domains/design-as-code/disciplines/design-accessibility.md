@@ -3,7 +3,7 @@ human_revised: false
 name: design-accessibility
 applies-when: creating or reviewing visual accessibility and interaction requirements
 strictness: 10/10
-summary: For visual accessibility work, resolve the project's accessibility target and affected criteria first; an unspecified target stays an open requirement. Measure rendered foreground and background pairs per relevant state, and check contrast, focus, control identification, and alternatives to color-, hover-, or gesture-only interaction. Separate measured facts from judgment, since static designs cannot prove keyboard or screen-reader behavior, and record revision, criterion, evidence, and pending checks.
+summary: "For visual accessibility work, resolve the accessibility target first. Measure contrast, focus, control identification, and non-color cues per rendered state. Separate measured facts from judgment and record revision, criterion, evidence, and pending checks."
 source:
   - plugin: AccessLint/skills
     skill: accessibility-inspect

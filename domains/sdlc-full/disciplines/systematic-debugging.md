@@ -8,7 +8,7 @@ source:
   skill: systematic-debugging
   url: https://github.com/obra/superpowers/blob/main/skills/systematic-debugging/SKILL.md
   license: MIT
-summary: When a bug, test failure, or unexpected behavior appears, find the root cause before proposing or writing any fix; a symptom patch is a failure. Reproduce when practical and trace back to the origin, or label a hypothesis built from logs, traces, or captured state. Check whether it is one instance of a broader class, test one hypothesis with one minimal change at a time, then write a failing test, the minimal fix, and prove it. After three failed fixes, stop and reassess the evidence before trying again.
+summary: "When a bug or test failure appears, find the root cause before you write a fix. Reproduce it or label the hypothesis. Test one hypothesis with one minimal change, then write a failing test and the minimal fix. After three failed fixes, stop and reassess the evidence."
 ---
 
 # Systematic debugging

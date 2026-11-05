@@ -3,7 +3,7 @@ human_revised: false
 name: dry
 applies-when: writing or reviewing any code, module, config, or definition where the same knowledge, rule, or decision risks being expressed in more than one place
 strictness: 8/10
-summary: When the same knowledge, rule, constant, decision, or contract risks living in more than one place, give it one authoritative home and reference it. Apply DRY to knowledge, not to similar-looking text; ask whether two sites encode the same knowledge or merely look alike. Keep coincidental duplication only with a one-line note on why it differs, because a forced abstraction bent with flags to serve unrelated callers is worse than the copy. Watch for hand-synced paths and bugs fixed in only one copy.
+summary: "When the same knowledge, rule, constant, or contract could live in two places, give it one authoritative home and reference it. Apply DRY to knowledge, not to similar text. Keep a coincidental copy with a one-line reason instead of a forced abstraction with flags."
 ---
 
 # Don't repeat yourself (DRY)

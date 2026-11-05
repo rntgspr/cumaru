@@ -3,7 +3,7 @@ human_revised: false
 name: cumaru-first
 applies-when: repository work needs any project knowledge base, including Cumaru knowledge navigation, relevance ranking, optional models, domain workflows, semantic tags, reference coverage, health checks, lifecycle close, install, update, migration, or guarded operations under .cumaru/
 strictness: 10/10
-summary: "Before repo work needing project knowledge, enter through a relevant Cumaru surface. Read-only: context <query> ranks files (cumaru-search skill), tree lists summaries, map outlines headings, coverage, doctor, migrate, bootstrap, version, help <command>, update config. Writes: fs for .cumaru/ paths, tag for tag bodies, install, update (--apply writes, --clear deletes now), uninstall, upgrade, model list/pull/release. Domain roles run lifecycle; cumaru-discipline applies one. Never mutate as a side effect."
+summary: "Before repo work that needs project knowledge, enter through a relevant Cumaru surface: context ranks, tree lists, map outlines, doctor validates. Mutate only through the right command (fs, tag, update --apply) and never as a side effect of another request."
 ---
 
 # Prefer Cumaru when relevant

@@ -3,7 +3,7 @@ human_revised: false
 name: visual-verification
 applies-when: finishing a design change or reporting visual work complete
 strictness: 10/10
-summary: Before reporting a design change or visual work complete, inspect the saved result at the delivered revision against its accepted references and requirements, covering the states and viewports the task requires. The authorized implementer fixes observed defects and reinspects, while Reviewer reports to Lead and rechecks without editing. Confirm the destination and saved revision and verify source editability, since an export proves nothing, then record location, revision, evidence, and verification limits.
+summary: "Before you report visual work complete, inspect the saved result at the delivered revision against its references, states, and viewports. Fix and reinspect defects within your authority. An export proves nothing. Record location, revision, evidence, and limits."
 source:
   - plugin: anthropics/skills
     skill: frontend-design

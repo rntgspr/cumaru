@@ -95,7 +95,8 @@ cumaru uninstall [--yes]
    the required discipline index, every body, and the captured
    `cumaru tree .` projection as one payload within a 65536-byte budget;
    Codex entries set `additionalContextLimit: 0`. `UserPromptSubmit` runs
-   `cumaru hooks disciplines` before every prompt. Their static instruction
+   `cumaru hooks prompt` before every prompt: the kernel `summary:` line, then
+   the discipline digest. Their static instruction
    block imports kernel and domain only and keeps a fallback pointer to read
    every discipline when hook context is missing; generic and OpenCode have no
    supported hook injection and rely on ordered static instructions.
@@ -108,7 +109,8 @@ The canonical hooks are exactly one Cumaru SessionStart entry, matcher
 `startup|resume|clear|compact|fork`, type `command`, and `cumaru hooks session`
 (the retired inline shell command is still recognized as owned),
 plus exactly one matcherless `UserPromptSubmit` entry running
-`cumaru hooks disciplines`. Other hook events and adopter entries survive
+`cumaru hooks prompt` (the retired `cumaru hooks disciplines` command is still
+recognized as owned and replaced). Other hook events and adopter entries survive
 merges and uninstall.
 
 ## Failure contract

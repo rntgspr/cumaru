@@ -48,11 +48,14 @@ adapter instructions and SessionStart hook
    `0/10` through `10/10`. Missing is effective `0/10` but invalid metadata.
    External adaptations also carry source URL and license metadata.
 6. A discipline's `summary:` is its per-prompt digest line: a short trigger
-   plus imperative action, not a topic description. Native validation checks
-   only the shared summary contract (32-512 code points); meaning is reviewed
-   by humans. The digest lists `cumaru-first` first, then descending
-   strictness, then C path order, within a 32768-byte budget, and fails
-   atomically with one diagnostic line instead of partial context.
+   plus imperative action, not a topic description, targeted near 256 code
+   points. The kernel `summary:` in `.cumaru/index.md` targets near 512 code
+   points and leads the per-prompt payload. Native validation checks only the
+   shared summary contract (32-512 code points); meaning is reviewed by
+   humans. `cumaru hooks prompt` emits the kernel line, then the digest, which
+   lists `cumaru-first` first, then descending strictness, then C path order,
+   all within a 32768-byte budget, and fails atomically with one diagnostic
+   line instead of partial context.
 7. A discipline states a gate, a cycle only when the process needs one, and
    red flags. It must not compete with the Cumaru loading rule or force a
    session-start plugin.
@@ -113,7 +116,7 @@ adapter instructions and SessionStart hook
    fallback pointer; Generic receives materialized managed Markdown; OpenCode receives ordered native instruction entries.
 3. Claude and Codex receive one merged SessionStart entry that emits the
    discipline index, all remaining bodies, and then runs `cumaru tree .`, plus
-   one `UserPromptSubmit` entry running `cumaru hooks disciplines`. Their
+   one `UserPromptSubmit` entry running `cumaru hooks prompt`. Their
    static block keeps only a fallback pointer instead of discipline bodies;
    unsupported adapters rely on static delivery.
 4. The universal `cumaru-role` skill reloads kernel, domain, discipline index,

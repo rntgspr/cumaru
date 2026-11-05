@@ -3,7 +3,7 @@ human_revised: false
 name: yagni
 applies-when: deciding what to build now — tempted to add capability, generality, or structure beyond what a present, stated requirement demands
 strictness: 8/10
-summary: When deciding what to build now, build only what a present, stated requirement demands, such as an acceptance criterion, the plan's scope, or a real bug. Do not build for an imagined future; speculative generality costs now and locks in guesses made with the least information. Reject parameters, hooks, or abstractions with one caller and an imagined second, configurable modes never exercised, and frameworks for one concrete case. Even a cheap seam for a known near-term need is best added when it lands.
+summary: "When you decide what to build now, build only what a present requirement demands: an acceptance criterion, the plan's scope, or a real bug. Reject parameters, hooks, modes, or abstractions for an imagined future caller, because speculative generality locks in guesses."
 ---
 
 # You aren't gonna need it (YAGNI)

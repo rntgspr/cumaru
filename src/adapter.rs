@@ -90,7 +90,7 @@ fn block(
     // per-prompt digest; the static file keeps only a fallback pointer so a
     // disabled or untrusted hook never leaves the agent without disciplines.
     if adapter.hooks().is_some() {
-        output.push_str("\nDiscipline bodies arrive through the SessionStart hook and a per-prompt digest (`cumaru hooks disciplines`). If either is missing from context, read `.cumaru/disciplines/index.md` and every other `.cumaru/disciplines/*.md` before working.\n");
+        output.push_str("\nDiscipline bodies arrive through the SessionStart hook and a per-prompt digest of the kernel and discipline summaries (`cumaru hooks prompt`). If either is missing from context, read `.cumaru/disciplines/index.md` and every other `.cumaru/disciplines/*.md` before working.\n");
         disciplines.clear();
     }
 
@@ -176,8 +176,10 @@ pub(crate) fn opencode(existing: Option<&str>) -> Result<String, String> {
         .map_err(|e| e.to_string())
 }
 
-/// Per-prompt discipline digest command owned by Cumaru.
-const PROMPT_HOOK: &str = "cumaru hooks disciplines";
+/// Per-prompt kernel and discipline digest command owned by Cumaru.
+const PROMPT_HOOK: &str = "cumaru hooks prompt";
+/// Retired discipline-only prompt command, still recognized as Cumaru-owned.
+const LEGACY_PROMPT_HOOK: &str = "cumaru hooks disciplines";
 
 /// Reports whether a hook command is a current or legacy Cumaru-owned command for `event`.
 fn owned(event: &str, command: &str) -> bool {
@@ -188,7 +190,7 @@ fn owned(event: &str, command: &str) -> bool {
                 || command == LEGACY_HOOK.replace("cumaru tree", "cuma tree")
                 || command == "cumaru tree . 2>/dev/null || true"
         }
-        _ => command == PROMPT_HOOK,
+        _ => command == PROMPT_HOOK || command == LEGACY_PROMPT_HOOK,
     }
 }
 
@@ -444,6 +446,16 @@ mod tests {
         assert_eq!(entries[0]["hooks"][0]["command"], "mine");
         assert_eq!(entries[1]["hooks"][0]["command"], PROMPT_HOOK);
         assert_eq!(entries[1]["hooks"][0]["additionalContextLimit"], 0);
+
+        let legacy =
+            json!({"hooks":{"UserPromptSubmit":[{"hooks":[{"command":LEGACY_PROMPT_HOOK}]}]}})
+                .to_string();
+        let refreshed: Value = serde_json::from_str(&hooks(Some(&legacy), false).unwrap()).unwrap();
+        assert_eq!(
+            refreshed["hooks"]["UserPromptSubmit"],
+            json!([{"hooks":[{"type":"command","command":PROMPT_HOOK}]}])
+        );
+
         let claude: Value = serde_json::from_str(&hooks(None, false).unwrap()).unwrap();
         assert!(
             claude["hooks"]["SessionStart"][0]["hooks"][0]
@@ -467,7 +479,7 @@ mod tests {
             let output = markdown(adapter, None, &files).unwrap();
             assert!(!output.contains("discipline body"));
             assert!(!output.contains("@.cumaru/disciplines/"));
-            assert!(output.contains("cumaru hooks disciplines"));
+            assert!(output.contains("cumaru hooks prompt"));
         }
         assert!(
             markdown(Adapter::None, None, &files)

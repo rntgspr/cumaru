@@ -17,7 +17,7 @@ use crate::markdown::{frontmatter, validate_strictness, validate_summary};
 use crate::paths::is_symlink;
 use crate::text::has_control;
 
-/// Byte budget for the per-prompt discipline digest, including the header.
+/// Byte budget for the per-prompt digest, including the header and the kernel line.
 const DIGEST_BUDGET: usize = 32768;
 
 /// Byte budget for the complete session-start payload, including the tree projection.
@@ -39,6 +39,9 @@ enum Hook {
     /// Print a compact per-prompt digest of every installed discipline summary.
     Disciplines,
 
+    /// Print the kernel summary, then the discipline digest, for every prompt.
+    Prompt,
+
     /// Print the discipline index and every discipline body, then the root tree projection.
     Session,
 }
@@ -56,6 +59,7 @@ struct Discipline {
 pub fn run(args: HooksArgs) -> ExitCode {
     let (label, result) = match args.hook {
         Hook::Disciplines => ("disciplines", digest(Path::new(CUMARU_DIR))),
+        Hook::Prompt => ("prompt", prompt(Path::new(CUMARU_DIR))),
         Hook::Session => (
             "session",
             session(Path::new(CUMARU_DIR)).and_then(|body| body.map(with_tree).transpose()),
@@ -211,6 +215,34 @@ fn digest(cumaru: &Path) -> Result<Option<String>, String> {
     Ok(Some(output))
 }
 
+/// Prepends the validated kernel summary to the discipline digest within the same budget.
+fn prompt(cumaru: &Path) -> Result<Option<String>, String> {
+    let Some(disciplines) = digest(cumaru)? else {
+        return Ok(None);
+    };
+
+    let index = cumaru.join("index.md");
+    if is_symlink(&index) || !index.is_file() {
+        return Err(".cumaru/index.md must be a regular file".into());
+    }
+    let text = fs::read_to_string(&index).map_err(|error| format!("index.md: {error}"))?;
+    let yaml = frontmatter(&text).map_err(|error| format!("index.md: {error}"))?;
+    validate_summary(&yaml["summary"]).map_err(|error| format!("index.md: {error}"))?;
+
+    let output = format!(
+        "Cumaru kernel (active every turn; reread .cumaru/index.md before acting on its topic): {}\n{disciplines}",
+        yaml["summary"].as_str().unwrap_or_default()
+    );
+    if output.len() > DIGEST_BUDGET {
+        return Err(format!(
+            "prompt digest is {} bytes, over the {DIGEST_BUDGET}-byte budget",
+            output.len()
+        ));
+    }
+
+    Ok(Some(output))
+}
+
 /// Extracts and validates the digest fields from one discipline's frontmatter.
 fn parse(file: &str, text: &str) -> Result<Discipline, String> {
     let yaml = frontmatter(text)?;
@@ -334,6 +366,40 @@ mod tests {
             if dir.join("disciplines").is_dir() {
                 let text = digest(&dir).unwrap().unwrap();
                 assert!(text.len() <= DIGEST_BUDGET, "{}", dir.display());
+            }
+        }
+    }
+
+    /// Puts the kernel summary first, keeps the discipline digest, and requires a valid index.
+    #[test]
+    fn prompt_prepends_kernel_summary() {
+        let base = project("prompt");
+        discipline(&base, FIRST, "10/10");
+
+        assert!(prompt(&base).unwrap_err().contains("index.md"));
+        fs::write(
+            base.join("index.md"),
+            "---\nsummary: Load only what is declared and follow the output style.\n---\n",
+        )
+        .unwrap();
+        let text = prompt(&base).unwrap().unwrap();
+        let lines: Vec<_> = text.lines().collect();
+        assert!(lines[0].starts_with("Cumaru kernel"));
+        assert!(lines[0].ends_with("follow the output style."));
+        assert!(lines[1].starts_with("Cumaru disciplines"));
+        assert_eq!(prompt(&base.join("missing")), Ok(None));
+
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    /// Keeps every shipped domain's prompt digest, kernel included, within budget.
+    #[test]
+    fn shipped_domains_prompt_fits_budget() {
+        let domains = Path::new(env!("CARGO_MANIFEST_DIR")).join("domains");
+        for entry in fs::read_dir(domains).unwrap() {
+            let dir = entry.unwrap().path();
+            if dir.join("disciplines").is_dir() {
+                assert!(prompt(&dir).unwrap().is_some(), "{}", dir.display());
             }
         }
     }
