@@ -12,8 +12,8 @@ usage() {
 Usage: scripts/sync-domain-kernel.sh [--check|--apply]
 
 Synchronize universal Cumaru kernel artifacts from domains/__base into every
-shipped domain. Domain-owned skills/cumaru-install/ and disciplines/index.md
-are never changed.
+shipped domain. Domain-owned skills/cumaru-install/, disciplines/index.md, and
+focus/skills/cumaru-doctor/ are never changed.
 
   --check  report missing or divergent mirrors without modifying files (default)
   --apply  copy missing or divergent mirrors from domains/__base
@@ -70,6 +70,8 @@ for domain_dir in "$DOMAINS_DIR"/*/; do
     case "$rel" in
       skills/cumaru-install/*|disciplines/index.md) continue ;;
     esac
+    # The focus domain extends cumaru-doctor with its semantic review step.
+    [[ "${domain_dir##*/}/$rel" == focus/skills/cumaru-doctor/* ]] && continue
     sync_file "$src" "$domain_dir/$rel"
   done < <(find "$BASE_DIR/skills" "$BASE_DIR/commands" "$BASE_DIR/disciplines" -type f 2>/dev/null | LC_ALL=C sort)
 done

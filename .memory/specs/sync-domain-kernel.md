@@ -10,7 +10,7 @@ version: 9
 
 ## Purpose
 
-Provides a standalone maintenance script that deterministically copies universal kernel artifacts from `domains/__base/` into every shipped domain, while preserving domain-owned artifacts (`skills/cumaru-install/`, `disciplines/index.md`). Domain-scoped disciplines such as `code-comments` live outside `__base` and are never synced; the script and the installer drift check apply the same domain-owned exceptions. This ensures kernel byte-identity across domains, which is a hard requirement for the installer drift-check.
+Provides a standalone maintenance script that deterministically copies universal kernel artifacts from `domains/__base/` into every shipped domain, while preserving domain-owned artifacts (`skills/cumaru-install/`, `disciplines/index.md`, and the focus-only `focus/skills/cumaru-doctor/`, which adds a semantic review step). Domain-scoped disciplines such as `code-comments` live outside `__base` and are never synced; the script and the installer drift check apply the same domain-owned exceptions. This ensures kernel byte-identity across domains, which is a hard requirement for the installer drift-check.
 
 ## Public surface
 
@@ -21,7 +21,7 @@ scripts/sync-domain-kernel.sh [--check|--apply]
 ## Invariants
 
 1. **Byte-identity guarantee** — After `--apply`, every universal artifact in every shipped domain is byte-identical to its `__base` source.
-2. **Domain-owned preservation** — `skills/cumaru-install/**` and `disciplines/index.md` are never modified.
+2. **Domain-owned preservation** — `skills/cumaru-install/**`, `disciplines/index.md`, and `focus/skills/cumaru-doctor/**` are never modified.
 3. **No mutation in check mode** — `--check` only reports; exits 0 when fully synchronized, 1 with a list of divergent/missing paths.
 4. **Idempotent apply** — Re-running `--apply` on an already-synchronized tree produces no output and changes nothing.
 
