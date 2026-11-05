@@ -18,7 +18,7 @@ hook ships shell logic.
 ## Status
 
 1. Done: actionable discipline `summary:` lines across all shipped domains.
-2. Done: `cumaru hooks disciplines` per-prompt digest (4096-byte budget).
+2. Done: `cumaru hooks disciplines` per-prompt digest (12288-byte budget).
 3. Done: Claude/Codex adapters install the `UserPromptSubmit` entry; their
    static block keeps a fallback pointer instead of discipline bodies.
 4. Done: `cumaru hooks session` replaces the inline SessionStart shell

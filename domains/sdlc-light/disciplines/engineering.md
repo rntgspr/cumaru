@@ -3,7 +3,7 @@ human_revised: false
 name: engineering
 applies-when: performing software engineering work, operating repository tools, collaborating with the user, or reporting technical results
 strictness: 10/10
-summary: For engineering work, inspect before deciding, make the smallest correct change, preserve unrelated work, and prove results.
+summary: For engineering work, inspect code, contracts, callers, and tests before deciding; make the smallest correct change with the fewest new parts, adding compatibility only for a concrete need. Implement requested changes instead of stopping at proposals, but stay read-only for plans, reviews, and diagnoses. Preserve unrelated and concurrent work, never run destructive Git without authorization, separate evidence from hypothesis, and never claim completion or hide a failed check without fresh evidence.
 ---
 
 # Engineering

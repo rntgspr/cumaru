@@ -3,7 +3,7 @@ human_revised: false
 name: cumaru-first
 applies-when: repository work needs any project knowledge base, including Cumaru knowledge navigation, relevance ranking, optional models, domain workflows, semantic tags, reference coverage, health checks, lifecycle close, install, update, migration, or guarded operations under .cumaru/
 strictness: 10/10
-summary: Before repository work with a Cumaru surface, choose the relevant Cumaru command, skill, role, or workflow first.
+summary: Before repository work that needs project knowledge, decide whether Cumaru has a relevant surface and, if so, enter through its command, skill, role, or workflow; otherwise use normal tools. Discover unknown knowledge with the cumaru-search skill, mutate .cumaru/ paths only via cumaru fs and tag bodies via cumaru tag, and treat coverage, doctor, migrate, and update config as read-only. Never treat update --clear as a preview, and never pull models, upgrade, or uninstall as a side effect.
 ---
 
 # Prefer Cumaru when relevant

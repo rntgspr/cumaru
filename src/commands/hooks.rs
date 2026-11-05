@@ -18,7 +18,7 @@ use crate::paths::is_symlink;
 use crate::text::has_control;
 
 /// Byte budget for the per-prompt discipline digest, including the header.
-const DIGEST_BUDGET: usize = 4096;
+const DIGEST_BUDGET: usize = 12288;
 
 /// Byte budget for the complete session-start payload, including the tree projection.
 const SESSION_BUDGET: usize = 65536;
@@ -313,7 +313,7 @@ mod tests {
         assert!(digest(&base).unwrap_err().contains("strictness"));
         fs::remove_file(base.join("disciplines/loose.md")).unwrap();
 
-        for index in 0..40 {
+        for index in 0..150 {
             discipline(
                 &base,
                 &format!("rule-{index:02}-{}", "x".repeat(40)),

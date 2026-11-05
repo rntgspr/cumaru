@@ -3,7 +3,7 @@ human_revised: false
 name: design-review
 applies-when: reviewing a design or evaluating a proposed visual change
 strictness: 9/10
-summary: Review the requested design revision against accepted requirements and report actionable findings within role boundaries.
+summary: When reviewing a design or visual change, inspect the component or flow in context against the requested scope, inspected revision, and accepted requirements, checking hierarchy, spacing, typography, density, content, and consistency. Apply interaction-states, responsive-design, and design-accessibility where relevant and record untested dimensions. Report location, expected versus observed, evidence, impact, and the smallest correction, separating preference from defect. Reviewer only reports to Lead.
 source:
   - plugin: bencium/bencium-marketplace
     skill: design-audit

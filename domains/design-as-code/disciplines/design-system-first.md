@@ -3,7 +3,7 @@ human_revised: false
 name: design-system-first
 applies-when: creating or changing design components, screens, or visual direction
 strictness: 10/10
-summary: Use the project's canonical design source and existing components before introducing visual changes or system departures.
+summary: When changing design components, screens, or visual direction, ground every change in the project's canonical design source and accepted brief, using the project's established source and destination. Inspect the component's anatomy, properties, tokens, and usage before editing, reuse suitable components and semantic tokens, and preserve established identity, content, and behavior. Keep changes bounded, explain necessary departures, never invent a missing system, and keep external styles subordinate.
 source:
   - plugin: bencium/bencium-marketplace
     skill: design-audit

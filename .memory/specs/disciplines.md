@@ -51,7 +51,7 @@ adapter instructions and SessionStart hook
    plus imperative action, not a topic description. Native validation checks
    only the shared summary contract (32-512 code points); meaning is reviewed
    by humans. The digest lists `cumaru-first` first, then descending
-   strictness, then C path order, within a 4096-byte budget, and fails
+   strictness, then C path order, within a 12288-byte budget, and fails
    atomically with one diagnostic line instead of partial context.
 7. A discipline states a gate, a cycle only when the process needs one, and
    red flags. It must not compete with the Cumaru loading rule or force a

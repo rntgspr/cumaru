@@ -8,7 +8,7 @@ source:
   skill: verification-before-completion
   url: https://github.com/obra/superpowers/blob/main/skills/verification-before-completion/SKILL.md
   license: MIT
-summary: Before claiming work is complete, fixed, or passing, run the relevant checks and report the observed evidence.
+summary: Before claiming work is complete, fixed, or passing, or before a commit, PR, or handoff, identify the command that proves the claim, such as the test, build, lint, or diff, run it now in the same message, and read its real output. Only then claim, citing that evidence. For a regression fix, prove both directions, failing with the fix reverted and passing once restored. Never write should work before running it, never say done without fresh output, and never reuse an older run after further edits.
 ---
 
 # Verification before completion

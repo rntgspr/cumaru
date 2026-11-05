@@ -3,7 +3,7 @@ human_revised: false
 name: separation-of-concerns
 applies-when: implementing, reviewing, or refactoring code where responsibilities, module boundaries, or dependency direction are being chosen or changed
 strictness: 9/10
-summary: Separate independently changing concerns through cohesive ownership and explicit boundaries without speculative layers.
+summary: When choosing or changing responsibilities, module boundaries, or dependency direction, first name each concern and its current owner. Keep code serving one concern together, and separate presentation, domain policy, persistence, and integrations only when they change for independent reasons. Pass consumers only what they need, keep transport and storage details at their boundary, avoid cycles and private access, never split by line count or add speculative layers, and verify behavior across boundaries.
 ---
 
 # Separation of concerns

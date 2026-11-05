@@ -8,7 +8,7 @@ source:
   skill: test-driven-development
   url: https://github.com/obra/superpowers/blob/main/skills/test-driven-development/SKILL.md
   license: MIT
-summary: Before writing implementation code for a feature or bugfix, write a failing test that captures the expected behavior.
+summary: Before writing implementation code for any feature or bugfix, write the smallest test for the next behavior and watch it fail for the expected reason, not a typo or missing import. Then write only the minimal code that makes it pass, run it to confirm green, and refactor with the test as a safety net. A test that passes on its first run proves nothing. If code you wrote in this task preceded its test, revert only that new work and restart; characterize existing behavior with a regression test first.
 ---
 
 # Test-driven development

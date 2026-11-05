@@ -8,7 +8,7 @@ source:
   skill: receiving-code-review
   url: https://github.com/obra/superpowers/blob/main/skills/receiving-code-review/SKILL.md
   license: MIT
-summary: When acting on review feedback, verify each comment technically and push back with evidence instead of complying blindly.
+summary: When acting on code-review feedback, read the whole review before touching anything, then verify each point against the actual code, since reviewers err. Clarify unclear items up front instead of guessing intent mid-fix. Push back with technical reasoning where you disagree and apply yagni to nice-to-have generality. Implement agreed changes one at a time, proving each. Never answer with performative agreement or thanks instead of the fix, and never fold unrelated changes into one untested lump.
 ---
 
 # Receiving code review

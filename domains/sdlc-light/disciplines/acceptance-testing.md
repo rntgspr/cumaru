@@ -8,7 +8,7 @@ source:
   skill: acceptance-testing
   url: https://github.com/xhyqaq/superpowers-plus/blob/main/skills/acceptance-testing/SKILL.md
   license: MIT
-summary: Before closing a plan, verify each acceptance criterion with observed evidence and record unmet ones instead of closing.
+summary: Before direct absorption of a plan into specs/, source every EARS / RFC 2119 acceptance criterion from plans/<PLAN-ID>/index.md and the touched spec areas, adding any missing one first. Prove each with a deterministic check and record exactly PASS, FAIL, or Blocked with evidence. Any FAIL is a blocker, so add fix tasks and re-prove until green; defer a Blocked criterion only with explicit user approval. Never weaken or delete a criterion to pass, and never accept passing unit tests as acceptance.
 ---
 
 # Acceptance testing
