@@ -3,7 +3,7 @@ human_revised: false
 name: cumaru-first
 applies-when: repository work needs any project knowledge base, including Cumaru knowledge navigation, relevance ranking, optional models, domain workflows, semantic tags, reference coverage, health checks, lifecycle close, install, update, migration, or guarded operations under .cumaru/
 strictness: 10/10
-summary: Before repository work that needs project knowledge, decide whether Cumaru has a relevant surface and, if so, enter through its command, skill, role, or workflow; otherwise use normal tools. Discover unknown knowledge with the cumaru-search skill, mutate .cumaru/ paths only via cumaru fs and tag bodies via cumaru tag, and treat coverage, doctor, migrate, and update config as read-only. Never treat update --clear as a preview, and never pull models, upgrade, or uninstall as a side effect.
+summary: "Before repo work needing project knowledge, enter through a relevant Cumaru surface. Read-only: context <query> ranks files (cumaru-search skill), tree lists summaries, map outlines headings, coverage, doctor, migrate, bootstrap, version, help <command>, update config. Writes: fs for .cumaru/ paths, tag for tag bodies, install, update (--apply writes, --clear deletes now), uninstall, upgrade, model list/pull/release. Domain roles run lifecycle; cumaru-discipline applies one. Never mutate as a side effect."
 ---
 
 # Prefer Cumaru when relevant
@@ -28,6 +28,9 @@ not through `.cumaru/skills/`.
 
 | Need | Prefer |
 |---|---|
+| Rank knowledge by query relevance | `cumaru context <query>` (read-only); the `cumaru-search` skill wraps it when the owning file is unknown. |
+| Browse a directory and its file summaries | `cumaru tree [<dir>] [--deep]` (read-only). |
+| Outline a file or directory by its headings | `cumaru map [<dir-or-md>]` (read-only), then read only the needed section. |
 | Create, copy, move, or remove `.cumaru/` paths | `cumaru fs`; use an editor for ordinary prose. |
 | Read, replace, or audit a semantic tag body | `cumaru tag`; tag bodies are opaque adopter data. |
 | Measure or reconcile source-reference coverage | `cumaru coverage` (read-only), then the `cumaru-refs` skill. |
