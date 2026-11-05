@@ -1,6 +1,6 @@
 ---
 name: cumaru-update-and-doctor-design-principles
-description: Preserve adopter data while v9 config, doctor, update, and migration enforce deterministic structure and explicit ownership
+description: "Preserve adopter tag bodies and local-only files; keep config reconciliation agent-led and version-gated"
 metadata:
   node_type: memory
   type: feedback

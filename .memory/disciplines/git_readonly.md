@@ -1,6 +1,6 @@
 ---
 name: git is read-only by default
-description: Do not use git for mutating operations unless the user explicitly asks
+description: "Run only read-only git commands; never mutate git state unless the user explicitly asks"
 type: feedback
 originSessionId: 507d571c-f4de-4425-8d7c-cb5b12395a28
 ---

@@ -1,6 +1,6 @@
 ---
 name: commit-message-style
-description: Commit messages must be one-line gitmoji messages under 120 chars
+description: "Write commits only on explicit request, as one-line gitmoji messages under 120 chars"
 metadata:
   type: feedback
 ---

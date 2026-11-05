@@ -1,5 +1,5 @@
 {
-  "description": "Load repository memory and documentation into every Codex context.",
+  "description": "Load the repository startup set and a per-prompt discipline digest into Codex context.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,8 +7,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash \"$(git rev-parse --show-toplevel)/.codex/hooks/load-context.sh\"",
-            "statusMessage": "Loading repository memory and docs",
+            "command": "/bin/bash \"$(git rev-parse --show-toplevel)/.codex/hooks/load-context.sh\" session",
+            "statusMessage": "Loading repository startup set",
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"$(git rev-parse --show-toplevel)/.codex/hooks/load-context.sh\" prompt",
             "additionalContextLimit": 0
           }
         ]

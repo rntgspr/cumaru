@@ -1,6 +1,6 @@
 ---
 name: chat in pt-BR, write artifacts in English
-description: Project's CLAUDE.md sets language convention; honor terse style across both
+description: "Chat in pt-BR, write every artifact in English, never mix languages in one artifact, keep replies terse"
 type: feedback
 originSessionId: 507d571c-f4de-4425-8d7c-cb5b12395a28
 ---

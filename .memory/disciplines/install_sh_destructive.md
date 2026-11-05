@@ -1,6 +1,6 @@
 ---
 name: install-sh-destructive
-description: Never run src/install.sh (or cumaru upgrade) without explicit user request — it mutates the global installation
+description: "Never run src/install.sh or cumaru upgrade without explicit user request; use sync-domain-kernel.sh --check"
 metadata:
   type: feedback
 ---

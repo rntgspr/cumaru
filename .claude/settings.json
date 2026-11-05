@@ -6,7 +6,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/load-context.sh\""
+            "command": "/bin/bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/load-context.sh\" session"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/load-context.sh\" prompt"
           }
         ]
       }

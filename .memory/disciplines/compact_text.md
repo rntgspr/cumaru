@@ -1,6 +1,6 @@
 ---
 name: compactness over duplication; reference templates
-description: Across the framework, prefer compactness; reference canonical sources instead of duplicating their content
+description: "Reference the canonical source instead of duplicating its content in roles, skills, and indexes"
 type: feedback
 originSessionId: 507d571c-f4de-4425-8d7c-cb5b12395a28
 ---
