@@ -8,7 +8,7 @@ source:
   skill: systematic-debugging
   url: https://github.com/obra/superpowers/blob/main/skills/systematic-debugging/SKILL.md
   license: MIT
-summary: Framework guidance for Systematic debugging and its required workflow.
+summary: When a bug or failure appears, reproduce it and find the root cause before proposing or writing any fix.
 ---
 
 # Systematic debugging

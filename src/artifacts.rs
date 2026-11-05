@@ -141,7 +141,7 @@ pub(crate) fn merge_json(
     } else if kind == "opencode" {
         adapter::opencode(existing)?
     } else {
-        adapter::hooks(existing)?
+        adapter::hooks(existing, Some(path) == adapter::Adapter::Codex.hooks())?
     };
     add(
         project,

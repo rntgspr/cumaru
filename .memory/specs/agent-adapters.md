@@ -36,7 +36,8 @@ cumaru uninstall [--yes]
    surface without consulting config.
 3. Bootstrap order is kernel, domain, the discipline index, every remaining
    installed discipline, then the root `cumaru tree .` projection where a
-   SessionStart hook is supported.
+   SessionStart hook is supported. Hook-capable adapters also receive a
+   per-prompt discipline digest through `UserPromptSubmit`.
 4. Cumaru merges or removes only its owned adapter artifacts; adopter-owned
    instructions, hooks, skills, commands, and configuration remain intact.
 5. Claude and OpenCode commands forward `$ARGUMENTS` to a required namesake
@@ -45,7 +46,7 @@ cumaru uninstall [--yes]
 
 ## Adapter matrix
 
-| Adapter target | Instructions | Skills | Commands | Session hook |
+| Adapter target | Instructions | Skills | Commands | Hooks |
 |---|---|---|---|---|
 | generic (`none`) | `.agents/AGENTS.md` | `.agents/skills/cumaru-*` | `.agents/commands/cumaru/` | none |
 | `claude` | `CLAUDE.md` | `.claude/skills/cumaru-*` | `.claude/commands/cumaru/` | `.claude/settings.json` |
@@ -90,17 +91,25 @@ cumaru uninstall [--yes]
 1. Load `.cumaru/index.md` as the framework kernel.
 2. Load `.cumaru/domain.md` for pillars, roles, and discipline triggers.
 3. Load every regular `.cumaru/disciplines/*.md` body.
-4. On Claude and Codex, SessionStart re-emits discipline bodies and runs
-   `cumaru tree . 2>/dev/null || true`; generic and OpenCode have no supported
-   session-start injection and rely on ordered static instructions.
+4. On Claude and Codex, SessionStart runs `cumaru hooks session`, which emits
+   the required discipline index, every body, and the captured
+   `cumaru tree .` projection as one payload within a 65536-byte budget;
+   Codex entries set `additionalContextLimit: 0`. `UserPromptSubmit` runs
+   `cumaru hooks disciplines` before every prompt. Their static instruction
+   block imports kernel and domain only and keeps a fallback pointer to read
+   every discipline when hook context is missing; generic and OpenCode have no
+   supported hook injection and rely on ordered static instructions.
 
 The universal `cumaru-role` skill repeats kernel, domain, discipline-index,
 remaining-discipline, and root-candidate order before loading the requested
 role. It changes context only and never writes active-role state.
 
-The canonical hook has exactly one Cumaru entry, matcher
-`startup|resume|clear|compact|fork`, type `command`, and the canonical command.
-Other hook events and SessionStart entries survive merges.
+The canonical hooks are exactly one Cumaru SessionStart entry, matcher
+`startup|resume|clear|compact|fork`, type `command`, and `cumaru hooks session`
+(the retired inline shell command is still recognized as owned),
+plus exactly one matcherless `UserPromptSubmit` entry running
+`cumaru hooks disciplines`. Other hook events and adopter entries survive
+merges and uninstall.
 
 ## Failure contract
 

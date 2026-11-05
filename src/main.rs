@@ -75,6 +75,9 @@ enum Command {
 
     /// Install the latest global Cumaru binary, or check release freshness with --check.
     Upgrade(commands::upgrade::UpgradeArgs),
+
+    /// Print deterministic offline context payloads for native agent hooks.
+    Hooks(commands::hooks::HooksArgs),
 }
 
 /// Entry point for the Rust Cumaru CLI; parses argv, runs the selected subcommand, and returns its exit code.
@@ -98,6 +101,7 @@ fn main() -> ExitCode {
         Some(Command::Coverage(args)) => commands::coverage::run(args),
         Some(Command::Fs(args)) => commands::fs::run(args),
         Some(Command::Upgrade(args)) => commands::upgrade::run(args),
+        Some(Command::Hooks(args)) => commands::hooks::run(args),
         None => commands::doctor::run(commands::doctor::DoctorArgs::default()),
     }
 }

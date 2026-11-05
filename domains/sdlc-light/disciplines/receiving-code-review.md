@@ -8,7 +8,7 @@ source:
   skill: receiving-code-review
   url: https://github.com/obra/superpowers/blob/main/skills/receiving-code-review/SKILL.md
   license: MIT
-summary: Framework guidance for Receiving code review and its required workflow.
+summary: When acting on review feedback, verify each comment technically and push back with evidence instead of complying blindly.
 ---
 
 # Receiving code review

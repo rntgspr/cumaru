@@ -13,7 +13,10 @@ pub(crate) enum Adapter {
     Opencode,
 }
 
-const HOOK: &str = "index=.cumaru/disciplines/index.md; [ -f \"$index\" ] && { printf \"\\n## Discipline: %s\\n\\n\" \"$index\"; cat \"$index\"; }; for file in .cumaru/disciplines/*.md; do [ \"$file\" = \"$index\" ] && continue; [ -f \"$file\" ] && { printf \"\\n## Discipline: %s\\n\\n\" \"$file\"; cat \"$file\"; }; done; cumaru tree . 2>/dev/null || true";
+/// Native session payload command owned by Cumaru.
+const HOOK: &str = "cumaru hooks session";
+/// Retired inline shell session command, still recognized as Cumaru-owned.
+const LEGACY_HOOK: &str = "index=.cumaru/disciplines/index.md; [ -f \"$index\" ] && { printf \"\\n## Discipline: %s\\n\\n\" \"$index\"; cat \"$index\"; }; for file in .cumaru/disciplines/*.md; do [ \"$file\" = \"$index\" ] && continue; [ -f \"$file\" ] && { printf \"\\n## Discipline: %s\\n\\n\" \"$file\"; cat \"$file\"; }; done; cumaru tree . 2>/dev/null || true";
 const INSTRUCTIONS: [&str; 3] = [
     ".cumaru/index.md",
     ".cumaru/domain.md",
@@ -82,6 +85,15 @@ fn block(
         })
         .collect();
     disciplines.sort_by_key(|path| (path.as_str() != "disciplines/index.md", path.as_str()));
+
+    // Hook-capable adapters receive discipline bodies at session start and a
+    // per-prompt digest; the static file keeps only a fallback pointer so a
+    // disabled or untrusted hook never leaves the agent without disciplines.
+    if adapter.hooks().is_some() {
+        output.push_str("\nDiscipline bodies arrive through the SessionStart hook and a per-prompt digest (`cumaru hooks disciplines`). If either is missing from context, read `.cumaru/disciplines/index.md` and every other `.cumaru/disciplines/*.md` before working.\n");
+        disciplines.clear();
+    }
+
     for path in disciplines {
         if adapter == Adapter::Claude {
             output.push_str(&format!("@.cumaru/{path}\n"));
@@ -164,8 +176,45 @@ pub(crate) fn opencode(existing: Option<&str>) -> Result<String, String> {
         .map_err(|e| e.to_string())
 }
 
-/// Merges one Cumaru hook and preserves other entries, including unrelated hooks sharing an entry.
-pub(crate) fn hooks(existing: Option<&str>) -> Result<String, String> {
+/// Per-prompt discipline digest command owned by Cumaru.
+const PROMPT_HOOK: &str = "cumaru hooks disciplines";
+
+/// Reports whether a hook command is a current or legacy Cumaru-owned command for `event`.
+fn owned(event: &str, command: &str) -> bool {
+    match event {
+        "SessionStart" => {
+            command == HOOK
+                || command == LEGACY_HOOK
+                || command == LEGACY_HOOK.replace("cumaru tree", "cuma tree")
+                || command == "cumaru tree . 2>/dev/null || true"
+        }
+        _ => command == PROMPT_HOOK,
+    }
+}
+
+/// Removes owned commands from one event's entries, dropping entries left empty.
+fn strip(entries: &mut Vec<Value>, event: &str) -> Result<(), String> {
+    for entry in entries.iter_mut() {
+        if !entry.is_object() {
+            return Err(format!("{event} entries must be objects"));
+        }
+        let hooks = entry["hooks"]
+            .as_array_mut()
+            .ok_or(format!("{event} entry hooks must be an array"))?;
+        hooks.retain(|hook| {
+            !hook["command"]
+                .as_str()
+                .is_some_and(|command| owned(event, command))
+        });
+    }
+    entries.retain(|entry| !entry["hooks"].as_array().unwrap().is_empty());
+    Ok(())
+}
+
+/// Merges the Cumaru session and prompt hooks and preserves other entries, including unrelated hooks sharing an entry.
+///
+/// Codex entries disable the provider's context spill threshold so full discipline bodies arrive intact.
+pub(crate) fn hooks(existing: Option<&str>, codex: bool) -> Result<String, String> {
     let mut value = object(existing)?;
     if value["hooks"].is_null() {
         value["hooks"] = json!({});
@@ -173,29 +222,29 @@ pub(crate) fn hooks(existing: Option<&str>) -> Result<String, String> {
     if !value["hooks"].is_object() {
         return Err("hooks must be a JSON object".into());
     }
-    if value["hooks"]["SessionStart"].is_null() {
-        value["hooks"]["SessionStart"] = json!([]);
-    }
-    let entries = value["hooks"]["SessionStart"]
-        .as_array_mut()
-        .ok_or("SessionStart must be an array")?;
-    for entry in entries.iter_mut() {
-        if !entry.is_object() {
-            return Err("SessionStart entries must be objects".into());
+    for (event, entry) in [
+        (
+            "SessionStart",
+            json!({"matcher": "startup|resume|clear|compact|fork", "hooks": [{"type": "command", "command": HOOK}]}),
+        ),
+        (
+            "UserPromptSubmit",
+            json!({"hooks": [{"type": "command", "command": PROMPT_HOOK}]}),
+        ),
+    ] {
+        if value["hooks"][event].is_null() {
+            value["hooks"][event] = json!([]);
         }
-        let hooks = entry["hooks"]
+        let entries = value["hooks"][event]
             .as_array_mut()
-            .ok_or("SessionStart entry hooks must be an array")?;
-        hooks.retain(|hook| {
-            !hook["command"].as_str().is_some_and(|command| {
-                command == HOOK
-                    || command == HOOK.replace("cumaru tree", "cuma tree")
-                    || command == "cumaru tree . 2>/dev/null || true"
-            })
-        });
+            .ok_or(format!("{event} must be an array"))?;
+        strip(entries, event)?;
+        let mut entry = entry;
+        if codex {
+            entry["hooks"][0]["additionalContextLimit"] = json!(0);
+        }
+        entries.push(entry);
     }
-    entries.retain(|entry| !entry["hooks"].as_array().unwrap().is_empty());
-    entries.push(json!({"matcher": "startup|resume|clear|compact|fork", "hooks": [{"type": "command", "command": HOOK}]}));
     serde_json::to_string_pretty(&value)
         .map(|text| format!("{text}\n"))
         .map_err(|e| e.to_string())
@@ -250,25 +299,15 @@ pub(crate) fn clear(existing: &str, kind: &str) -> Result<String, String> {
         }
     } else if let Some(hooks) = value.get_mut("hooks") {
         let hooks = hooks.as_object_mut().ok_or("hooks must be a JSON object")?;
-        if let Some(entries) = hooks.get_mut("SessionStart") {
-            let entries = entries
-                .as_array_mut()
-                .ok_or("SessionStart must be an array")?;
-            for entry in entries.iter_mut() {
-                let hooks = entry["hooks"]
+        for event in ["SessionStart", "UserPromptSubmit"] {
+            if let Some(entries) = hooks.get_mut(event) {
+                let entries = entries
                     .as_array_mut()
-                    .ok_or("SessionStart entry hooks must be an array")?;
-                hooks.retain(|hook| {
-                    !hook["command"].as_str().is_some_and(|command| {
-                        command == HOOK
-                            || command == HOOK.replace("cumaru tree", "cuma tree")
-                            || command == "cumaru tree . 2>/dev/null || true"
-                    })
-                });
-            }
-            entries.retain(|entry| !entry["hooks"].as_array().unwrap().is_empty());
-            if entries.is_empty() {
-                hooks.remove("SessionStart");
+                    .ok_or(format!("{event} must be an array"))?;
+                strip(entries, event)?;
+                if entries.is_empty() {
+                    hooks.remove(event);
+                }
             }
         }
         if hooks.is_empty() {
@@ -336,11 +375,11 @@ mod tests {
             ("disciplines/index.md".into(), b"discipline index".to_vec()),
             ("disciplines/a.md".into(), b"discipline body".to_vec()),
         ]);
-        let output = markdown(Adapter::Codex, Some("My rules\n"), &files).unwrap();
+        let output = markdown(Adapter::None, Some("My rules\n"), &files).unwrap();
         assert!(output.starts_with("My rules\n"));
         assert!(output.find("discipline index").unwrap() < output.find("discipline body").unwrap());
         assert_eq!(
-            markdown(Adapter::Codex, Some(&output), &files)
+            markdown(Adapter::None, Some(&output), &files)
                 .unwrap()
                 .matches("BEGIN CUMARU-HOOK")
                 .count(),
@@ -370,8 +409,8 @@ mod tests {
     #[test]
     fn merges_session_hooks() {
         let existing = r#"{"permissions":{"allow":["mine"]},"hooks":{"Stop":[1],"SessionStart":[{"matcher":"startup","hooks":[{"type":"command","command":"mine"},{"type":"command","command":"cumaru tree . 2>/dev/null || true"}]}]}}"#;
-        let output = hooks(Some(existing)).unwrap();
-        let output = hooks(Some(&output)).unwrap();
+        let output = hooks(Some(existing), false).unwrap();
+        let output = hooks(Some(&output), false).unwrap();
         let value: Value = serde_json::from_str(&output).unwrap();
         assert_eq!(value["hooks"]["SessionStart"].as_array().unwrap().len(), 2);
         assert_eq!(
@@ -379,10 +418,10 @@ mod tests {
             "mine"
         );
         assert_eq!(value["hooks"]["Stop"], json!([1]));
-        assert!(hooks(Some(r#"{"hooks":{"SessionStart":"bad"}}"#)).is_err());
+        assert!(hooks(Some(r#"{"hooks":{"SessionStart":"bad"}}"#), false).is_err());
 
-        let legacy = json!({"hooks":{"SessionStart":[{"hooks":[{"command":HOOK.replace("cumaru tree", "cuma tree")}]}]}}).to_string();
-        let refreshed = hooks(Some(&legacy)).unwrap();
+        let legacy = json!({"hooks":{"SessionStart":[{"hooks":[{"command":LEGACY_HOOK.replace("cumaru tree", "cuma tree")}]}]}}).to_string();
+        let refreshed = hooks(Some(&legacy), false).unwrap();
         let value: Value = serde_json::from_str(&refreshed).unwrap();
         assert_eq!(value["hooks"]["SessionStart"].as_array().unwrap().len(), 1);
         assert_eq!(
@@ -391,5 +430,49 @@ mod tests {
         );
         let cleared: Value = serde_json::from_str(&clear(&legacy, "hooks").unwrap()).unwrap();
         assert!(cleared.get("hooks").is_none());
+    }
+
+    /// Installs one prompt digest hook idempotently and clears it without touching adopter prompt hooks.
+    #[test]
+    fn merges_prompt_digest_hook() {
+        let existing =
+            r#"{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"mine"}]}]}}"#;
+        let output = hooks(Some(&hooks(Some(existing), true).unwrap()), true).unwrap();
+        let value: Value = serde_json::from_str(&output).unwrap();
+        let entries = value["hooks"]["UserPromptSubmit"].as_array().unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0]["hooks"][0]["command"], "mine");
+        assert_eq!(entries[1]["hooks"][0]["command"], PROMPT_HOOK);
+        assert_eq!(entries[1]["hooks"][0]["additionalContextLimit"], 0);
+        let claude: Value = serde_json::from_str(&hooks(None, false).unwrap()).unwrap();
+        assert!(
+            claude["hooks"]["SessionStart"][0]["hooks"][0]
+                .get("additionalContextLimit")
+                .is_none()
+        );
+
+        let cleared: Value = serde_json::from_str(&clear(&output, "hooks").unwrap()).unwrap();
+        assert_eq!(
+            cleared["hooks"]["UserPromptSubmit"],
+            json!([{"hooks":[{"type":"command","command":"mine"}]}])
+        );
+        assert!(cleared["hooks"].get("SessionStart").is_none());
+    }
+
+    /// Keeps only a fallback pointer for hook-capable adapters and embeds bodies elsewhere.
+    #[test]
+    fn hook_adapters_skip_static_bodies() {
+        let files = BTreeMap::from([("disciplines/a.md".into(), b"discipline body".to_vec())]);
+        for adapter in [Adapter::Claude, Adapter::Codex] {
+            let output = markdown(adapter, None, &files).unwrap();
+            assert!(!output.contains("discipline body"));
+            assert!(!output.contains("@.cumaru/disciplines/"));
+            assert!(output.contains("cumaru hooks disciplines"));
+        }
+        assert!(
+            markdown(Adapter::None, None, &files)
+                .unwrap()
+                .contains("discipline body")
+        );
     }
 }

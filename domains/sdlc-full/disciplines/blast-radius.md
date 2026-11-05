@@ -3,7 +3,7 @@ human_revised: false
 name: blast-radius
 applies-when: "fixing a plan's scope: or a task's files: for a change whose reach the spec graph does not already describe — a shared capability/surface/flow not yet a node with edges in specs/ (or topology/)"
 strictness: 9/10
-summary: Framework guidance for Blast radius (keep the impact graph complete before planning) and its required workflow.
+summary: Before fixing a plan's scope, map every affected shared surface into the spec graph so no impact stays undescribed.
 ---
 
 # Blast radius (keep the impact graph complete before planning)

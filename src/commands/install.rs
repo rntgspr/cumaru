@@ -175,7 +175,7 @@ pub fn run(args: InstallArgs) -> ExitCode {
                 .map_err(|e| e.to_string())?;
             writes.push(Write {
                 path: path.into(),
-                content: adapter::hooks(text)?.into_bytes(),
+                content: adapter::hooks(text, adapter == Adapter::Codex)?.into_bytes(),
                 original,
                 executable: false,
             });

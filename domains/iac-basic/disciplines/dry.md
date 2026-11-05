@@ -3,7 +3,7 @@ human_revised: false
 name: dry
 applies-when: writing or reviewing any code, module, config, or definition where the same knowledge, rule, or decision risks being expressed in more than one place
 strictness: 8/10
-summary: Framework guidance for Don't repeat yourself (DRY) and its required workflow.
+summary: When the same knowledge or rule would live in two places, keep one canonical source and reference it.
 ---
 
 # Don't repeat yourself (DRY)

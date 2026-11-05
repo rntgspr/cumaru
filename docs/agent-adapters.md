@@ -37,15 +37,20 @@ reload changes context only and never writes active-role state.
 
 1. **`.cumaru/index.md`, `.cumaru/domain.md`, and `.cumaru/disciplines/*.md`**
    load eagerly, with the discipline index before discipline bodies where the
-   adapter exposes deterministic file order. Claude receives explicit `@` imports for each installed
-   discipline; Generic and Codex receive their bodies inside the managed
-   `CUMARU-HOOK`; OpenCode uses its native instructions glob. `domain.md` must be
+   adapter exposes deterministic file order. Claude and Codex, which have hooks, keep only a
+   fallback pointer to the disciplines in the managed `CUMARU-HOOK`; Generic
+   receives their bodies inside it; OpenCode uses its native instructions glob. `domain.md` must be
    eager because it carries the pillars, roles, and the execution-discipline
    trigger table — a `depends-on` alone is a prunable signal, not a guarantee.
 2. **The SessionStart projection** emits the discipline index, every remaining
    discipline body, then `cumaru tree .` projects the root's current candidates and summaries. This
    guarantees the discipline content for adapters with a session hook instead
    of relying only on static import expansion.
+3. **The per-prompt digest** runs `cumaru hooks disciplines` before every
+   prompt: one line per installed discipline with its strictness, actionable
+   `summary`, and path, so the rules stay in view as the conversation grows.
+   It reads only local files, prints nothing outside an installation, and on
+   invalid metadata or budget overflow prints a single diagnostic line.
 
 Where the client has a session-start event, Cumaru registers the projection as
 a hook so it runs exactly once per context, independent of model judgment:
@@ -57,15 +62,21 @@ a hook so it runs exactly once per context, independent of model judgment:
       {
         "matcher": "startup|resume|clear|compact|fork",
         "hooks": [
-          { "type": "command", "command": "index=.cumaru/disciplines/index.md; [ -f \"$index\" ] && cat \"$index\"; for file in .cumaru/disciplines/*.md; do [ \"$file\" = \"$index\" ] && continue; [ -f \"$file\" ] && cat \"$file\"; done; cumaru tree . 2>/dev/null || true" }
+          { "type": "command", "command": "cumaru hooks session" }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "cumaru hooks disciplines" }] }
     ]
   }
 }
 ```
 
-Claude and Codex share this shape. The matcher covers every point where a
+Claude and Codex share this shape; Codex entries also set
+`"additionalContextLimit": 0` so full discipline bodies are not spilled. Both
+commands are native, offline, validate the complete set before printing, emit a
+single diagnostic line on failure, and always exit 0. The matcher covers every point where a
 context is created or re-created; the command is silenced and forced to succeed
 because a failing hook must never disturb a session. Codex also accepts the
 equivalent inline `[hooks]` table in `.codex/config.toml`; Cumaru writes

@@ -8,7 +8,7 @@ source:
   skill: test-driven-development
   url: https://github.com/obra/superpowers/blob/main/skills/test-driven-development/SKILL.md
   license: MIT
-summary: Framework guidance for Test-driven development and its required workflow.
+summary: Before writing implementation code for a feature or bugfix, write a failing test that captures the expected behavior.
 ---
 
 # Test-driven development

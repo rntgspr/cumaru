@@ -3,7 +3,7 @@ human_revised: false
 name: solid
 applies-when: designing or refactoring the structure of code — classes, modules, interfaces, and their dependencies — where responsibilities, extension, or coupling are in play
 strictness: 7/10 # SRP and Open/Closed held at 9/10 — see body
-summary: Framework guidance for SOLID (object / module design) and its required workflow.
+summary: When shaping modules and interfaces, keep single responsibility and extension without modification; justify other deviations.
 ---
 
 # SOLID (object / module design)

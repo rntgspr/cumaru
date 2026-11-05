@@ -3,7 +3,7 @@ human_revised: false
 name: engineering
 applies-when: performing software engineering work, operating repository tools, collaborating with the user, or reporting technical results
 strictness: 10/10
-summary: Pragmatic engineering rules for autonomous implementation, safe editing, concise collaboration, and evidence-backed delivery.
+summary: For engineering work, inspect before deciding, make the smallest correct change, preserve unrelated work, and prove results.
 ---
 
 # Engineering

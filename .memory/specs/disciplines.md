@@ -47,12 +47,18 @@ adapter instructions and SessionStart hook
 5. Every discipline except `disciplines/index.md` declares `strictness:` from
    `0/10` through `10/10`. Missing is effective `0/10` but invalid metadata.
    External adaptations also carry source URL and license metadata.
-6. A discipline states a gate, a cycle only when the process needs one, and
+6. A discipline's `summary:` is its per-prompt digest line: a short trigger
+   plus imperative action, not a topic description. Native validation checks
+   only the shared summary contract (32-512 code points); meaning is reviewed
+   by humans. The digest lists `cumaru-first` first, then descending
+   strictness, then C path order, within a 4096-byte budget, and fails
+   atomically with one diagnostic line instead of partial context.
+7. A discipline states a gate, a cycle only when the process needs one, and
    red flags. It must not compete with the Cumaru loading rule or force a
    session-start plugin.
-7. Adapter reconciliation preserves adopter-owned instructions and unrelated
+8. Adapter reconciliation preserves adopter-owned instructions and unrelated
    hooks while maintaining one canonical Cumaru bootstrap sequence.
-8. The universal strictness `10/10` `cumaru-first` discipline is the priority
+9. The universal strictness `10/10` `cumaru-first` discipline is the priority
    application gate when repository work has a relevant Cumaru surface; it
    does not bind unrelated work or create a separate delivery path. It is
    also the compact agent manual for all 16 native command families: bounded
@@ -60,11 +66,11 @@ adapter instructions and SessionStart hook
    `model pull` downloads and `model release` deactivation without deleting cached files; and the mutation distinctions of install, update,
    uninstall, and upgrade. It points to `cumaru help <command>` for flags
    instead of duplicating command documentation, and grants no new authority.
-9. Discipline guidance is bounded by task ownership and observed evidence.
+10. Discipline guidance is bounded by task ownership and observed evidence.
    Existing authorization covers routine in-scope judgments; unresolved scope
    or ownership, destructive cleanup, and genuinely new authority still stop
    for user input.
-10. The SDLC Full and Light `engineering` disciplines remain byte-identical.
+11. The SDLC Full and Light `engineering` disciplines remain byte-identical.
     Their [canonical guidance](../../domains/sdlc-full/disciplines/engineering.md#context-and-posture)
     requires evidence-backed assertions and explicit `[hipotese]` labels with
     verification criteria. Temperature `0.1` is a request only when the harness
@@ -103,10 +109,12 @@ adapter instructions and SessionStart hook
 
 1. Install or refresh static instructions in kernel, domain, discipline-index,
    then remaining-discipline order where the adapter controls file order.
-2. Claude receives explicit imports; Generic and Codex receive materialized
-   managed Markdown; OpenCode receives ordered native instruction entries.
+2. Claude and Codex static blocks import kernel and domain plus a discipline
+   fallback pointer; Generic receives materialized managed Markdown; OpenCode receives ordered native instruction entries.
 3. Claude and Codex receive one merged SessionStart entry that emits the
-   discipline index, all remaining bodies, and then runs `cumaru tree .`;
+   discipline index, all remaining bodies, and then runs `cumaru tree .`, plus
+   one `UserPromptSubmit` entry running `cumaru hooks disciplines`. Their
+   static block keeps only a fallback pointer instead of discipline bodies;
    unsupported adapters rely on static delivery.
 4. The universal `cumaru-role` skill reloads kernel, domain, discipline index,
    remaining discipline bodies in C-locale path order, and root candidates

@@ -8,7 +8,7 @@ source:
   skill: verification-before-completion
   url: https://github.com/obra/superpowers/blob/main/skills/verification-before-completion/SKILL.md
   license: MIT
-summary: Framework guidance for Verification before completion and its required workflow.
+summary: Before claiming work is complete, fixed, or passing, run the relevant checks and report the observed evidence.
 ---
 
 # Verification before completion

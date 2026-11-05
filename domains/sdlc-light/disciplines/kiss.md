@@ -3,7 +3,7 @@ human_revised: false
 name: kiss
 applies-when: choosing how to implement anything — a function, module, abstraction, dependency, or config — whenever a simpler option would also solve the stated problem
 strictness: 9/10
-summary: Framework guidance for Keep it simple (KISS) and its required workflow.
+summary: When a simpler option solves the stated problem, choose it over added abstraction, dependency, or configuration.
 ---
 
 # Keep it simple (KISS)

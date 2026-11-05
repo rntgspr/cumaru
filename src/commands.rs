@@ -4,6 +4,7 @@ pub mod coverage;
 pub mod doctor;
 pub mod fs;
 pub mod help;
+pub mod hooks;
 pub mod install;
 pub mod map;
 pub mod migrate;

@@ -285,7 +285,7 @@ mod tests {
         }
         for path in [".claude/settings.json", ".codex/hooks.json"] {
             let original = r#"{"permissions":{"allow":["mine"]},"hooks":{"Other":[],"SessionStart":[{"hooks":[{"type":"command","command":"mine"}]}]}}"#;
-            fixture.write(path, &adapter::hooks(Some(original)).unwrap());
+            fixture.write(path, &adapter::hooks(Some(original), false).unwrap());
         }
         fixture.write(
             "opencode.json",
@@ -382,7 +382,7 @@ mod tests {
             &adapter::markdown(Adapter::Codex, None, &BTreeMap::new()).unwrap(),
         );
         fixture.write("CLAUDE.md", "# Project instructions\n");
-        fixture.write(".codex/hooks.json", &adapter::hooks(None).unwrap());
+        fixture.write(".codex/hooks.json", &adapter::hooks(None, true).unwrap());
         fixture.write("opencode.json", &adapter::opencode(None).unwrap());
         fixture.write(".agents/skills/cumaru-leftover/SKILL.md", "owned");
         apply(&plan(&fixture.0).unwrap()).unwrap();

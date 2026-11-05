@@ -3,7 +3,7 @@ human_revised: false
 name: cumaru-first
 applies-when: repository work needs any project knowledge base, including Cumaru knowledge navigation, relevance ranking, optional models, domain workflows, semantic tags, reference coverage, health checks, lifecycle close, install, update, migration, or guarded operations under .cumaru/
 strictness: 10/10
-summary: Priority gate and compact manual for choosing the relevant Cumaru command, skill, role, or domain workflow before related repository work.
+summary: Before repository work with a Cumaru surface, choose the relevant Cumaru command, skill, role, or workflow first.
 ---
 
 # Prefer Cumaru when relevant

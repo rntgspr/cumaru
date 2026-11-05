@@ -3,7 +3,7 @@ human_revised: false
 name: yagni
 applies-when: deciding what to build now — tempted to add capability, generality, or structure beyond what a present, stated requirement demands
 strictness: 8/10
-summary: Framework guidance for You aren't gonna need it (YAGNI) and its required workflow.
+summary: Build only what a present, stated requirement demands; defer speculative capability, generality, or structure.
 ---
 
 # You aren't gonna need it (YAGNI)

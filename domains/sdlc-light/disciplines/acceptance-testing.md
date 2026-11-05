@@ -8,7 +8,7 @@ source:
   skill: acceptance-testing
   url: https://github.com/xhyqaq/superpowers-plus/blob/main/skills/acceptance-testing/SKILL.md
   license: MIT
-summary: Framework guidance for Acceptance testing and its required workflow.
+summary: Before closing a plan, verify each acceptance criterion with observed evidence and record unmet ones instead of closing.
 ---
 
 # Acceptance testing

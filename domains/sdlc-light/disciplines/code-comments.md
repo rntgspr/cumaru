@@ -3,7 +3,7 @@ human_revised: false
 name: code-comments
 applies-when: writing, editing, reviewing, refactoring, or documenting code, tests, scripts, configuration, or infrastructure definitions where comments may be created, preserved, changed, or removed; or deciding whether an explanation belongs in source code or the domain's durable prose
 strictness: 9/10
-summary: Framework guidance for documenting real functions, capping other comments at 512 characters, and moving explanation into domain prose.
+summary: When touching comments, document every real function, cap other comments at 512 characters, and move explanation to domain prose.
 ---
 
 # Code comments
