@@ -51,6 +51,11 @@ reload changes context only and never writes active-role state.
    `summary`, and path, so the rules stay in view as the conversation grows.
    It reads only local files, prints nothing outside an installation, and on
    invalid metadata or budget overflow prints a single diagnostic line.
+4. **The read redirect** runs `cumaru hooks pretool` before every shell tool
+   call. When a `cat`, `head`, `tail`, or non-in-place `sed` targets a
+   `.cumaru/` Markdown path, it denies the call with a reason that points to
+   [`cumaru map`](map.md) and [`cumaru get`](get.md); every other command,
+   malformed input, and non-shell tool passes silently.
 
 Where the client has a session-start event, Cumaru registers the projection as
 a hook so it runs exactly once per context, independent of model judgment:
@@ -68,12 +73,18 @@ a hook so it runs exactly once per context, independent of model judgment:
     ],
     "UserPromptSubmit": [
       { "hooks": [{ "type": "command", "command": "cumaru hooks prompt" }] }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "cumaru hooks pretool" }]
+      }
     ]
   }
 }
 ```
 
-Claude and Codex share this shape; Codex entries also set
+Claude and Codex share this shape; Codex context entries also set
 `"additionalContextLimit": 0` so full discipline bodies are not spilled. Both
 commands are native, offline, validate the complete set before printing, emit a
 single diagnostic line on failure, and always exit 0. The matcher covers every point where a

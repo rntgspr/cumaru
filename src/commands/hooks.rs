@@ -7,6 +7,7 @@
 //! never blocks the user's prompt; the diagnostic itself reaches the agent.
 
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 use std::process::{Command, ExitCode, Stdio};
 
@@ -44,6 +45,9 @@ enum Hook {
 
     /// Print the discipline index and every discipline body, then the root tree projection.
     Session,
+
+    /// Read native PreToolUse JSON on stdin and deny whole-file shell reads of `.cumaru/` Markdown.
+    Pretool,
 }
 
 /// One installed discipline reduced to its digest fields.
@@ -58,6 +62,15 @@ struct Discipline {
 /// Runs the selected hook payload and always exits successfully.
 pub fn run(args: HooksArgs) -> ExitCode {
     let (label, result) = match args.hook {
+        Hook::Pretool => {
+            let mut input = String::new();
+            if std::io::stdin().read_to_string(&mut input).is_ok()
+                && let Some(decision) = pretool(&input)
+            {
+                println!("{decision}");
+            }
+            return ExitCode::SUCCESS;
+        }
         Hook::Disciplines => ("disciplines", digest(Path::new(CUMARU_DIR))),
         Hook::Prompt => ("prompt", prompt(Path::new(CUMARU_DIR))),
         Hook::Session => (
@@ -243,6 +256,80 @@ fn prompt(cumaru: &Path) -> Result<Option<String>, String> {
     Ok(Some(output))
 }
 
+/// Shell readers whose `.cumaru/` Markdown targets are redirected to `cumaru map` and `cumaru get`.
+const READERS: [&str; 4] = ["cat", "head", "tail", "sed"];
+
+/// Returns a PreToolUse deny decision when a shell command reads `.cumaru/` Markdown, or `None` to pass.
+///
+/// Parsing is conservative: malformed input, non-shell tools, in-place `sed`, and paths not
+/// spelled through a `.cumaru/` component all pass through untouched.
+fn pretool(input: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(input).ok()?;
+    // Claude sends a string; Codex shells may send an argv array such as ["bash", "-lc", "..."].
+    let command = match &value["tool_input"]["command"] {
+        serde_json::Value::String(command) => command.clone(),
+        serde_json::Value::Array(argv) => argv
+            .iter()
+            .filter_map(|arg| arg.as_str())
+            .collect::<Vec<_>>()
+            .join("\n"),
+        _ => return None,
+    };
+
+    let mut targets = Vec::new();
+    for segment in command.split(['|', ';', '&', '(', ')', '\n']) {
+        let words: Vec<String> = segment
+            .split(|c: char| c.is_whitespace() || c == '<')
+            .filter(|word| !word.is_empty())
+            .map(|word| word.trim_matches(['\'', '"']).to_string())
+            .collect();
+        let Some(program) = words.first() else {
+            continue;
+        };
+
+        let program = program.rsplit('/').next().unwrap_or(program);
+        if !READERS.contains(&program) {
+            continue;
+        }
+        if program == "sed"
+            && words
+                .iter()
+                .any(|w| w.starts_with("-i") || w == "--in-place")
+        {
+            continue;
+        }
+
+        for word in &words[1..] {
+            let rel = word
+                .strip_prefix(".cumaru/")
+                .or_else(|| word.split_once("/.cumaru/").map(|(_, rel)| rel));
+            if let Some(rel) = rel.filter(|rel| rel.ends_with(".md") && !has_control(rel)) {
+                targets.push(rel.to_string());
+            }
+        }
+    }
+    if targets.is_empty() {
+        return None;
+    }
+
+    targets.dedup();
+    let reason = format!(
+        "Cumaru blocks shell reads of .cumaru/ Markdown. Outline first with `cumaru map {}`, then read only the needed sections with `cumaru get <path:start,end>...`, copying selectors from the map rows (paths are relative to .cumaru/).",
+        targets.join(" ")
+    );
+
+    Some(
+        serde_json::json!({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+            }
+        })
+        .to_string(),
+    )
+}
+
 /// Extracts and validates the digest fields from one discipline's frontmatter.
 fn parse(file: &str, text: &str) -> Result<Discipline, String> {
     let yaml = frontmatter(text)?;
@@ -421,6 +508,41 @@ mod tests {
         assert_eq!(flatten("a\nb\u{7f}"), "a?b?");
 
         fs::remove_dir_all(base).unwrap();
+    }
+
+    /// Denies shell reads of `.cumaru/` Markdown and passes everything else.
+    #[test]
+    fn pretool_denies_cumaru_reads_only() {
+        let call = |command: &str| {
+            pretool(
+                &serde_json::json!({"tool_name": "Bash", "tool_input": {"command": command}})
+                    .to_string(),
+            )
+        };
+
+        let denied = call("cat .cumaru/specs/auth.md | head -5").unwrap();
+        let value: serde_json::Value = serde_json::from_str(&denied).unwrap();
+        assert_eq!(value["hookSpecificOutput"]["permissionDecision"], "deny");
+        let reason = value["hookSpecificOutput"]["permissionDecisionReason"]
+            .as_str()
+            .unwrap();
+        assert!(reason.contains("cumaru map specs/auth.md"));
+        assert!(reason.contains("cumaru get"));
+
+        assert!(call("cd x && /bin/cat \"/p/.cumaru/index.md\"").is_some());
+        assert!(call("sed -n 1,20p .cumaru/a.md").is_some());
+        assert!(call("tail < .cumaru/a.md").is_some());
+
+        assert!(call("sed -i '' s/a/b/ .cumaru/a.md").is_none());
+        assert!(call("cat README.md").is_none());
+        assert!(call("cat .cumaru/config.yaml").is_none());
+        assert!(call("cumaru get a.md:1,4").is_none());
+        assert!(call("rg cat .cumaru/a.md").is_none());
+        let argv = serde_json::json!({"tool_name": "Bash", "tool_input": {"command": ["bash", "-lc", "cat .cumaru/a.md"]}});
+        assert!(pretool(&argv.to_string()).is_some());
+
+        assert!(pretool("not json").is_none());
+        assert!(pretool(r#"{"tool_input":{"file_path":".cumaru/a.md"}}"#).is_none());
     }
 
     /// Emits the index first, then bodies in C order, and fails atomically over budget.

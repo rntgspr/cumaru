@@ -77,11 +77,71 @@ zeta.md	Zeta behavior provides stable selection context."
     printf '# One\n2\n3\n4\n5\n## Six\n```\n### Eight\n```\n10\n11\n###### Twelve\n' > "$PROJECT/.cumaru/order.md"
     When call cli map order.md
     The status should equal 0
-    The output should equal "order.md	1	# One
-order.md	6	## Six
-order.md	8	### Eight
-order.md	12	###### Twelve"
+    The output should equal "order.md:1,12	# One
+order.md:6,12	## Six
+order.md:8,12	### Eight
+order.md:12,12	###### Twelve"
     The error should be blank
+  End
+
+  It 'ends each section before the next heading of the same or higher level'
+    printf '# A\n## B\n### C\nc\n## D\nd\n# E\n' > "$PROJECT/.cumaru/ends.md"
+    When call cli map ends.md
+    The status should equal 0
+    The output should equal "ends.md:1,6	# A
+ends.md:2,4	## B
+ends.md:3,4	### C
+ends.md:5,6	## D
+ends.md:7,7	# E"
+    The error should be blank
+  End
+
+  It 'gets headed line selections in argument order'
+    printf 'one\ntwo\nthree\nfour\n' > "$PROJECT/.cumaru/lines.md"
+    When call cli get 'lines.md:3,$' 'lines.md:,2' 'lines.md:2,+1'
+    The status should equal 0
+    The output should equal "==> lines.md:3,4 <==
+three
+four
+
+==> lines.md:1,2 <==
+one
+two
+
+==> lines.md:2,3 <==
+two
+three"
+    The error should be blank
+  End
+
+  It 'trims blank edges from map ends and get selections'
+    printf '# A\n\na\n\n\n# B\nb\n' > "$PROJECT/.cumaru/blank.md"
+    When call cli get blank.md:1,5 blank.md:2,4
+    The status should equal 0
+    The output should equal "==> blank.md:1,3 <==
+# A
+
+a
+
+==> blank.md:3,3 <==
+a"
+    The error should be blank
+  End
+
+  Context 'invalid get selectors'
+    Parameters
+      'lines.md:,'
+      'lines.md:,+1'
+      'lines.md:3,1'
+      'lines.md:9'
+    End
+    It 'rejects the whole call with status 2 and no output'
+      printf 'one\ntwo\nthree\nfour\n' > "$PROJECT/.cumaru/lines.md"
+      When call cli get lines.md:1 "$1"
+      The status should equal 2
+      The output should be blank
+      The error should include 'cumaru get:'
+    End
   End
 
   It 'reports symlinks and malformed UTF-8 while retaining safe map rows'
@@ -89,7 +149,7 @@ order.md	12	###### Twelve"
     ln -s alpha.md "$PROJECT/.cumaru/link.md"
     When call cli map
     The status should equal 1
-    The output should include "alpha.md	5	# Fixture"
+    The output should include "alpha.md:5,5	# Fixture"
     The output should not include 'link.md'
     The error should include invalid.md
     The error should include link.md

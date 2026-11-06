@@ -152,7 +152,8 @@ ranking while retaining the package; pull verifies and re-enables it. See [conte
 | `cumaru tag` | Inspect or update config-declared semantic tags |
 | `cumaru coverage` | Report source files covered by durable-specification references |
 | `cumaru tree` | List filesystem-backed candidates and their summaries |
-| `cumaru map` | List literal H1-H6 headings with markers and source lines under a selected scope |
+| `cumaru map` | List literal H1-H6 headings with markers and section start/end lines under a selected scope |
+| `cumaru get` | Print selected line ranges of Markdown files under `.cumaru/`; [guide](docs/get.md) |
 | `cumaru context "query"` | Rank local Markdown offline with a cached encoder or lightweight fallback; [guide](docs/context.md) |
 | `cumaru model list` / `pull <name>` / `release` | Read the closed catalog, download/enable an optional encoder, or restore lightweight ranking while retaining the cache; [guide](docs/model.md) |
 | `cumaru fs` | Perform guarded file operations inside `.cumaru/` |
@@ -223,6 +224,7 @@ Read [updates](docs/update.md), [migration](docs/migrate.md), and
 - [Agent adapters](docs/agent-adapters.md)
 - [`cumaru tree`](docs/tree.md)
 - [`cumaru map`](docs/map.md)
+- [`cumaru get`](docs/get.md)
 - [`cumaru context`](docs/context.md)
 - [`cumaru model`](docs/model.md)
 - [`cumaru doctor`](docs/doctor.md)

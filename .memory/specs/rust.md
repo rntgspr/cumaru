@@ -40,6 +40,7 @@ cargo run --manifest-path Cargo.toml -- update agent <agent> [--apply|--clear]
 cargo run --manifest-path Cargo.toml -- tree [<directory-or-md>...]
     [--deep] [--rows|--markdown]
 cargo run --manifest-path Cargo.toml -- map [<directory-or-md>] [--rows|--markdown]
+cargo run --manifest-path Cargo.toml -- get <path[:range]>...
 cargo run --manifest-path Cargo.toml -- fs <src> move|copy <dst>
 cargo run --manifest-path Cargo.toml -- fs <path> create|remove
 cargo run --manifest-path Cargo.toml -- tag [<file>]
@@ -136,9 +137,12 @@ the native contract.
    headings from `index.md`, preserving the complete line with its `#` markers
    and one-based line number. CRLF is accepted. Setext and indented headings
    are not interpreted by this literal reader.
+   Each heading's section ends on the line before the next heading of the same
+   or higher level, or on the last line of the file, moved up past trailing
+   blank lines.
    Output sorts by path then numeric line: default TSV
-   `path<TAB>line<TAB>title`, or an escaped Path/Line/Title Markdown table with
-   `--markdown`. `--rows` explicitly selects TSV and conflicts with `--markdown`.
+   `path:start,end<TAB>title`, whose first field is the `get` selector, or an
+   escaped Selector/Title Markdown table with `--markdown`. `--rows` explicitly selects TSV and conflicts with `--markdown`.
    No matches is success. Read/traversal failures are
    reported on stderr, with safe results emitted before status 1.
 9. `upgrade --check` runs `git ls-remote --tags --refs` against the public Cumaru
@@ -357,6 +361,7 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 | `src/install.sh` | Platform asset download, binary verification, global executable publication, and per-user version JSON. |
 | `src/commands/tree.rs` | CLI coordination, tree-specific entry parsing, index/summary rules, diagnostics, and output. |
 | `src/commands/map.rs` | Exact-file or recursive heading projection, diagnostics, and TSV/Markdown output. |
+| `src/commands/get.rs` | Atomic, budgeted line-range selection with resolved `==> path:start,end <==` headers; contract in [`docs/get.md`](../../docs/get.md). |
 | `src/commands/fs.rs` | Guarded create/move/copy/remove inside `.cumaru/`, private fs path resolution and shape checks, and their unit tests. |
 | `src/commands/tag.rs` | Tag CLI parsing, audits, traversal, opaque body reads, and staged host publication. |
 | `src/commands/install.rs` | Main-HEAD domain coordination, complete download/preflight planning, and initial project publication. |

@@ -180,6 +180,10 @@ pub(crate) fn opencode(existing: Option<&str>) -> Result<String, String> {
 const PROMPT_HOOK: &str = "cumaru hooks prompt";
 /// Retired discipline-only prompt command, still recognized as Cumaru-owned.
 const LEGACY_PROMPT_HOOK: &str = "cumaru hooks disciplines";
+/// Pre-tool command that redirects whole-file `.cumaru/` reads to `cumaru map` and `cumaru get`.
+const PRETOOL_HOOK: &str = "cumaru hooks pretool";
+/// Hook events whose Cumaru-owned entries are merged and cleared.
+const EVENTS: [&str; 3] = ["SessionStart", "UserPromptSubmit", "PreToolUse"];
 
 /// Reports whether a hook command is a current or legacy Cumaru-owned command for `event`.
 fn owned(event: &str, command: &str) -> bool {
@@ -190,6 +194,7 @@ fn owned(event: &str, command: &str) -> bool {
                 || command == LEGACY_HOOK.replace("cumaru tree", "cuma tree")
                 || command == "cumaru tree . 2>/dev/null || true"
         }
+        "PreToolUse" => command == PRETOOL_HOOK,
         _ => command == PROMPT_HOOK || command == LEGACY_PROMPT_HOOK,
     }
 }
@@ -213,9 +218,9 @@ fn strip(entries: &mut Vec<Value>, event: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Merges the Cumaru session and prompt hooks and preserves other entries, including unrelated hooks sharing an entry.
+/// Merges the Cumaru session, prompt, and pre-tool hooks and preserves other entries, including unrelated hooks sharing an entry.
 ///
-/// Codex entries disable the provider's context spill threshold so full discipline bodies arrive intact.
+/// Codex context entries disable the provider's context spill threshold so full discipline bodies arrive intact.
 pub(crate) fn hooks(existing: Option<&str>, codex: bool) -> Result<String, String> {
     let mut value = object(existing)?;
     if value["hooks"].is_null() {
@@ -233,6 +238,10 @@ pub(crate) fn hooks(existing: Option<&str>, codex: bool) -> Result<String, Strin
             "UserPromptSubmit",
             json!({"hooks": [{"type": "command", "command": PROMPT_HOOK}]}),
         ),
+        (
+            "PreToolUse",
+            json!({"matcher": "Bash", "hooks": [{"type": "command", "command": PRETOOL_HOOK}]}),
+        ),
     ] {
         if value["hooks"][event].is_null() {
             value["hooks"][event] = json!([]);
@@ -242,7 +251,7 @@ pub(crate) fn hooks(existing: Option<&str>, codex: bool) -> Result<String, Strin
             .ok_or(format!("{event} must be an array"))?;
         strip(entries, event)?;
         let mut entry = entry;
-        if codex {
+        if codex && event != "PreToolUse" {
             entry["hooks"][0]["additionalContextLimit"] = json!(0);
         }
         entries.push(entry);
@@ -301,7 +310,7 @@ pub(crate) fn clear(existing: &str, kind: &str) -> Result<String, String> {
         }
     } else if let Some(hooks) = value.get_mut("hooks") {
         let hooks = hooks.as_object_mut().ok_or("hooks must be a JSON object")?;
-        for event in ["SessionStart", "UserPromptSubmit"] {
+        for event in EVENTS {
             if let Some(entries) = hooks.get_mut(event) {
                 let entries = entries
                     .as_array_mut()
@@ -405,6 +414,28 @@ mod tests {
         assert_eq!(value["instructions"][0], "mine");
         assert_eq!(value["other"], true);
         assert!(opencode(Some(r#"{"instructions":"bad"}"#)).is_err());
+    }
+
+    /// Installs one Bash PreToolUse entry idempotently, without a Codex context limit, and clears it.
+    #[test]
+    fn merges_pretool_hook() {
+        let existing = r#"{"hooks":{"PreToolUse":[{"matcher":"Edit","hooks":[{"type":"command","command":"mine"}]}]}}"#;
+        let output = hooks(Some(&hooks(Some(existing), true).unwrap()), true).unwrap();
+        let value: Value = serde_json::from_str(&output).unwrap();
+        let entries = value["hooks"]["PreToolUse"].as_array().unwrap();
+
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[1]["matcher"], "Bash");
+        assert_eq!(entries[1]["hooks"][0]["command"], PRETOOL_HOOK);
+        assert!(
+            entries[1]["hooks"][0]
+                .get("additionalContextLimit")
+                .is_none()
+        );
+
+        let cleared: Value = serde_json::from_str(&clear(&output, "hooks").unwrap()).unwrap();
+        assert_eq!(cleared["hooks"]["PreToolUse"].as_array().unwrap().len(), 1);
+        assert!(cleared["hooks"].get("SessionStart").is_none());
     }
 
     /// Keeps unrelated hooks while consolidating the owned hook on repeated merges.

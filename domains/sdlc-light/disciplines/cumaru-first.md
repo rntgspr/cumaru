@@ -30,7 +30,7 @@ not through `.cumaru/skills/`.
 |---|---|
 | Rank knowledge by query relevance | `cumaru context <query>` (read-only); the `cumaru-search` skill wraps it when the owning file is unknown. |
 | Browse a directory and its file summaries | `cumaru tree [<dir>] [--deep]` (read-only). |
-| Outline a file or directory by its headings | `cumaru map [<dir-or-md>]` (read-only), then read only the needed section. |
+| Outline a file or directory by its headings | `cumaru map [<dir-or-md>]` (read-only), then `cumaru get <path:start,end>...` for only the needed sections. |
 | Create, copy, move, or remove `.cumaru/` paths | `cumaru fs`; use an editor for ordinary prose. |
 | Read, replace, or audit a semantic tag body | `cumaru tag`; tag bodies are opaque adopter data. |
 | Measure or reconcile source-reference coverage | `cumaru coverage` (read-only), then the `cumaru-refs` skill. |

@@ -61,8 +61,11 @@ enum Command {
     /// List filesystem candidates and their summaries.
     Tree(commands::tree::TreeArgs),
 
-    /// List H1-H6 Markdown headings with their markers in a directory or exact file.
+    /// List H1-H6 Markdown headings with their markers and section start/end lines.
     Map(commands::map::MapArgs),
+
+    /// Print selected line ranges of Markdown files under .cumaru/, each under a resolved header.
+    Get(commands::get::GetArgs),
 
     /// Read, write, and audit balanced semantic tags in Markdown files.
     Tag(commands::tag::TagArgs),
@@ -97,6 +100,7 @@ fn main() -> ExitCode {
         Some(Command::Bootstrap(args)) => commands::bootstrap::run(args),
         Some(Command::Migrate(args)) => commands::migrate::run(args),
         Some(Command::Map(args)) => commands::map::run(args),
+        Some(Command::Get(args)) => commands::get::run(args),
         Some(Command::Tag(args)) => commands::tag::run(args),
         Some(Command::Coverage(args)) => commands::coverage::run(args),
         Some(Command::Fs(args)) => commands::fs::run(args),

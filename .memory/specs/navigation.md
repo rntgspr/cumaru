@@ -16,7 +16,8 @@ Markdown bodies.
 
 The [native navigation contract](rust.md#execution) records Rust's config-free
 directory selection, TSV default, optional Markdown output, reusable walker,
-and literal H1-H6 map with retained `#` markers. Native navigation has no
+literal H1-H6 map with retained `#` markers and section start/end lines, and
+the `get` line-range reader ([`docs/get.md`](../../docs/get.md)). Native navigation has no
 `--pillars` or `--domain`. The Bash surface below retains its distinct defaults,
 filters, and level-two heading projection.
 

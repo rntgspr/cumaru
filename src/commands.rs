@@ -3,6 +3,7 @@ pub mod context;
 pub mod coverage;
 pub mod doctor;
 pub mod fs;
+pub mod get;
 pub mod help;
 pub mod hooks;
 pub mod install;

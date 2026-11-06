@@ -80,7 +80,8 @@ reference route for its full current contract.
 | `cumaru tag` | List, audit, read, or replace schema-declared semantic marker bodies. | `cumaru tag --help` |
 | `cumaru coverage` | Report durable-specification references and uncovered repository source. | `cumaru coverage --help` |
 | `cumaru tree` | List filesystem candidates and summaries without loading their bodies. | `cumaru tree --help` |
-| `cumaru map` | List literal H1-H6 headings with `#` markers and source lines in a directory or exact Markdown file. | `cumaru map --help` |
+| `cumaru map` | List literal H1-H6 headings with `#` markers and section start/end lines in a directory or exact Markdown file. | `cumaru map --help` |
+| `cumaru get` | Print selected line ranges (`path:N,M`) of Markdown files, each under a resolved header. | `cumaru get --help` |
 | `cumaru context` | Offline, read-only ranking of visible `.cumaru/` Markdown against an English query as path/score TSV; uses a cached encoder when present, otherwise a lightweight fallback. Scores are uncalibrated. | `cumaru context --help` |
 | `cumaru model` | List the closed model catalog or explicitly download a supported encoder to `~/.cumaru/<name>/`; never automatic. | `cumaru model --help` |
 | `cumaru update` | Preview or apply framework-owned content and adapter artifact updates. | `cumaru update --help` |

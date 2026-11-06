@@ -98,18 +98,42 @@ pub(crate) fn markdown_escape(value: &str) -> String {
     value.replace('\\', "\\\\").replace('|', "\\|")
 }
 
-/// Reads literal H1-H6 ATX headings with their original markers and one-based lines, including matches inside fences and frontmatter.
-pub(crate) fn read_headings(file: &Path) -> io::Result<Vec<(usize, String)>> {
+/// Reads literal H1-H6 ATX headings as `(start, end, title)` sections, including matches inside fences and frontmatter.
+///
+/// `end` is the line before the next heading of the same or higher level, or the last line of the file,
+/// moved up past trailing blank lines.
+pub(crate) fn read_headings(file: &Path) -> io::Result<Vec<(usize, usize, String)>> {
     let lines = BufReader::new(fs::File::open(file)?).lines();
-    let mut headings = Vec::new();
+    let mut headings: Vec<(usize, usize, String)> = Vec::new();
+    let mut levels = Vec::new();
+    let mut blank = Vec::new();
+    let mut total = 0;
 
     for (index, line) in lines.enumerate() {
         let line = line?;
+        total = index + 1;
+        blank.push(line.trim().is_empty());
+
         let level = line.bytes().take_while(|byte| *byte == b'#').count();
         if (1..=6).contains(&level)
             && matches!(line.as_bytes().get(level), None | Some(b' ' | b'\t'))
         {
-            headings.push((index + 1, line));
+            for (open, heading) in levels.iter().zip(headings.iter_mut()) {
+                if heading.1 == 0 && *open >= level {
+                    heading.1 = index;
+                }
+            }
+            headings.push((total, 0, line));
+            levels.push(level);
+        }
+    }
+
+    for heading in &mut headings {
+        if heading.1 == 0 {
+            heading.1 = total;
+        }
+        while heading.1 > heading.0 && blank[heading.1 - 1] {
+            heading.1 -= 1;
         }
     }
 

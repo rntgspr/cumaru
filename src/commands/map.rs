@@ -1,4 +1,4 @@
-//! Read-only projection of literal H1-H6 Markdown headings with their markers.
+//! Read-only projection of literal H1-H6 Markdown headings with their markers and section line ranges.
 
 use std::fs;
 use std::io::{self, Write};
@@ -7,6 +7,7 @@ use std::process::ExitCode;
 
 use clap::Args;
 
+use crate::commands::get::selector;
 use crate::config::CUMARU_DIR;
 use crate::markdown::{markdown_escape, read_headings};
 use crate::paths::{
@@ -22,7 +23,7 @@ pub struct MapArgs {
     #[arg(value_name = "directory-or-md")]
     target: Option<String>,
 
-    /// Emit path<TAB>line<TAB>title TSV (the default).
+    /// Emit path:start,end<TAB>title TSV (the default).
     #[arg(long, conflicts_with = "markdown")]
     rows: bool,
 
@@ -80,7 +81,7 @@ fn execute(args: &MapArgs) -> Result<bool, String> {
                     records.extend(
                         headings
                             .into_iter()
-                            .map(|(line, title)| (rel.clone(), line, title)),
+                            .map(|(start, end, title)| (rel.clone(), start, end, title)),
                     );
                 }
                 Err(_) => diagnostics.push(format!(
@@ -118,22 +119,23 @@ fn execute(args: &MapArgs) -> Result<bool, String> {
     Ok(diagnostics.is_empty())
 }
 
-/// Prints caller-selected heading fields as TSV or an escaped Markdown table, stopping on a closed output stream.
-fn emit(records: &[(String, usize, String)], rows: bool) {
+/// Prints `cumaru get` selectors with heading titles as TSV or an escaped Markdown table, stopping on a closed output stream.
+fn emit(records: &[(String, usize, usize, String)], rows: bool) {
     let mut out = io::stdout().lock();
 
-    if !rows && writeln!(out, "| Path | Line | Title |\n|---|---|---|").is_err() {
+    if !rows && writeln!(out, "| Selector | Title |\n|---|---|").is_err() {
         return;
     }
 
-    for (path, line, title) in records {
+    for (path, start, end, title) in records {
+        let selector = selector(path, *start, *end);
         let result = if rows {
-            crate::tsv::write_row(&mut out, [path.as_str(), &line.to_string(), title.as_str()])
+            crate::tsv::write_row(&mut out, [selector.as_str(), title.as_str()])
         } else {
             writeln!(
                 out,
-                "| {} | {line} | {} |",
-                markdown_escape(path),
+                "| {} | {} |",
+                markdown_escape(&selector),
                 markdown_escape(title)
             )
         };

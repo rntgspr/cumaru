@@ -15,14 +15,20 @@ One optional target defaults to the root. A directory is searched recursively;
 a Markdown target is mapped exactly, unlike `cumaru tree`, which normalizes a
 Markdown target to its parent directory.
 
-The default output is TSV, `path<TAB>line<TAB>title`, keeping each heading's
-`#` markers (`--rows` selects it explicitly):
+The default output is TSV, `path:start,end<TAB>title`, keeping each heading's
+`#` markers (`--rows` selects it explicitly). The first field is a
+[`cumaru get`](get.md) selector, the same form `get` prints in its headers:
 
 ```text
-specs/auth.md<TAB>18<TAB>## Session lifecycle
+specs/auth.md:18,42<TAB>## Session lifecycle
 ```
 
-`--markdown` emits an escaped Path/Line/Title table instead and conflicts with
+`end` is the line before the next heading of the same or higher level, or the
+last line of the file, moved up past trailing blank lines, so each row is a
+complete section: an H1 spans the file and an H2 includes its H3s. Pass the
+selector to `cumaru get` to read only that section.
+
+`--markdown` emits an escaped Selector/Title table instead and conflicts with
 `--rows`.
 
 A heading is a line starting at column zero with one to six `#` characters
@@ -47,4 +53,5 @@ cumaru map specs --markdown
 ## Related
 
 - [`cumaru tree`](tree.md) — candidate and summary navigation.
+- [`cumaru get`](get.md) — read the mapped sections by line range.
 - [`cumaru tag`](tag.md) — inspect or edit declared semantic blocks.

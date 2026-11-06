@@ -110,7 +110,10 @@ The canonical hooks are exactly one Cumaru SessionStart entry, matcher
 (the retired inline shell command is still recognized as owned),
 plus exactly one matcherless `UserPromptSubmit` entry running
 `cumaru hooks prompt` (the retired `cumaru hooks disciplines` command is still
-recognized as owned and replaced). Other hook events and adopter entries survive
+recognized as owned and replaced), plus exactly one `PreToolUse` entry, matcher
+`Bash`, running `cumaru hooks pretool`, which denies shell reads of `.cumaru/`
+Markdown through `hookSpecificOutput.permissionDecision: "deny"` and points to
+`cumaru map` and `cumaru get` ([`docs/agent-adapters.md`](../../docs/agent-adapters.md)). Other hook events and adopter entries survive
 merges and uninstall.
 
 ## Failure contract
