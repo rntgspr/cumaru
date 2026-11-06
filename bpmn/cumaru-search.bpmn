@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Search" targetNamespace="http://bpmn.io/schema/bpmn" exporter="mangue" exporterVersion="0.1.0">
+  <bpmn:process id="CumaruSearch" name="Discover Cumaru knowledge" isExecutable="false">
+    <bpmn:startEvent id="Start" name="Knowledge needed">
+      <bpmn:outgoing>f1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Route" name="Discovery route">
+      <bpmn:incoming>f1</bpmn:incoming>
+      <bpmn:incoming>f12</bpmn:incoming>
+      <bpmn:outgoing>f2</bpmn:outgoing>
+      <bpmn:outgoing>f3</bpmn:outgoing>
+      <bpmn:outgoing>f4</bpmn:outgoing>
+      <bpmn:outgoing>f5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Context" name="Rank conceptual candidates">
+      <bpmn:incoming>f2</bpmn:incoming>
+      <bpmn:outgoing>f6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Tree" name="Navigate known area">
+      <bpmn:incoming>f3</bpmn:incoming>
+      <bpmn:outgoing>f7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Exact" name="Search exact term">
+      <bpmn:incoming>f4</bpmn:incoming>
+      <bpmn:outgoing>f8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Read" name="Read selected files">
+      <bpmn:incoming>f5</bpmn:incoming>
+      <bpmn:incoming>f6</bpmn:incoming>
+      <bpmn:incoming>f7</bpmn:incoming>
+      <bpmn:incoming>f8</bpmn:incoming>
+      <bpmn:outgoing>f9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Enough" name="Evidence sufficient?">
+      <bpmn:incoming>f9</bpmn:incoming>
+      <bpmn:outgoing>f10</bpmn:outgoing>
+      <bpmn:outgoing>f11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Refine" name="Refine or switch route">
+      <bpmn:incoming>f11</bpmn:incoming>
+      <bpmn:outgoing>f12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Report" name="Report paths, gaps and errors">
+      <bpmn:incoming>f10</bpmn:incoming>
+      <bpmn:outgoing>f13</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End" name="Discovery complete">
+      <bpmn:incoming>f13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="Start" targetRef="Route" />
+    <bpmn:sequenceFlow id="f2" name="Conceptual" sourceRef="Route" targetRef="Context" />
+    <bpmn:sequenceFlow id="f3" name="Known area" sourceRef="Route" targetRef="Tree" />
+    <bpmn:sequenceFlow id="f4" name="Exact term" sourceRef="Route" targetRef="Exact" />
+    <bpmn:sequenceFlow id="f5" name="Known file" sourceRef="Route" targetRef="Read" />
+    <bpmn:sequenceFlow id="f6" sourceRef="Context" targetRef="Read" />
+    <bpmn:sequenceFlow id="f7" sourceRef="Tree" targetRef="Read" />
+    <bpmn:sequenceFlow id="f8" sourceRef="Exact" targetRef="Read" />
+    <bpmn:sequenceFlow id="f9" sourceRef="Read" targetRef="Enough" />
+    <bpmn:sequenceFlow id="f10" name="Yes, or no useful candidates remain" sourceRef="Enough" targetRef="Report" />
+    <bpmn:sequenceFlow id="f11" name="No" sourceRef="Enough" targetRef="Refine" />
+    <bpmn:sequenceFlow id="f12" sourceRef="Refine" targetRef="Route" />
+    <bpmn:sequenceFlow id="f13" sourceRef="Report" targetRef="End" />
+    <bpmn:textAnnotation id="Boundary">
+      <bpmn:text>Read-only after normal bootstrap. Respect plan boundaries; follow relevant links. Scores do not prove relevance or absence. Report errors and partial results; never install models during search.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="a1" sourceRef="Read" targetRef="Boundary" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Search">
+    <bpmndi:BPMNPlane id="Plane_Search" bpmnElement="CumaruSearch">
+      <bpmndi:BPMNShape id="s_Start" bpmnElement="Start">
+        <dc:Bounds x="-8" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Route" bpmnElement="Route">
+        <dc:Bounds x="170" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Context" bpmnElement="Context">
+        <dc:Bounds x="295" y="100" width="150" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Tree" bpmnElement="Tree">
+        <dc:Bounds x="295" y="-40" width="150" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Exact" bpmnElement="Exact">
+        <dc:Bounds x="295" y="360" width="150" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Read" bpmnElement="Read">
+        <dc:Bounds x="540" y="240" width="150" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Enough" bpmnElement="Enough">
+        <dc:Bounds x="760" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Refine" bpmnElement="Refine">
+        <dc:Bounds x="710" y="490" width="150" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Report" bpmnElement="Report">
+        <dc:Bounds x="985" y="240" width="150" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_End" bpmnElement="End">
+        <dc:Bounds x="1262" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_Boundary" bpmnElement="Boundary">
+        <dc:Bounds x="540" y="-65" width="150" height="155" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ea1" bpmnElement="a1">
+        <di:waypoint x="615" y="240" />
+        <di:waypoint x="615" y="90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e1" bpmnElement="f1">
+        <di:waypoint x="28" y="270" />
+        <di:waypoint x="170" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e2" bpmnElement="f2">
+        <di:waypoint x="195" y="245" />
+        <di:waypoint x="195" y="130" />
+        <di:waypoint x="295" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e3" bpmnElement="f3">
+        <di:waypoint x="195" y="245" />
+        <di:waypoint x="195" y="-10" />
+        <di:waypoint x="295" y="-10" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e4" bpmnElement="f4">
+        <di:waypoint x="195" y="295" />
+        <di:waypoint x="195" y="390" />
+        <di:waypoint x="295" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e5" bpmnElement="f5">
+        <di:waypoint x="220" y="270" />
+        <di:waypoint x="540" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e6" bpmnElement="f6">
+        <di:waypoint x="445" y="130" />
+        <di:waypoint x="500" y="130" />
+        <di:waypoint x="500" y="255" />
+        <di:waypoint x="540" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e7" bpmnElement="f7">
+        <di:waypoint x="445" y="-10" />
+        <di:waypoint x="500" y="-10" />
+        <di:waypoint x="500" y="260" />
+        <di:waypoint x="540" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e8" bpmnElement="f8">
+        <di:waypoint x="445" y="390" />
+        <di:waypoint x="500" y="390" />
+        <di:waypoint x="500" y="285" />
+        <di:waypoint x="540" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e9" bpmnElement="f9">
+        <di:waypoint x="690" y="270" />
+        <di:waypoint x="760" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e10" bpmnElement="f10">
+        <di:waypoint x="810" y="270" />
+        <di:waypoint x="985" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e11" bpmnElement="f11">
+        <di:waypoint x="785" y="295" />
+        <di:waypoint x="785" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e12" bpmnElement="f12">
+        <di:waypoint x="710" y="520" />
+        <di:waypoint x="195" y="520" />
+        <di:waypoint x="195" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e13" bpmnElement="f13">
+        <di:waypoint x="1135" y="270" />
+        <di:waypoint x="1262" y="270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
