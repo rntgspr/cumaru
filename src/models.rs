@@ -48,6 +48,8 @@ pub(crate) struct Encoder {
     model: BertModel,
     tokenizer: Tokenizer,
     max_tokens: usize,
+    /// Stable model identity (`name@revision`) that keys cached document vectors.
+    pub(crate) identity: String,
 }
 
 /// Read the binary's closed compatibility inventory; it contains metadata, never model weights.
@@ -316,18 +318,66 @@ pub(crate) fn local(root: &Path) -> Result<Option<Encoder>, String> {
         model,
         tokenizer,
         max_tokens: entry.max_tokens,
+        identity: format!("{}@{}", entry.name, entry.revision),
     }))
 }
 
-impl Encoder {
-    /// Evaluate every paragraph through token-aware windows, retaining the highest cosine similarity.
-    pub(crate) fn document_score(&self, document: &str, query: &[f32]) -> Result<f64, String> {
-        let mut maximum = 0.0_f32;
+/// One-based inclusive source line range of a chunk's paragraph.
+pub(crate) type Lines = (usize, usize);
 
-        for paragraph in document
-            .split("\n\n")
-            .filter(|text| !text.trim().is_empty())
-        {
+/// Splits a document on blank-line pairs into non-blank paragraphs with one-based inclusive line ranges.
+fn paragraphs(document: &str) -> Vec<(&str, Lines)> {
+    let mut output = Vec::new();
+    let mut line = 1;
+
+    for paragraph in document.split("\n\n") {
+        let first = line + paragraph.len() - paragraph.trim_start_matches('\n').len();
+        let last = first + paragraph.trim_matches('\n').matches('\n').count();
+        line += paragraph.matches('\n').count() + 2;
+
+        if !paragraph.trim().is_empty() {
+            output.push((paragraph, (first, last)));
+        }
+    }
+
+    output
+}
+
+/// Scores a document as ten times its highest clamped cosine against the normalized query, with the winning chunk index.
+pub(crate) fn best<'a>(
+    vectors: impl IntoIterator<Item = &'a Vec<f32>>,
+    query: &[f32],
+) -> Result<(f64, Option<usize>), String> {
+    let mut maximum = 0.0_f32;
+    let mut winner = None;
+
+    for (index, vector) in vectors.into_iter().enumerate() {
+        let cosine: f32 = query
+            .iter()
+            .zip(vector)
+            .map(|(left, right)| left * right)
+            .sum();
+        if !cosine.is_finite() {
+            return Err("nonfinite model similarity".into());
+        }
+        let cosine = cosine.clamp(0.0, 1.0);
+        if winner.is_none() || cosine > maximum {
+            maximum = cosine;
+            winner = Some(index);
+        }
+    }
+
+    Ok((f64::from(maximum) * 10.0, winner))
+}
+
+impl Encoder {
+    /// Split every non-blank paragraph into model-ready token windows with a 32-token overlap.
+    ///
+    /// Each window carries the one-based inclusive line range of its paragraph.
+    pub(crate) fn document_chunks(&self, document: &str) -> Result<Vec<(Vec<u32>, Lines)>, String> {
+        let mut chunks = Vec::new();
+
+        for (paragraph, lines) in paragraphs(document) {
             let encoding = self
                 .tokenizer
                 .encode(paragraph, false)
@@ -339,18 +389,7 @@ impl Encoder {
                 let mut ids = vec![101];
                 ids.extend_from_slice(&encoding.get_ids()[start..end]);
                 ids.push(102);
-                let vector = self.normalized(&ids)?;
-                let cosine: f32 = query
-                    .iter()
-                    .zip(vector)
-                    .map(|(left, right)| left * right)
-                    .sum();
-
-                if !cosine.is_finite() {
-                    return Err("nonfinite model similarity".into());
-                }
-
-                maximum = maximum.max(cosine.clamp(0.0, 1.0));
+                chunks.push((ids, lines));
 
                 if end == encoding.len() {
                     break;
@@ -360,7 +399,12 @@ impl Encoder {
             }
         }
 
-        Ok(f64::from(maximum) * 10.0)
+        Ok(chunks)
+    }
+
+    /// Embed one token window produced by `document_chunks`.
+    pub(crate) fn embed_chunk(&self, ids: &[u32]) -> Result<Vec<f32>, String> {
+        self.normalized(ids)
     }
 
     /// Mean-pool and normalize unpadded token vectors without truncating an oversized fragment.
@@ -410,6 +454,18 @@ impl Encoder {
 
 #[cfg(test)]
 mod tests {
+    /// Maps each paragraph to its source lines, skipping blank runs and extra newlines.
+    #[test]
+    fn paragraphs_track_source_lines() {
+        let text = "# A\n\nline two\nline three\n\n\n\nlast\n";
+        let ranges: Vec<_> = paragraphs(text)
+            .into_iter()
+            .map(|(_, lines)| lines)
+            .collect();
+
+        assert_eq!(ranges, [(1, 1), (3, 4), (8, 8)]);
+    }
+
     use super::*;
 
     /// Create an isolated canonical scratch directory without changing HOME or process environment.

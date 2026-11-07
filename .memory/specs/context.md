@@ -17,7 +17,10 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 
 ## Invariants
 
-1. Context is offline/read-only and emits only path/two-decimal score TSV.
+1. Context is offline, never changes knowledge files, and emits only
+   `path:start,end`/two-decimal score TSV, the `get` selector shared with `map`, widened to the innermost `map` section of the best paragraph and capped at the best 16 rows unless `--full`. With an enabled encoder it maintains the token-ID-addressed chunk vector cache
+   in `.cumaru/.cache/context/` and the `.gitignore` entry
+   ([`docs/context.md`](../../docs/context.md#vector-cache)).
 2. A valid enabled cached BGE Micro is preferred; absence or explicit release permits
    the lightweight fallback. Invalid enabled packages, unsafe cache paths, and invalid
    release markers fail. There is no automatic download or model training.
@@ -38,6 +41,7 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 |---|---|
 | `src/commands/model.rs` | List/pull/release CLI and reporting. |
 | `src/models.rs` | Closed catalog, cache safety, integrity/publication, offline encoder loading and token-aware inference. |
+| `src/vectors.rs` | Token-ID-addressed chunk vector cache, stale-file cleanup, and its `.gitignore` entry. |
 | `models/catalog.json` | Initial pinned BGE package metadata and compatibility inventory. |
 | `src/commands/context.rs` | Safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
 | `src/relevance.rs` | Dependency-free lexical features and compact numerical head. |

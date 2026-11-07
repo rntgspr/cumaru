@@ -24,7 +24,8 @@ and semantic links rather than assuming a `specs/` directory.
 ## Select and verify
 
 1. Inspect the returned paths and signals. For `context`, start with the most
-   promising ranked candidates. Scores are experimental and backend-specific;
+   promising ranked candidates; each row is a `cumaru get` selector for the
+   best-matching passage. Scores are experimental and backend-specific;
    no score threshold proves relevance or absence of knowledge.
 2. Read selected files to verify that their contents answer the task. Use
    `cumaru map <path>` when a large host needs a heading map first. Follow only

@@ -17,6 +17,7 @@ mod relevance;
 mod tags;
 mod text;
 mod tsv;
+mod vectors;
 mod walk;
 
 /// Cumaru CLI.
