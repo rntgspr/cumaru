@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `.memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 161.
+from 171.
 
 ## Open issues
 
@@ -35,6 +35,16 @@ from 161.
 | [158](issue_158.md) | low | Realign install-upgrade.md with the native implementation |
 | [159](issue_159.md) | low | Realign migration.md with the native implementation |
 | [160](issue_160.md) | low | Realign workflows.md with the native implementation |
+| [161](issue_161.md) | high | Keep released binaries able to read the main domain config after additive meta keys ship |
+| [162](issue_162.md) | high | Keep doctor reporting when the downloaded drift reference fails this binary's schema |
+| [163](issue_163.md) | high | Decide how doctor reports a main config version newer than the binary supports |
+| [164](issue_164.md) | high | Stop a missing meta.context path from failing ordinary context queries |
+| [165](issue_165.md) | high | Make doctor survive an unwritable or contended drift reference cache |
+| [166](issue_166.md) | medium | Bound the network cost of a drift reference that cannot be fetched |
+| [167](issue_167.md) | medium | Decide whether cumaru context keeps ranking when the installed config is invalid |
+| [168](issue_168.md) | medium | Make files outside the meta.context lists visible instead of silently unranked |
+| [169](issue_169.md) | medium | Honor cumaru context --reset when no encoder is enabled |
+| [170](issue_170.md) | low | Resolve the base/__base domain alias through one helper and fix the drift message path |
 
 ## Notes
 
