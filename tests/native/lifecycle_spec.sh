@@ -141,6 +141,8 @@ Describe 'native preservation regressions adapted from legacy update transaction
   It 'clears owned adapter artifacts offline while retaining adopter skills and instructions'
     mkdir -p "$PROJECT/.agents/skills/adopter"
     printf 'custom\n' > "$PROJECT/.agents/skills/adopter/SKILL.md"
+    mkdir -p "$PROJECT/.cumaru/.cache"
+    cp "$REPO_ROOT/domains/sdlc-light/config.yaml" "$PROJECT/.cumaru/.cache/config-$(date -u +%F).yaml"
     : > "$CUMARU_TEST_REQUESTS"
     When call cli update agent codex --clear
     The status should be success
@@ -195,5 +197,93 @@ Describe 'native preservation regressions adapted from legacy update transaction
     The contents of file "$PROJECT/.codex/hooks.json" should include '"custom": true'
     The contents of file "$PROJECT/.agents/skills/adopter/SKILL.md" should equal custom
     The contents of file "$PROJECT/AGENTS.md" should include 'Keep this policy.'
+  End
+End
+
+Describe 'doctor post-check vector cache warm (meta.doctor.after.warm)'
+  BeforeEach 'installed_setup'
+  AfterEach 'native_cleanup'
+
+  # Sets meta.doctor.after.warm in the installed config.
+  set_warm() { sed -i.bak "s/warm: false/warm: $1/" "$PROJECT/.cumaru/config.yaml" && rm "$PROJECT/.cumaru/config.yaml.bak"; }
+
+  # Lists a missing adopter path in meta.context.
+  break_adopter() { sed -i.bak 's/adopter: \[plans, specs, exploring\]/adopter: [plans, missing-area]/' "$PROJECT/.cumaru/config.yaml" && rm "$PROJECT/.cumaru/config.yaml.bak"; }
+
+  It 'ships the flag off and creates no cache'
+    When call cli doctor
+    The status should be success
+    The output should include 'Summary: 0 error(s)'
+    The error should be blank
+    The contents of file "$PROJECT/.cumaru/config.yaml" should include 'doctor: {after: {warm: false}}'
+    The path "$PROJECT/.cumaru/.cache/context" should not be exist
+  End
+
+  It 'does not warm after a failing report'
+    set_warm true
+    break_adopter
+    printf '# No frontmatter\n' > "$PROJECT/.cumaru/plans/bad.md"
+    When call cli doctor
+    The status should be failure
+    The output should include '[error]'
+    The error should be blank
+    The path "$PROJECT/.cumaru/.cache/context" should not be exist
+  End
+
+  It 'fails a passing report when a listed adopter path is missing'
+    set_warm true
+    break_adopter
+    When call cli doctor
+    The status should be failure
+    The output should include 'Summary: 0 error(s)'
+    The error should include 'meta.context.adopter'
+    The error should include 'missing-area'
+    The error should include 'cumaru doctor: vector cache warm failed'
+  End
+
+  It 'succeeds without an enabled encoder'
+    set_warm true
+    When call cli doctor
+    The status should be success
+    The output should include 'Summary: 0 error(s)'
+    The error should include 'no enabled encoder; nothing to cache'
+    The path "$PROJECT/.cumaru/.cache/context" should not be exist
+  End
+End
+
+Describe 'doctor configuration reference cached daily from main'
+  BeforeEach 'installed_setup'
+  AfterEach 'native_cleanup'
+
+  It 'downloads once per day and reuses the cached reference'
+    mkdir -p "$PROJECT/.cumaru/.cache"
+    cp "$REPO_ROOT/domains/sdlc-light/config.yaml" "$PROJECT/.cumaru/.cache/config-2000-01-01.yaml"
+    : > "$CUMARU_TEST_REQUESTS"
+    When call cli doctor
+    The status should be success
+    The output should include '[ok] Configuration drift'
+    The contents of file "$CUMARU_TEST_REQUESTS" should include 'domains/sdlc-light/config.yaml'
+    The path "$PROJECT/.cumaru/.cache/config-$(date -u +%F).yaml" should be file
+    The path "$PROJECT/.cumaru/.cache/config-2000-01-01.yaml" should not be exist
+    The contents of file "$PROJECT/.gitignore" should include '.cumaru/.cache/'
+  End
+
+  It 'reads no network when today is cached'
+    mkdir -p "$PROJECT/.cumaru/.cache"
+    cp "$REPO_ROOT/domains/sdlc-light/config.yaml" "$PROJECT/.cumaru/.cache/config-$(date -u +%F).yaml"
+    : > "$CUMARU_TEST_REQUESTS"
+    When call cli doctor
+    The status should be success
+    The output should include '[ok] Configuration drift'
+    The contents of file "$CUMARU_TEST_REQUESTS" should be blank
+  End
+
+  It 'warns and passes when the domain reference is unavailable'
+    sed -i.bak 's/^domain: sdlc-light/domain: custom-domain/' "$PROJECT/.cumaru/config.yaml" && rm "$PROJECT/.cumaru/config.yaml.bak"
+    When call cli doctor
+    The status should be success
+    The output should include '[warn] Configuration drift'
+    The output should include 'drift was not checked'
+    The path "$PROJECT/.cumaru/.cache" should not be exist
   End
 End

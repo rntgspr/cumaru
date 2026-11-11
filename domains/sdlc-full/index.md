@@ -76,7 +76,7 @@ reference route for its full current contract.
 |---|---|---|
 | `cumaru install` | Install one domain from main HEAD and one explicit agent adapter into a project; add opt-in skills later with `cumaru update skills <agent> --with <skill>`. | `cumaru install --help` |
 | `cumaru uninstall` | Remove project installation and shared adapter artifacts with explicit confirmation. | `cumaru uninstall --help` |
-| `cumaru doctor` | Offline validation of installed config, tree, tags, references, tools, agent instructions, and config drift; the default command. | `cumaru doctor --help` |
+| `cumaru doctor` | Validation of installed config, tree, tags, references, tools, agent instructions, and config drift against main (cached daily); the default command. | `cumaru doctor --help` |
 | `cumaru tag` | List, audit, read, or replace schema-declared semantic marker bodies. | `cumaru tag --help` |
 | `cumaru coverage` | Report durable-specification references and uncovered repository source. | `cumaru coverage --help` |
 | `cumaru tree` | List filesystem candidates and summaries without loading their bodies. | `cumaru tree --help` |

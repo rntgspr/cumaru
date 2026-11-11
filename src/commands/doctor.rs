@@ -8,7 +8,7 @@ use yaml_rust2::Yaml;
 
 use crate::adapter::{self, Adapter};
 use crate::walk::Walk;
-use crate::{config, config_tree, markdown, paths, references, tags};
+use crate::{config, config_tree, distribution, markdown, paths, references, tags};
 
 #[derive(Args, Default)]
 pub struct DoctorArgs {
@@ -76,15 +76,21 @@ impl Report {
     }
 }
 
-/// Runs read-only health checks against the current project's fixed framework directory.
+/// Runs read-only health checks against the current project's fixed framework directory, then the opt-in adopter cache warm.
 pub fn run(args: DoctorArgs) -> ExitCode {
     match inspect(Path::new(config::CUMARU_DIR)) {
         Ok(report) => {
             print!("{}", report.render(args.quiet));
             if report.failed() {
-                ExitCode::FAILURE
-            } else {
-                ExitCode::SUCCESS
+                return ExitCode::FAILURE;
+            }
+
+            match after_warm(Path::new(config::CUMARU_DIR)) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(message) => {
+                    eprintln!("cumaru doctor: vector cache warm failed: {message}");
+                    ExitCode::FAILURE
+                }
             }
         }
         Err(message) => {
@@ -92,6 +98,16 @@ pub fn run(args: DoctorArgs) -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// Warms the `adopter` vector cache after a passing report when `meta.doctor.after.warm` is true; the only doctor side effect.
+fn after_warm(root: &Path) -> Result<(), String> {
+    let text = fs::read_to_string(root.join(config::CONFIG_FILE)).map_err(|e| e.to_string())?;
+    if config::parse(&text)?["meta"]["doctor"]["after"]["warm"].as_bool() != Some(true) {
+        return Ok(());
+    }
+
+    super::context::warm(root, Some(super::context::Scope::Adopter))
 }
 
 /// Loads a safe v9 tree once, validates configured hosts, and reports independent cached health checks.
@@ -309,7 +325,11 @@ pub(crate) fn inspect(root: &Path) -> Result<Report, String> {
         false,
         instruction_issues(project, &files),
     );
-    report.check("Configuration drift", false, drift(&config_text, &config)?);
+    report.check(
+        "Configuration drift",
+        false,
+        drift(&root, &config_text, &config, &today(), &fetch_main)?,
+    );
     Ok(report)
 }
 
@@ -471,55 +491,216 @@ fn instruction_issues(project: &Path, files: &BTreeMap<String, String>) -> Vec<S
     ]
 }
 
-/// Compares local config with embedded build-time domain defaults, keeping doctor independent of a local snapshot or network.
-fn drift(text: &str, local: &Yaml) -> Result<Vec<String>, String> {
-    let domain = local["domain"].as_str().unwrap_or_default();
-    let source = match domain {
-        "base" | "__base" => include_str!("../../domains/__base/config.yaml"),
-        "sdlc-full" => include_str!("../../domains/sdlc-full/config.yaml"),
-        "sdlc-light" => include_str!("../../domains/sdlc-light/config.yaml"),
-        "design-as-code" => include_str!("../../domains/design-as-code/config.yaml"),
-        "iac-basic" => include_str!("../../domains/iac-basic/config.yaml"),
-        "qa-basic" => include_str!("../../domains/qa-basic/config.yaml"),
-        "focus" => include_str!("../../domains/focus/config.yaml"),
-        "vault-memory" => include_str!("../../domains/vault-memory/config.yaml"),
-        _ => include_str!("../../domains/__base/config.yaml"),
+/// Highest configuration version this binary validates; a newer reference requires `cumaru migrate`.
+const SUPPORTED_VERSION: i64 = 9;
+
+/// Reference domain config chosen for drift, with the calendar date of its cached copy.
+struct Reference {
+    text: String,
+    date: String,
+}
+
+/// Downloads the domain's `config.yaml` from GitHub main through the shared domain source.
+fn fetch_main(domain: &str) -> Result<Vec<u8>, String> {
+    if cfg!(test) {
+        return Err("network disabled in unit tests".into());
+    }
+
+    let domain = if domain == "base" { "__base" } else { domain };
+    distribution::domain_source(domain)?.read("config.yaml")
+}
+
+/// Returns today's UTC calendar date as `YYYY-MM-DD` (Hinnant's civil-from-days algorithm).
+fn today() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs() as i64);
+    let z = secs.div_euclid(86_400) + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + i64::from(month <= 2);
+
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
+/// Parses one YAML document without schema validation, so a newer reference version can still be recognized.
+fn raw_yaml(text: &str) -> Result<Yaml, String> {
+    yaml_rust2::YamlLoader::load_from_str(text)
+        .map_err(|e| format!("invalid reference config: {e}"))?
+        .into_iter()
+        .next()
+        .ok_or_else(|| "empty reference config".to_string())
+}
+
+/// Normalizes the `base`/`__base` alias so cached and local domain names compare equal.
+fn same_domain(left: &str, right: &str) -> bool {
+    let norm = |name: &str| {
+        if name == "__base" {
+            "base".to_string()
+        } else {
+            name.to_string()
+        }
     };
-    let mut source = config::parse(source)?;
-    if ![
-        "base",
-        "__base",
-        "sdlc-full",
-        "sdlc-light",
-        "design-as-code",
-        "iac-basic",
-        "qa-basic",
-        "focus",
-        "vault-memory",
-    ]
-    .contains(&domain)
+    norm(left) == norm(right)
+}
+
+/// Resolves the drift reference from `.cumaru/.cache/config-<date>.yaml` or main (at most once per day), pushing warnings.
+fn reference(
+    root: &Path,
+    domain: &str,
+    today: &str,
+    fetch: &dyn Fn(&str) -> Result<Vec<u8>, String>,
+    warnings: &mut Vec<String>,
+) -> Result<Option<Reference>, String> {
+    let cache = root.join(".cache");
+    if paths::is_symlink(&cache) {
+        return Err(".cumaru/.cache must not be a symlink".into());
+    }
+
+    let mut cached = Vec::new();
+    if let Ok(entries) = fs::read_dir(&cache) {
+        for entry in entries {
+            let path = entry.map_err(|e| e.to_string())?.path();
+            let name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default();
+            let Some(date) = name
+                .strip_prefix("config-")
+                .and_then(|rest| rest.strip_suffix(".yaml"))
+            else {
+                continue;
+            };
+            if paths::is_symlink(&path) {
+                return Err(format!(".cumaru/.cache/{name} must not be a symlink"));
+            }
+            cached.push((date.to_string(), path));
+        }
+    }
+    cached.sort();
+
+    let matching = |path: &Path| {
+        let text = fs::read_to_string(path).ok()?;
+        let yaml = raw_yaml(&text).ok()?;
+        same_domain(yaml["domain"].as_str()?, domain).then_some(text)
+    };
+
+    if let Some((_, path)) = cached.iter().find(|(date, _)| date == today)
+        && let Some(text) = matching(path)
     {
-        for key in ["domain", "root", "rules", "meta", "workflows"] {
-            if local[key] != Yaml::BadValue
-                && let Yaml::Hash(values) = &mut source
+        return Ok(Some(Reference {
+            text,
+            date: today.into(),
+        }));
+    }
+
+    match fetch(domain).and_then(|bytes| String::from_utf8(bytes).map_err(|e| e.to_string())) {
+        Ok(text) => {
+            raw_yaml(&text)?;
+            fs::create_dir_all(&cache).map_err(|e| format!("cannot create .cumaru/.cache: {e}"))?;
+            if let Some(project) = root.parent() {
+                crate::vectors::ignore(project)?;
+            }
+
+            let target = cache.join(format!("config-{today}.yaml"));
+            let temp = cache.join(format!(".config-{today}.yaml.tmp"));
+            fs::write(&temp, &text).map_err(|e| format!("cannot write config cache: {e}"))?;
+            fs::rename(&temp, &target).map_err(|e| format!("cannot write config cache: {e}"))?;
+
+            for (_, path) in cached.iter().filter(|(_, path)| *path != target) {
+                fs::remove_file(path)
+                    .map_err(|e| format!("cannot remove old config cache: {e}"))?;
+            }
+
+            Ok(Some(Reference {
+                text,
+                date: today.into(),
+            }))
+        }
+        Err(error) => {
+            if let Some((date, text)) = cached
+                .iter()
+                .rev()
+                .find_map(|(date, path)| matching(path).map(|text| (date.clone(), text)))
             {
-                values.insert(Yaml::String(key.into()), local[key].clone());
+                warnings.push(format!(
+                    "GitHub main is unreachable ({error}); using stale reference .cumaru/.cache/config-{date}.yaml from {date}"
+                ));
+                return Ok(Some(Reference { text, date }));
+            }
+
+            warnings.push(format!(
+                "domain '{domain}' reference config is unavailable from GitHub main ({error}); drift was not checked, schema validation only"
+            ));
+            Ok(None)
+        }
+    }
+}
+
+/// Compares local config with the domain config on GitHub main, cached daily under `.cumaru/.cache/`.
+fn drift(
+    root: &Path,
+    text: &str,
+    local: &Yaml,
+    today: &str,
+    fetch: &dyn Fn(&str) -> Result<Vec<u8>, String>,
+) -> Result<Vec<String>, String> {
+    let domain = local["domain"].as_str().unwrap_or_default();
+    let mut issues = Vec::new();
+    let Some(reference) = reference(root, domain, today, fetch, &mut issues)? else {
+        return Ok(issues);
+    };
+    let raw = raw_yaml(&reference.text)?;
+    if raw["version"]
+        .as_i64()
+        .is_some_and(|version| version > SUPPORTED_VERSION)
+    {
+        return Err(format!(
+            "domain '{domain}' reference config on main is version {}, newer than this binary supports ({SUPPORTED_VERSION}); run cumaru migrate",
+            raw["version"].as_i64().unwrap_or_default()
+        ));
+    }
+    let source = config::parse(&reference.text)?;
+
+    for key in ["framework", "adopter"] {
+        let local_list = local["meta"]["context"][key]
+            .as_vec()
+            .cloned()
+            .unwrap_or_default();
+        for entry in source["meta"]["context"][key]
+            .as_vec()
+            .into_iter()
+            .flatten()
+        {
+            if !local_list.contains(entry) {
+                issues.push(format!(
+                    "/meta/context/{key}: reference entry '{}' is absent locally; review whether it was removed on purpose",
+                    entry.as_str().unwrap_or("?")
+                ));
             }
         }
     }
+
     let (candidate, removed) = config::reconcile(text, &source)?;
     let candidate = config::parse(&candidate)?;
     if config::yaml_to_json(&candidate)? == config::yaml_to_json(local)? && removed.is_empty() {
-        return Ok(Vec::new());
+        return Ok(issues);
     }
-    let mut issues = Vec::new();
     review_properties(
         &config::yaml_to_json(local)?,
         &config::yaml_to_json(&candidate)?,
         "",
         &mut issues,
     );
-    issues.push(format!("defaults are embedded in this binary for domain '{domain}'; review with cumaru update config (latest release)"));
+    issues.push(format!(
+        "reference: domains/{domain}/config.yaml on GitHub main, cached .cumaru/.cache/config-{}.yaml; review with cumaru update config",
+        reference.date
+    ));
     Ok(issues)
 }
 
@@ -640,11 +821,13 @@ mod tests {
         let before = fixture.snapshot();
         let report = inspect(&fixture.root()).unwrap();
         assert!(!report.failed(), "{}", report.render(false));
+        let rendered = report.render(false);
+        assert_eq!(rendered.matches("[warn]").count(), 1, "{rendered}");
         assert!(
-            !report.render(false).contains("[warn]"),
-            "{}",
-            report.render(false)
+            rendered.contains("[warn] Configuration drift"),
+            "{rendered}"
         );
+        assert!(rendered.contains("drift was not checked"), "{rendered}");
         assert!(!report.render(true).contains("[ok]"));
         assert_eq!(fixture.snapshot(), before);
     }
@@ -734,29 +917,141 @@ mod tests {
         }
     }
 
-    /// Reports missing source defaults while accepting YAML formatting and additive local entries.
+    /// Reports missing reference defaults while accepting YAML formatting and additive local entries, from today's cache.
     #[test]
     fn reviews_config_defaults_offline() {
+        let fixture = Fixture::new();
+        let root = fixture.root();
         let text = include_str!("../../domains/__base/config.yaml");
+        fs::create_dir_all(root.join(".cache")).unwrap();
+        fs::write(root.join(".cache/config-2026-01-02.yaml"), text).unwrap();
+        let offline = |_: &str| -> Result<Vec<u8>, String> { panic!("network used") };
+
         let local = config::parse(text).unwrap();
-        assert!(drift(text, &local).unwrap().is_empty());
-        let changed = text.replace("depends-on: {optional: true}", "");
-        let changed = config::parse(&changed).unwrap();
-        let text = include_str!("../../domains/__base/config.yaml")
-            .replace("depends-on: {optional: true}", "");
         assert!(
-            drift(&text, &changed)
+            drift(&root, text, &local, "2026-01-02", &offline)
                 .unwrap()
-                .join("\n")
-                .contains("/root/frontmatter/depends-on")
+                .is_empty()
         );
+
+        let changed_text = text.replace("depends-on: {optional: true}", "");
+        let changed = config::parse(&changed_text).unwrap();
+        let issues = drift(&root, &changed_text, &changed, "2026-01-02", &offline)
+            .unwrap()
+            .join("\n");
+        assert!(issues.contains("/root/frontmatter/depends-on"), "{issues}");
+        assert!(issues.contains("config-2026-01-02.yaml"), "{issues}");
+
         let mut additive = config::yaml_to_json(&local).unwrap();
         additive["root"]["new.md"] = serde_json::json!({});
         let text = additive.to_string();
         assert!(
-            drift(&text, &config::parse(&text).unwrap())
+            drift(
+                &root,
+                &text,
+                &config::parse(&text).unwrap(),
+                "2026-01-02",
+                &offline
+            )
+            .unwrap()
+            .is_empty()
+        );
+    }
+
+    /// Covers download, daily reuse, stale fallback, refetch on domain mismatch, version gate, context warnings, and symlinks.
+    #[cfg(unix)]
+    #[test]
+    fn resolves_daily_reference_cache() {
+        let fixture = Fixture::new();
+        let root = fixture.root();
+        let text = include_str!("../../domains/__base/config.yaml");
+        let local = config::parse(text).unwrap();
+        let calls = std::cell::Cell::new(0);
+        let online = |domain: &str| -> Result<Vec<u8>, String> {
+            assert_eq!(domain, "base");
+            calls.set(calls.get() + 1);
+            Ok(text.as_bytes().to_vec())
+        };
+        let offline = |_: &str| -> Result<Vec<u8>, String> { Err("offline".into()) };
+
+        fs::create_dir_all(root.join(".cache")).unwrap();
+        fs::write(root.join(".cache/config-2026-01-01.yaml"), text).unwrap();
+        assert!(
+            drift(&root, text, &local, "2026-01-02", &online)
                 .unwrap()
                 .is_empty()
+        );
+        assert_eq!(calls.get(), 1);
+        assert!(root.join(".cache/config-2026-01-02.yaml").is_file());
+        assert!(!root.join(".cache/config-2026-01-01.yaml").exists());
+        assert!(
+            fs::read_to_string(fixture.0.join(".gitignore"))
+                .unwrap()
+                .contains(".cumaru/.cache/")
+        );
+
+        assert!(
+            drift(&root, text, &local, "2026-01-02", &online)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(calls.get(), 1);
+
+        let stale = drift(&root, text, &local, "2026-01-03", &offline)
+            .unwrap()
+            .join("\n");
+        assert!(
+            stale.contains("stale reference") && stale.contains("2026-01-02"),
+            "{stale}"
+        );
+
+        fs::write(
+            root.join(".cache/config-2026-01-03.yaml"),
+            text.replace("domain: base", "domain: focus"),
+        )
+        .unwrap();
+        drift(&root, text, &local, "2026-01-03", &online).unwrap();
+        assert_eq!(calls.get(), 2);
+        assert!(!root.join(".cache/config-2026-01-02.yaml").exists());
+
+        fs::remove_dir_all(root.join(".cache")).unwrap();
+        let none = drift(&root, text, &local, "2026-01-04", &offline)
+            .unwrap()
+            .join("\n");
+        assert!(none.contains("drift was not checked"), "{none}");
+
+        let newer = |_: &str| -> Result<Vec<u8>, String> {
+            Ok(text.replace("version: 9", "version: 10").into_bytes())
+        };
+        let error = drift(&root, text, &local, "2026-01-05", &newer).unwrap_err();
+        assert!(error.contains("cumaru migrate"), "{error}");
+
+        let removed = text.replace("framework: [domain.md, index.md,", "framework: [domain.md,");
+        let issues = drift(
+            &root,
+            &removed,
+            &config::parse(&removed).unwrap(),
+            "2026-01-06",
+            &online,
+        )
+        .unwrap()
+        .join("\n");
+        assert!(
+            issues.contains("/meta/context/framework: reference entry 'index.md'"),
+            "{issues}"
+        );
+
+        fs::remove_dir_all(root.join(".cache")).unwrap();
+        fs::create_dir_all(root.join(".cache")).unwrap();
+        std::os::unix::fs::symlink(
+            fixture.0.join("AGENTS.md"),
+            root.join(".cache/config-2026-01-07.yaml"),
+        )
+        .unwrap();
+        assert!(
+            drift(&root, text, &local, "2026-01-07", &online)
+                .unwrap_err()
+                .contains("symlink")
         );
     }
 

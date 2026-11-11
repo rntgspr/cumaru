@@ -28,4 +28,4 @@ root:
   sources:
     framework: true
     "*.md": {frontmatter: {status: {}}}
-meta: {targets: {values: [platform, meta]}}
+meta: {targets: {values: [platform, meta]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [directives, threads, outcomes, sources], source: []}, doctor: {after: {warm: false}}}

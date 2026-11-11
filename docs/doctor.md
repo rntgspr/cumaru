@@ -1,6 +1,13 @@
 # `cumaru doctor`
 
-Run health checks on a `.cumaru/` tree end-to-end, offline and without writes.
+Run health checks on a `.cumaru/` tree end-to-end without editing adopter files.
+Doctor may read GitHub main at most once per day for the
+[drift reference](#configuration-drift-reference) and caches it under
+`.cumaru/.cache/`. The other opt-in side effect: with `meta.doctor.after.warm: true`, a passing report
+is followed by warming the `adopter` [vector cache](context.md#vector-cache);
+a warm failure (such as a missing listed `meta.context.adopter` path) fails
+doctor, while no enabled encoder only prints the "nothing to cache" notice.
+Domains ship the flag as `false`.
 It is the default command: running `cumaru` with no arguments is equivalent to
 `cumaru doctor`. Configuration validation is a preflight: invalid config state
 stops before the health checks run.
@@ -55,11 +62,27 @@ checks, not individual defects.
 | 7 | **Retained file references** — only declared `files`, `touched`, and `reference` tags are path-resolved. `touched` accepts explicitly removed files; `reference` follows the [coverage](coverage.md) source-file rule. | warn |
 | 8 | **External tools** — `git` and `curl` on PATH, checked without running them. | warn |
 | 9 | **Agent instructions** — at least one complete Generic, Claude, Codex, or OpenCode instruction set with the installed discipline bodies. Skills, commands, and hooks are outside this check. | warn |
-| 10 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the defaults embedded in this binary. Formatting, order, and additive local entries are ignored. | warn |
+| 10 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the domain's `config.yaml` on GitHub main ([reference](#configuration-drift-reference)). Formatting, order, and additive local entries are ignored. Entries of the reference `meta.context.framework` / `meta.context.adopter` lists absent locally are named. | warn |
 
-Check 10 makes no claim about freshness against `main`: new source defaults
-require a newer binary. Use `cumaru version` or `cumaru update config` for the
-main-HEAD comparison.
+### Configuration drift reference
+
+Check 10 compares against `domains/<domain>/config.yaml` on GitHub main, fetched
+by the adopter's `domain` and cached as `.cumaru/.cache/config-<YYYY-MM-DD>.yaml`
+(UTC calendar day; the `.cumaru/.cache/` `.gitignore` entry is added if absent):
+
+1. Today's file with a matching `domain:` is used without network.
+2. Otherwise main is downloaded, today's file is written atomically, and older
+   `config-*.yaml` files are deleted. Delete today's file to force a refetch.
+3. Offline with an older matching file: that file is used and a warning names
+   its date.
+4. Offline with no usable file, or a domain absent from main (custom domains):
+   a warning says drift was not checked; doctor relies on schema validation
+   and does not fail for this.
+
+A reference `version` newer than this binary supports stops doctor with an
+error asking for `cumaru migrate`. Symlinked cache paths are refused.
+`meta.context.source` is not compared. Use `cumaru update config` to review the
+full candidate.
 
 `cumaru tree --deep` is the companion diagnostic for check 2: it keeps walking
 after defects, reports them on stderr, and returns nonzero at the end.
@@ -69,7 +92,7 @@ after defects, reports them on stderr, and returns nonzero at the end.
 - **Workflow integrity** (tasks done without handoff, unfinished delta drafts at close-out). Audited as part of recipe execution in the domain's `cumaru-absorb` skill.
 - **Cross-file semantic links** (every `scope:` path resolves, every `depends-on:` references a real entity).
 - **Schema intent vs. file content** — e.g. requirements quality and prose accuracy. These are author judgment, not validation.
-- **Remote freshness** — doctor never reads the network.
+- **Remote freshness beyond one day** — the drift reference is cached per calendar day.
 
 Malformed semantic tags make doctor exit `1` and block lifecycle cleanup. A
 successful result establishes structural health, not completed implementation

@@ -52,7 +52,7 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 The `.codex/` directory is currently not excluded; tracked files there remain
 coverable unless filtered by `meta.coverage.source`.
 
-Both are adopter-owned values, like `meta.targets.values`. When `coverage.source` is empty/absent, every tracked file except `.cumaru/`, `.agents/`, `.claude/`, `.opencode/`, and root agent instruction/config files counts as coverable.
+Both are adopter-owned values, like `meta.targets.values` and the [`meta.context`](context.md#scopes) scope lists. When `coverage.source` is empty/absent, every tracked file except `.cumaru/`, `.agents/`, `.claude/`, `.opencode/`, and root agent instruction/config files counts as coverable.
 
 ## Buckets
 

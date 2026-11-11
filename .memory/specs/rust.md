@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh 
 ```
 
 An invocation without a subcommand runs `doctor`. Package version
-`0.13.1` is baked into development builds; it is separate from adopter config version 9.
+`0.14.0-rc1` is baked into development builds; it is separate from adopter config version 9.
 The latest published release is `0.10.7`; the published Homebrew formula pins
 that release (see [Homebrew distribution](#homebrew-distribution)).
 `version` reports both identities inside an adopter; see [Native version](#native-version).
@@ -70,7 +70,7 @@ the rename to `fs`, not a remaining command implementation.
 |---|---|
 | `tree`, `map` | TSV by default; optional Markdown output; no config/domain/pillar filter; map lists literal H1-H6 headings with markers. |
 | `fs`, `tag` | Guarded filesystem operations and opaque balanced tag bodies; tag has no typed `all --rows` mode. |
-| `coverage`, `doctor` | Offline reports; shared reference resolution; bare invocation runs doctor. |
+| `coverage`, `doctor` | Offline reports (doctor's drift reference is cached daily from main); shared reference resolution; bare invocation runs doctor. |
 | `install`, `update`, `bootstrap`, `migrate`, `help domains` | HEAD of main, commit-pinned reads, no local snapshot or `--from`. |
 | `uninstall` | All stateless adapters; owned native cleanup; confirmed removal of the complete project tree. |
 | `version`, `upgrade` | Build identity plus installed/latest domain config and drift report against main; binary-only global installation as `cumaru`. |
@@ -370,7 +370,7 @@ Cross-filesystem moves are not emulated; `rename` failures are reported.
 | `src/commands/bootstrap.rs` | Installed-domain resolution, pinned base/domain bootstrap reads, rendering, and their unit tests. |
 | `src/commands/migrate.rs` | Current/legacy installed-domain resolution, pinned base/domain migration reads, checkpoint rendering, `--apply` refusal, and their unit tests. |
 | `src/commands/coverage.rs` | Read-only Git source inventory, exclusions/globs, bucket classification/rendering, and their unit tests. |
-| `src/commands/doctor.rs` | Read-only v9 health inspection, cached Markdown checks, workflow validation, instruction discovery, embedded config drift, and their unit tests. |
+| `src/commands/doctor.rs` | Read-only v9 health inspection, cached Markdown checks, workflow validation, instruction discovery, daily-cached main config drift, and their unit tests. |
 | `src/references.rs` | Shared table-cell extraction from innermost tags and project-source reference resolution for coverage and doctor. |
 | `src/adapter.rs` | Adapter paths, ordered instructions, and preservation-aware JSON hook/instruction merges. |
 | `src/artifacts.rs` | Shared update/uninstall file snapshots, owned namespace inventories and cleanup planning, exact native merges, and direct publication. |
@@ -792,11 +792,11 @@ and missing installed workflow skills fail preflight.
    adapter planning and installed discipline bodies. Missing/drifted instructions
    warn. Skills, commands, and hooks are outside this instruction-health check;
    workflow skill availability is checked separately, without execution.
-5. Compare config with the domain defaults embedded at build time, naming missing
-   defaults by JSON Pointer and ignoring formatting/order/additive local entries.
-   Custom domains retain their local tree, rules, metadata, and workflows. No
-   remote freshness is claimed: main-HEAD reconciliation remains the explicit
-   `update config` operation. New source defaults require rebuilding the binary.
+5. Compare config with the domain config on main, cached daily under
+   `.cumaru/.cache/`, naming missing defaults by JSON Pointer and ignoring
+   formatting/order/additive local entries; offline it degrades as specified in
+   [the doctor doc](../../docs/doctor.md#configuration-drift-reference).
+   Applying the candidate remains the explicit `update config` operation.
 6. Emit ASCII `[ok]`, `[warn]`, and `[error]` lines and a summary counting failed
    checks, not individual defects. Quiet mode suppresses passes only. Preflight
    failures use stderr; completed check reports use stdout. Errors return 1;
@@ -895,7 +895,7 @@ formatting or preserved valid local choices. Future remote integers are reported
 without applying the current schema across version boundaries. Equal-version
 comparison uses the shared read-only reconciliation, which rejects invalid values.
 Remote/metadata failures return 1 with installed fields preserved and no invented
-latest version. No adopter means no network; doctor remains offline.
+latest version. No adopter means no network.
 
 The identity read does not validate the current schema, so an older installed contract
 still reports its actual integer; nothing is migrated or inferred. CLI and

@@ -8,7 +8,7 @@ summary: Diagnose a `.cumaru/` tree with `cumaru doctor`, navigate reported loca
 
 # `cumaru-doctor` — validate and diagnose a v9 tree
 
-Run `cumaru doctor` first; it is offline and read-only. Its preflight validates
+Run `cumaru doctor` first; it never edits adopter files (it may cache the main drift reference daily under `.cumaru/.cache/`). Its preflight validates
 config, version, and workflow graphs; an older config version routes to
 `cumaru migrate`. Its checks cover configured tree contracts, navigation and
 summaries, tag balance and nesting, stale work and RAW markers, retained file

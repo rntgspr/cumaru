@@ -1,14 +1,16 @@
 # `cumaru context`
 
-Rank visible Markdown inside the current project's `.cumaru/` against an English
-query. It is offline, never changes knowledge files, needs no config or summaries, and returns
-paths and scores rather than generated text or retrieved fragments.
+Rank the files of three [scopes](#scopes) (`framework`, `adopter`, `source`)
+against an English query. It is offline, never changes knowledge files, needs no
+config or summaries, and returns paths and scores rather than generated text or
+retrieved fragments.
 
 ```bash
 cumaru context "look for egg recipes"
 cumaru context --full "look for egg recipes" # every ranked file, not the best 16
 cumaru context --warm          # build or refresh the vector cache only
 cumaru context --reset [QUERY] # delete and rebuild the vector cache
+cumaru context --scope source "vector cache" # one scope only
 ```
 
 Output is headerless TSV: a [`cumaru get`](get.md) selector, then a score from
@@ -17,14 +19,40 @@ Output is headerless TSV: a [`cumaru get`](get.md) selector, then a score from
 
 ```text
 disciplines/kiss.md:9,28	6.80
+./src/vectors.rs:40,62	6.31
 index.md:14,41	6.12
 ```
 
-With the encoder, the range is the innermost `map` section containing the paragraph whose chunk scored best (the paragraph itself before any heading); with the
+`framework` and `adopter` rows are relative to `.cumaru/`; `source` rows start
+with `./` and are relative to the project root.
+
+With the encoder, the range is the innermost `map` section containing the paragraph whose chunk scored best (the paragraph itself before any heading; for a non-Markdown source file, the raw best-chunk range); with the
 lightweight scorer it is the whole file (`path:1,N`), and an empty file prints
 its bare path. Sort order is descending displayed score, with byte-order
-selectors for ties; only the best 16 rows print unless `--full` is given. A Markdown `index.md` is evaluated like every other visible
+selectors for ties; all scopes merge into one list, and only the best 16 rows print unless `--full` is given. A Markdown `index.md` is evaluated like every other visible
 host. A QUERY is required unless `--warm` or `--reset` is given (status 2).
+
+## Scopes
+
+`meta.context` in `.cumaru/config.yaml` lists files or directories per scope
+(schema: [`config.schema.json`](../schemas/config.schema.json); shipped
+defaults: each `domains/<domain>/config.yaml`):
+
+| Scope | Entries relative to | Indexed files |
+|---|---|---|
+| `framework` | `.cumaru/` | Visible `.md` files; framework-owned material such as `domain.md`, `disciplines`, `roles`, `templates`. |
+| `adopter` | `.cumaru/` | Visible `.md` files; pillars that grow with adopter content such as `specs`, `plans`. |
+| `source` | project root | Every visible UTF-8 text file up to 1 MiB; binary, non-UTF-8, and larger files are skipped silently. `.gitignore` is not honored. |
+
+A `.cumaru/` file covered by both lists belongs to the longest (most specific)
+entry; one covered by neither is not indexed. Absolute paths, `..` segments, and
+(`framework`/`adopter`) symlinked entries are configuration errors. A listed path
+that does not exist is diagnosed on stderr with status 1, while other rows still
+print. Without a config, an unreadable one, or no `meta.context`, every visible
+`.cumaru/` Markdown file is ranked as `adopter`.
+
+`--scope framework|adopter|source` restricts ranking, `--warm`, and `--reset` to
+one scope; without it all three are used.
 
 ## Backend selection
 
@@ -42,8 +70,10 @@ do not initialize inference.
 
 ## Vector cache
 
-With the encoder enabled, vectors are cached per chunk in
-`.cumaru/.cache/context/<model>@<revision>.v<format>.json`. Each chunk is keyed
+With the encoder enabled, vectors are cached per chunk in one directory per scope,
+`.cumaru/.cache/context/<scope>/<model>@<revision>.v<format>.json`; scopes never
+prune each other, and files of the old single-cache layout directly in
+`.cumaru/.cache/context/` are removed on the first save. Each chunk is keyed
 by the SHA-256 of the exact token IDs fed to the model, so unchanged paragraphs
 are reused across edits, renames, and documents, edited paragraphs are
 re-embedded, and chunks no longer present are pruned. A chunking or tokenizer
@@ -58,16 +88,19 @@ line per file that needed new embeddings, and a summary. On a terminal the
 per-file line is rewritten in place.
 
 ```text
-cumaru context: building vector cache in .cumaru/.cache/context/
+cumaru context: building vector cache in .cumaru/.cache/context/framework/
 cumaru context: [  1/119] disciplines/acceptance-testing.md (+8 chunks)
-cumaru context: cached 992 chunks (992 new from 119 files) in 22.1s
+cumaru context: .cumaru/.cache/context/framework/: cached 992 chunks (992 new from 119 files) in 22.1s
 ```
 
 `--warm` builds without ranking and reports `vector cache is up to date` when
 nothing changed; without an enabled encoder it reports that there is nothing to
-cache and exits 0. `--reset` deletes `.cumaru/.cache/context/` first.
-`cumaru update --apply` warms the cache after a successful publication or an
-up-to-date check, warning instead of failing.
+cache and exits 0. `--reset` deletes `.cumaru/.cache/context/` first, or only
+`.cumaru/.cache/context/<scope>/` with `--scope`.
+`cumaru update --apply` warms every scope's cache after a successful publication or an
+up-to-date check, warning instead of failing. `cumaru doctor` warms only the
+`adopter` scope, after a passing report and only with `meta.doctor.after.warm: true`,
+and fails on a warm error ([doctor](doctor.md)).
 
 When it writes the cache, `context` appends this entry to the project
 `.gitignore`, creating the file if needed, unless a line already names

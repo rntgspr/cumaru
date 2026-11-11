@@ -190,7 +190,10 @@ mod tests {
             .unwrap()
             .contains("config status: drift")
         );
-        let missing = source.replace("meta: {targets: {values: [platform, meta]}}", "meta: {}");
+        let missing = format!(
+            "{}\nmeta: {{}}\n",
+            &source[..source.find("\nmeta:").unwrap()]
+        );
         assert!(
             compare(&missing, source)
                 .unwrap()

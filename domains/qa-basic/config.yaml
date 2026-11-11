@@ -26,4 +26,4 @@ root:
   coverage: {framework: true, "*": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}, "*.md": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}}}}
   exploring: {framework: true, "*": {optional: true, frontmatter: {status: {}, summary: {}, targets: {}}}}
   standards: {framework: true, "*": {frontmatter: {name: {}, summary: {}, targets: {}, relates: {optional: true}}}}
-meta: {targets: {values: [unit, integration, e2e, contract, performance, all, meta]}, specification_dir: coverage, coverage: {source: []}}
+meta: {targets: {values: [unit, integration, e2e, contract, performance, all, meta]}, specification_dir: coverage, coverage: {source: []}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [intake, plans, coverage, exploring, standards], source: []}, doctor: {after: {warm: false}}}

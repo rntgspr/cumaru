@@ -10,7 +10,8 @@ version: 1
 
 ## Purpose and public surface
 
-`cumaru context QUERY` ranks visible project `.cumaru/` Markdown. Independent
+`cumaru context QUERY` ranks the `framework`, `adopter`, and `source` scopes
+configured by `meta.context` (config-free: all visible `.cumaru/` Markdown as `adopter`). Independent
 `cumaru model list`, `cumaru model pull NAME`, and `cumaru model release` manage
 optional encoders in `~/.cumaru/NAME/`. Public arguments, budgets, output, and failure details are
 canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
@@ -18,9 +19,12 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 ## Invariants
 
 1. Context is offline, never changes knowledge files, and emits only
-   `path:start,end`/two-decimal score TSV, the `get` selector shared with `map`, widened to the innermost `map` section of the best paragraph and capped at the best 16 rows unless `--full`. With an enabled encoder it maintains the token-ID-addressed chunk vector cache
-   in `.cumaru/.cache/context/` and the `.gitignore` entry
-   ([`docs/context.md`](../../docs/context.md#vector-cache)).
+   `path:start,end`/two-decimal score TSV, the `get` selector shared with `map`, widened to the innermost `map` section of the best paragraph (raw chunk range for non-Markdown `source` files, whose rows carry a `./` project-relative prefix), merged across scopes and capped at the best 16 rows unless `--full`. With an enabled encoder it maintains one token-ID-addressed chunk vector cache per scope
+   in `.cumaru/.cache/context/<scope>/` and the `.gitignore` entry
+   ([`docs/context.md`](../../docs/context.md#scopes), [vector cache](../../docs/context.md#vector-cache)).
+   `--scope` filters ranking, `--warm`, and `--reset`. A warm checks listed
+   paths even without an encoder. Callers: `update --apply` warms every scope
+   warn-only; doctor warms `adopter` per [doctor](doctor.md) invariant 7.
 2. A valid enabled cached BGE Micro is preferred; absence or explicit release permits
    the lightweight fallback. Invalid enabled packages, unsafe cache paths, and invalid
    release markers fail. There is no automatic download or model training.
@@ -41,9 +45,9 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 |---|---|
 | `src/commands/model.rs` | List/pull/release CLI and reporting. |
 | `src/models.rs` | Closed catalog, cache safety, integrity/publication, offline encoder loading and token-aware inference. |
-| `src/vectors.rs` | Token-ID-addressed chunk vector cache, stale-file cleanup, and its `.gitignore` entry. |
+| `src/vectors.rs` | Per-scope token-ID-addressed chunk vector cache, stale/legacy-file cleanup, and its `.gitignore` entry. |
 | `models/catalog.json` | Initial pinned BGE package metadata and compatibility inventory. |
-| `src/commands/context.rs` | Safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
+| `src/commands/context.rs` | `meta.context` scope resolution and path validation, safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
 | `src/relevance.rs` | Dependency-free lexical features and compact numerical head. |
 | `src/distribution.rs` | Existing bounded cURL download shared by catalog/package reads. |
 | `src/walk.rs`, `tsv.rs` | Existing guarded traversal and TSV output. |

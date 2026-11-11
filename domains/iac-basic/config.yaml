@@ -26,4 +26,4 @@ root:
   topology: {framework: true, "*": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}, "*.md": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}}}}
   exploring: {framework: true, "*": {optional: true, frontmatter: {status: {}, summary: {}, targets: {}}}}
   runbooks: {framework: true, "*": {frontmatter: {name: {}, summary: {}, targets: {}, relates: {optional: true}}}}
-meta: {targets: {values: [dev, staging, prod, all, meta]}, specification_dir: topology, coverage: {source: []}}
+meta: {targets: {values: [dev, staging, prod, all, meta]}, specification_dir: topology, coverage: {source: []}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [intake, plans, topology, exploring, runbooks], source: []}, doctor: {after: {warm: false}}}

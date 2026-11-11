@@ -28,7 +28,8 @@ Install defaults to `base`, with an explicit stateless adapter target. Domain
 content is downloaded from HEAD of `main` and pinned to one commit per invocation.
 Optional skills belong to `update skills <agent> --with <name>`, not install.
 Source-consuming commands do not support `--from` or local snapshot sources.
-Doctor and bare invocation are offline; `help domains` uses cURL against main.
+Doctor and bare invocation read main at most once per day for the drift
+reference ([doctor](doctor.md#configuration-drift-reference)); `help domains` uses cURL against main.
 
 `cumaru version` prints the CLI version and, inside an adopter, the installed
 `domain:` and `config:` version read from `.cumaru/config.yaml`. These are

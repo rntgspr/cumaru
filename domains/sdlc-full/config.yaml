@@ -30,4 +30,4 @@ root:
     "*": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}, "*.md": {frontmatter: {name: {}, summary: {}, depends-on: {}, relates: {optional: true}, targets: {}}}}
   exploring: {framework: true, "*": {optional: true, frontmatter: {status: {}, summary: {}, targets: {}}}}
   issues: {framework: true, "*": {frontmatter: {type: {}, priority: {}, status: {}, summary: {}, targets: {}}}}
-meta: {targets: {values: [platform, meta]}, specification_dir: specs, coverage: {source: []}}
+meta: {targets: {values: [platform, meta]}, specification_dir: specs, coverage: {source: []}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [intake, plans, specs, exploring, issues], source: []}, doctor: {after: {warm: false}}}

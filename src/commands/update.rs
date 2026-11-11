@@ -335,7 +335,9 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
     }
     if changes.is_empty() {
         println!("up to date");
-        super::context::warm(&root);
+        if let Err(error) = super::context::warm(&root, None) {
+            eprintln!("cumaru context: vector cache not warmed: {error}");
+        }
         return Ok(());
     }
     recovery(&project)?;
@@ -356,7 +358,9 @@ fn execute(args: &UpdateArgs, mode: Mode, adapter: Option<Adapter>) -> Result<()
         return Err("doctor postcheck failed; published changes remain for review/recovery".into());
     }
     println!("updated: {} change(s); doctor checks passed", changes.len());
-    super::context::warm(&root);
+    if let Err(error) = super::context::warm(&root, None) {
+        eprintln!("cumaru context: vector cache not warmed: {error}");
+    }
     Ok(())
 }
 

@@ -67,12 +67,31 @@ def validate_node($value; $p):
     (child_entries($value) as $children | wildcard_conflicts($children; $p)),
     (child_entries($value)[] | validate_node(.value; $p + [.key]))
   end;
+def context_path: type == "string" and length > 0 and (test("^/|(^|/)\\.\\.(/|$)") | not);
+def validate_context($value):
+  if ($value | type) != "object" then err(["meta", "context"]; "must be an object")
+  else unknown($value; ["framework", "adopter", "source"]; ["meta", "context"]),
+    (["framework", "adopter", "source"][] as $scope | $value[$scope] as $paths | select($paths != null) |
+      if ($paths | strings | not) or (($paths | unique | length) != ($paths | length)) or any($paths[]; context_path | not) then err(["meta", "context", $scope]; "must be an array of unique relative paths without parent segments") else empty end)
+  end;
+def validate_doctor($value):
+  if ($value | type) != "object" then err(["meta", "doctor"]; "must be an object")
+  else unknown($value; ["after"]; ["meta", "doctor"]),
+    if $value.after? != null then
+      if ($value.after | type) != "object" then err(["meta", "doctor", "after"]; "must be an object")
+      else unknown($value.after; ["warm"]; ["meta", "doctor", "after"]),
+        if $value.after.warm? != null and ($value.after.warm | type) != "boolean" then err(["meta", "doctor", "after", "warm"]; "must be a boolean") else empty end
+      end
+    else empty end
+  end;
 def validate_meta($value):
   if ($value | type) != "object" then err(["meta"]; "must be an object")
-  else unknown($value; ["targets", "specification_dir", "coverage"]; ["meta"]),
+  else unknown($value; ["targets", "specification_dir", "coverage", "context", "doctor"]; ["meta"]),
     if ($value.targets? | type) != "object" or ($value.targets.values? | strings | not) or ($value.targets.values | length) == 0 or (($value.targets.values | unique | length) != ($value.targets.values | length)) then err(["meta", "targets", "values"]; "must be a non-empty array of unique strings") else unknown($value.targets; ["values"]; ["meta", "targets"]) end,
     if $value.specification_dir? != null and ($value.specification_dir | name | not) then err(["meta", "specification_dir"]; "invalid entity name") else empty end,
-    if $value.coverage? != null then if ($value.coverage | type) != "object" or ($value.coverage.source? | strings | not) then err(["meta", "coverage", "source"]; "must be an array of strings") else unknown($value.coverage; ["source"]; ["meta", "coverage"]) end else empty end
+    if $value.coverage? != null then if ($value.coverage | type) != "object" or ($value.coverage.source? | strings | not) then err(["meta", "coverage", "source"]; "must be an array of strings") else unknown($value.coverage; ["source"]; ["meta", "coverage"]) end else empty end,
+    if $value.context? != null then validate_context($value.context) else empty end,
+    if $value.doctor? != null then validate_doctor($value.doctor) else empty end
   end;
 def validate_workflow_step($value; $p):
   if ($value | type) != "object" then err($p; "must be an object")

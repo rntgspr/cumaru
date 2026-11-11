@@ -11,4 +11,4 @@ root:
   disciplines: {framework: true, "*.md": {framework: true}}
   roles: {framework: true, "*.md": {framework: true}}
   templates: {framework: true, "*.md": {framework: true}}
-meta: {targets: {values: [platform, meta]}}
+meta: {targets: {values: [platform, meta]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [], source: []}, doctor: {after: {warm: false}}}

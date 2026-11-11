@@ -1,10 +1,12 @@
-//! Project-local cache of encoder chunk vectors under `.cumaru/.cache/context/`.
+//! Project-local caches of encoder chunk vectors under `.cumaru/.cache/context/<scope>/`.
 //!
 //! Each vector is keyed by the SHA-256 of the exact token IDs fed to the model, so
 //! unchanged paragraphs reuse their vectors across edits, renames, and documents,
-//! and any change to chunking or tokenization yields new keys automatically. One
-//! file exists per model identity and cache format; files for other identities or
-//! formats are removed on save. A missing, unreadable, or mismatched cache is
+//! and any change to chunking or tokenization yields new keys automatically. Each
+//! scope (`framework`, `adopter`, `source`) owns one directory, so scopes never
+//! prune each other. One file exists per model identity and cache format inside a
+//! scope directory; files for other identities or formats, and legacy files left
+//! directly in `.cumaru/.cache/context/`, are removed on save. A missing, unreadable, or mismatched cache is
 //! treated as empty, never as an error, and saves are atomic (temporary file, then
 //! rename).
 
@@ -44,8 +46,8 @@ pub(crate) struct Cache {
 }
 
 impl Cache {
-    /// Loads the cache for `encoder` under the canonical `.cumaru/` root, starting empty on any defect.
-    pub(crate) fn load(root: &Path, encoder: &Encoder) -> Self {
+    /// Loads the `scope` cache for `encoder` under the canonical `.cumaru/` root, starting empty on any defect.
+    pub(crate) fn load(root: &Path, scope: &str, encoder: &Encoder) -> Self {
         let name: String = encoder
             .identity
             .chars()
@@ -59,6 +61,7 @@ impl Cache {
             .collect();
         let file = root
             .join(".cache/context")
+            .join(scope)
             .join(format!("{name}.v{FORMAT}.json"));
 
         let stored = fs::read(&file)
@@ -79,11 +82,19 @@ impl Cache {
         }
     }
 
-    /// Deletes this project's vector cache directory so the next load starts empty.
-    pub(crate) fn reset(root: &Path) -> Result<(), String> {
-        let directory = root.join(".cache/context");
-        if crate::paths::is_symlink(&directory) {
+    /// Deletes one scope's cache directory, or the whole context cache without a scope, so the next load starts empty.
+    pub(crate) fn reset(root: &Path, scope: Option<&str>) -> Result<(), String> {
+        let base = root.join(".cache/context");
+        if crate::paths::is_symlink(&base) {
             return Err(".cumaru/.cache/context must not be a symlink".into());
+        }
+
+        let directory = scope.map_or(base.clone(), |scope| base.join(scope));
+        if crate::paths::is_symlink(&directory) {
+            return Err(format!(
+                "{} must not be a symlink",
+                display(&directory, root)
+            ));
         }
         match fs::remove_dir_all(&directory) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
@@ -135,7 +146,12 @@ impl Cache {
         self.seen.len()
     }
 
-    /// Prunes unseen chunks, writes atomically when anything changed, and removes other identities' files.
+    /// Returns the scope cache directory as shown to users, e.g. `.cumaru/.cache/context/source/`.
+    pub(crate) fn directory(root: &Path, scope: &str) -> String {
+        display(&root.join(".cache/context").join(scope), root)
+    }
+
+    /// Prunes unseen chunks, writes atomically when anything changed, and removes other identities' and legacy files.
     pub(crate) fn save(mut self) -> Result<(), String> {
         let before = self.stored.chunks.len();
         self.stored.chunks.retain(|key, _| self.seen.contains(key));
@@ -160,7 +176,16 @@ impl Cache {
             }
         }
 
-        if let Some(project) = directory.ancestors().nth(3) {
+        // Files directly in `.cumaru/.cache/context/` belong to the old single-cache layout.
+        let context = directory.parent().ok_or("invalid cache path")?;
+        for entry in fs::read_dir(context).map_err(|e| e.to_string())? {
+            let path = entry.map_err(|e| e.to_string())?.path();
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
+                fs::remove_file(&path).map_err(|e| format!("cannot remove legacy cache: {e}"))?;
+            }
+        }
+
+        if let Some(project) = directory.ancestors().nth(4) {
             ignore(project)?;
         }
 
@@ -168,8 +193,15 @@ impl Cache {
     }
 }
 
+/// Renders a cache path under the `.cumaru/` root as `.cumaru/<relative>/`.
+fn display(path: &Path, root: &Path) -> String {
+    let rel = path.strip_prefix(root).unwrap_or(path).to_string_lossy();
+
+    format!(".cumaru/{rel}/")
+}
+
 /// Appends the commented cache entry to the project `.gitignore` unless a line already mentions it, active or commented.
-fn ignore(project: &Path) -> Result<(), String> {
+pub(crate) fn ignore(project: &Path) -> Result<(), String> {
     let path = project.join(".gitignore");
     let existing = fs::read_to_string(&path).unwrap_or_default();
 
@@ -215,6 +247,58 @@ mod tests {
         fs::create_dir_all(&base).unwrap();
 
         base
+    }
+
+    /// Builds a dirty cache for `scope` holding the given chunk keys, without an encoder.
+    fn cache(root: &Path, scope: &str, keys: &[&str]) -> Cache {
+        let chunks = keys
+            .iter()
+            .map(|key| (key.to_string(), vec![1.0]))
+            .collect();
+
+        Cache {
+            file: root.join(".cache/context").join(scope).join("m.v1.json"),
+            stored: Stored {
+                format: FORMAT,
+                identity: "m".into(),
+                chunks,
+            },
+            seen: keys.iter().map(|key| key.to_string()).collect(),
+            dirty: true,
+        }
+    }
+
+    /// Saves scopes into separate directories that never prune each other, removes legacy files, and finds the project `.gitignore`.
+    #[test]
+    fn scopes_do_not_prune_each_other_and_legacy_is_removed() {
+        let base = project("scopes");
+        let root = base.join(".cumaru");
+        fs::create_dir_all(root.join(".cache/context")).unwrap();
+        fs::write(root.join(".cache/context/old.v1.json"), "{}").unwrap();
+
+        cache(&root, "framework", &["a"]).save().unwrap();
+        cache(&root, "adopter", &["b"]).save().unwrap();
+        let mut empty = cache(&root, "adopter", &[]);
+        empty.stored.chunks.clear();
+        empty.save().unwrap();
+
+        assert!(!root.join(".cache/context/old.v1.json").exists());
+        let framework = fs::read(root.join(".cache/context/framework/m.v1.json")).unwrap();
+        let stored: Stored = serde_json::from_slice(&framework).unwrap();
+        assert!(stored.chunks.contains_key("a"));
+        assert!(root.join(".cache/context/adopter/m.v1.json").exists());
+        assert!(
+            fs::read_to_string(base.join(".gitignore"))
+                .unwrap()
+                .contains(IGNORE)
+        );
+
+        Cache::reset(&root, Some("adopter")).unwrap();
+        assert!(!root.join(".cache/context/adopter").exists());
+        assert!(root.join(".cache/context/framework").exists());
+        Cache::reset(&root, None).unwrap();
+        assert!(!root.join(".cache/context").exists());
+        fs::remove_dir_all(base).unwrap();
     }
 
     /// Adds the commented entry once and respects an adopter's commented-out line.

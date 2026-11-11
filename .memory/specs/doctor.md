@@ -13,8 +13,8 @@ version: 9
 `cumaru doctor` checks an installed adopter tree against the deterministic v9
 configuration and reports structural or metadata defects without editing it.
 
-The [native Rust doctor contract](rust.md#native-doctor) records its offline
-binary-only implementation, embedded defaults, ASCII presentation, installed
+The [native Rust doctor contract](rust.md#native-doctor) records its
+binary-only implementation, daily-cached main drift reference, ASCII presentation, installed
 workflow-skill boundary, default invocation, and verification. The Bash
 implementation below retains its separate source-snapshot contract.
 
@@ -44,7 +44,22 @@ cumaru doctor [--quiet]
    fail configuration preflight. Graph validation does not execute a skill.
 6. The remaining installed-tree checks cover indexes, summaries, discipline
    metadata, markers, file references, tools, adapter instructions, retired
-   adapter state, and configuration drift. All checks are read-only.
+   adapter state, and configuration drift. Checks never edit adopter files.
+7. The single side effect is opt-in and runs after the checks: when the report
+   passes and `meta.doctor.after.warm` is `true`
+   ([configuration](configuration.md)), doctor warms only the `adopter`
+   [context scope](../../docs/context.md#vector-cache), writing under
+   `.cumaru/.cache/` and possibly the `.gitignore` entry. A failed report, or a
+   false/absent flag, writes nothing. Any warm failure, including a missing
+   listed `meta.context.adopter` path, fails doctor; no enabled encoder is not
+   a failure. Warm progress goes to stderr; the report on stdout is unchanged.
+8. Drift compares against the domain `config.yaml` on GitHub main, read at most
+   once per UTC calendar day and written to `.cumaru/.cache/config-<date>.yaml`
+   (atomic, symlinks refused, older files deleted). Offline it uses a stale
+   matching file with a dated warning, or degrades to schema-only validation
+   with a non-failing warning. A newer reference `version` fails with a
+   `cumaru migrate` direction. Resolution order is canonical in
+   [the public doctor doc](../../docs/doctor.md#configuration-drift-reference).
 
 ## Inputs and ownership
 
@@ -52,10 +67,10 @@ cumaru doctor [--quiet]
 |---|---|---|
 | `.cumaru/config.yaml` | adopter | Effective v9 structural, metadata, and workflow contract. |
 | Installed Markdown and tag bodies | adopter/framework by explicit ownership | Inspected without mutation. |
-| Source domain defaults | framework | Compared to local config for drift reporting. |
+| Domain config on GitHub main (daily cache) | framework | Compared to local config for drift reporting. |
 
-For a valid custom domain with no matching distributed source package, doctor
-uses `domains/__base/config.yaml` only for framework-default drift. Its direct
+For a valid custom domain with no matching source on main, doctor skips drift
+with a warning and relies on schema validation. Its direct
 tree, rules, targets, and workflows remain adopter-owned, and workflow skills
 must exist in an installed supported-adapter skill tree. Distributed domains
 retain their own source-default and source-skill checks.
