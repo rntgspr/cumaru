@@ -186,6 +186,21 @@ EOF
     The status should be success
   End
 
+  It 'accepts specification_dir as a list of entity names'
+    file="$INTEGRATION_TMP/spec-dirs.yaml"; cp "$INTEGRATION_ROOT/domains/__base/config.yaml" "$file"
+    yq -i '.meta.specification_dir = ["formulae", "casks"]' "$file"
+    When call validate_config "$file" base
+    The status should be success
+  End
+
+  It 'rejects an empty, duplicated, or invalid specification_dir list'
+    When run bash -c '
+      root=$1; tmp=$2; . "$root/src/common.sh"; SCRIPT_DIR=$root; . "$root/src/agent_adapter.sh"; . "$root/src/schema.sh"
+      for value in "[]" "[specs, specs]" "[Bad]" "[1]"; do file="$tmp/spec-dirs-bad.yaml"; cp "$root/domains/__base/config.yaml" "$file"; yq -i ".meta.specification_dir = $value" "$file"; output=$(schema_validate_file "$file" base 2>&1); test $? -eq 1 && case "$output" in *"non-empty array of unique entity names"*) ;; *) exit 1;; esac || exit 1; done
+    ' _ "$INTEGRATION_ROOT" "$INTEGRATION_TMP"
+    The status should be success
+  End
+
   It 'rejects retired legacy properties in v9'
     file="$INTEGRATION_TMP/legacy-agent.yaml"; cp "$INTEGRATION_ROOT/domains/__base/config.yaml" "$file"; yq -i '.agent = "legacy-client"' "$file"
     When call validate_config "$file" base

@@ -78,12 +78,23 @@ struct Row {
 
 /// Classified coverage state ready for rendering.
 struct Buckets {
-    spec_dir: String,
+    spec_dirs: Vec<String>,
     refs: Vec<Row>,
     sources: BTreeSet<String>,
     uncovered: Vec<String>,
     foreign: usize,
     outside: usize,
+}
+
+impl Buckets {
+    /// Lists every specification pillar as `.cumaru/<dir>/`, comma-separated.
+    fn hosts_label(&self) -> String {
+        self.spec_dirs
+            .iter()
+            .map(|dir| format!(".cumaru/{dir}/"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
 }
 
 /// Runs `cumaru coverage`, printing the projection only after every input was read.
@@ -136,11 +147,13 @@ fn execute(cumaru: &Path) -> Result<(Buckets, Vec<String>), String> {
     }
     let config = config::load(cumaru)?;
 
-    let spec_dir = specification_dir(&config)?;
-    if !cumaru.join(&spec_dir).is_dir() {
-        return Err(format!(
-            ".cumaru/{spec_dir}/ not found; set meta.specification_dir in .cumaru/config.yaml to the pillar that holds the durable specification (default: specs)"
-        ));
+    let spec_dirs = specification_dirs(&config)?;
+    for spec_dir in &spec_dirs {
+        if !cumaru.join(spec_dir).is_dir() {
+            return Err(format!(
+                ".cumaru/{spec_dir}/ not found; set meta.specification_dir in .cumaru/config.yaml to the pillar or pillars that hold the durable specification (default: specs)"
+            ));
+        }
     }
 
     let project = cumaru
@@ -154,18 +167,32 @@ fn execute(cumaru: &Path) -> Result<(Buckets, Vec<String>), String> {
         fs::canonicalize(cumaru).map_err(|error| format!("cannot resolve .cumaru: {error}"))?;
     let (rows, defects) = reference_rows(&root)?;
 
-    Ok((classify(&spec_dir, sources, rows), defects))
+    Ok((classify(&spec_dirs, sources, rows), defects))
 }
 
-/// Reads `meta.specification_dir`, resolving a v9 logical directory through its configured physical path.
-fn specification_dir(config: &Yaml) -> Result<String, String> {
-    let declared = config["meta"]["specification_dir"].as_str().unwrap_or("");
+/// Reads `meta.specification_dir` (one name or a list), resolving each v9 logical directory through its configured physical path.
+fn specification_dirs(config: &Yaml) -> Result<Vec<String>, String> {
+    let value = &config["meta"]["specification_dir"];
+    let declared: Vec<&str> = match value.as_vec() {
+        Some(list) => list.iter().filter_map(Yaml::as_str).collect(),
+        None => value.as_str().into_iter().collect(),
+    };
+    let declared: Vec<&str> = declared
+        .into_iter()
+        .filter(|name| !name.is_empty())
+        .collect();
     if declared.is_empty() {
-        return Ok(DEFAULT_SPEC_DIR.into());
+        return Ok(vec![DEFAULT_SPEC_DIR.into()]);
     }
-    config_tree::directory_path(config, declared)?.ok_or_else(|| {
-        format!("meta.specification_dir '{declared}' is not a configured literal directory")
-    })
+
+    declared
+        .into_iter()
+        .map(|name| {
+            config_tree::directory_path(config, name)?.ok_or_else(|| {
+                format!("meta.specification_dir '{name}' is not a configured literal directory")
+            })
+        })
+        .collect()
 }
 
 /// Reads `meta.coverage.source` as Bash-style patterns where `*` crosses `/`.
@@ -317,12 +344,12 @@ fn reference_cells(text: &str) -> Result<Vec<(String, String, String)>, String> 
         .collect())
 }
 
-/// Keeps rows hosted under the specification pillar and derives uncovered and foreign sets.
-fn classify(spec_dir: &str, sources: BTreeSet<String>, rows: Vec<Row>) -> Buckets {
-    let prefix = format!("{spec_dir}/");
+/// Keeps rows hosted under any specification pillar and derives uncovered and foreign sets.
+fn classify(spec_dirs: &[String], sources: BTreeSet<String>, rows: Vec<Row>) -> Buckets {
+    let prefixes: Vec<String> = spec_dirs.iter().map(|dir| format!("{dir}/")).collect();
     let (refs, outside): (Vec<Row>, Vec<Row>) = rows
         .into_iter()
-        .partition(|row| row.host.starts_with(&prefix));
+        .partition(|row| prefixes.iter().any(|prefix| row.host.starts_with(prefix)));
 
     let covered: BTreeSet<&str> = refs
         .iter()
@@ -340,7 +367,7 @@ fn classify(spec_dir: &str, sources: BTreeSet<String>, rows: Vec<Row>) -> Bucket
         .count();
 
     Buckets {
-        spec_dir: spec_dir.into(),
+        spec_dirs: spec_dirs.to_vec(),
         refs,
         sources,
         uncovered,
@@ -388,7 +415,7 @@ fn render(mode: Mode, b: &Buckets) -> String {
             }
         }
         Mode::Refs if b.refs.is_empty() => {
-            let _ = writeln!(out, "No reference rows found under .cumaru/{}/", b.spec_dir);
+            let _ = writeln!(out, "No reference rows found under {}", b.hosts_label());
         }
         Mode::Refs => {
             let mut current = "";
@@ -423,8 +450,8 @@ fn report(out: &mut Vec<u8>, b: &Buckets, stale: &[&Row], invalid: &[&Row]) {
 
     let _ = writeln!(
         out,
-        "Specification coverage — .cumaru/{}/ ↔ repository source\n",
-        b.spec_dir
+        "Specification coverage — {} ↔ repository source\n",
+        b.hosts_label()
     );
     let _ = writeln!(
         out,
@@ -485,8 +512,13 @@ fn report(out: &mut Vec<u8>, b: &Buckets, stale: &[&Row], invalid: &[&Row]) {
     if b.outside > 0 {
         let _ = writeln!(
             out,
-            "[note]      {} reference row(s) hosted outside {}/ ignored",
-            b.outside, b.spec_dir
+            "[note]      {} reference row(s) hosted outside {} ignored",
+            b.outside,
+            b.spec_dirs
+                .iter()
+                .map(|dir| format!("{dir}/"))
+                .collect::<Vec<_>>()
+                .join(", ")
         );
     }
 
@@ -688,27 +720,72 @@ mod tests {
         );
     }
 
-    /// Defaults to specs, keeps v8 values, and maps v9 logical directories through path overrides.
+    /// Defaults to specs, keeps v8 values, maps v9 logical directories through path overrides, and accepts a list.
     #[test]
-    fn resolves_specification_dir() {
+    fn resolves_specification_dirs() {
         let load = |text: &str| YamlLoader::load_from_str(text).unwrap().remove(0);
 
         assert_eq!(
-            specification_dir(&load("version: 9\nmeta: {}\n")).unwrap(),
-            "specs"
+            specification_dirs(&load("version: 9\nmeta: {}\n")).unwrap(),
+            vec!["specs"]
         );
         assert_eq!(
-            specification_dir(&load(
+            specification_dirs(&load(
                 "version: 9\nroot: {specs: {path: durable/specs}}\nmeta: {specification_dir: specs}\n"
             ))
             .unwrap(),
-            "durable/specs"
+            vec!["durable/specs"]
         );
         assert!(
-            specification_dir(&load(
+            specification_dirs(&load(
                 "version: 9\nroot: {}\nmeta: {specification_dir: specs}\n"
             ))
             .is_err()
+        );
+
+        assert_eq!(
+            specification_dirs(&load(
+                "version: 9\nroot: {formulae: {}, casks: {path: apps}}\nmeta: {specification_dir: [formulae, casks]}\n"
+            ))
+            .unwrap(),
+            vec!["formulae", "apps"]
+        );
+        assert!(
+            specification_dirs(&load(
+                "version: 9\nroot: {formulae: {}}\nmeta: {specification_dir: [formulae, casks]}\n"
+            ))
+            .is_err()
+        );
+    }
+
+    /// Counts rows hosted under every listed pillar and labels them all in the report.
+    #[test]
+    fn classifies_rows_across_several_specification_dirs() {
+        let sources = BTreeSet::from([
+            "Formula/a.rb".into(),
+            "Casks/b.rb".into(),
+            "Casks/c.rb".into(),
+        ]);
+        let rows = vec![
+            row("formulae/a/index.md", "Formula/a.rb", Status::Ok),
+            row("casks/b/index.md", "Casks/b.rb", Status::Ok),
+            row("release/bump.md", "Casks/c.rb", Status::Ok),
+        ];
+        let buckets = classify(&["formulae".into(), "casks".into()], sources, rows);
+
+        assert_eq!(render(Mode::Gaps, &buckets), "Casks/c.rb\n");
+        let report = render(Mode::Report, &buckets);
+        assert!(
+            report.starts_with(
+                "Specification coverage — .cumaru/formulae/, .cumaru/casks/ ↔ repository source\n"
+            ),
+            "{report}"
+        );
+        assert!(
+            report.contains(
+                "[note]      1 reference row(s) hosted outside formulae/, casks/ ignored"
+            ),
+            "{report}"
         );
     }
 
@@ -724,7 +801,7 @@ mod tests {
             row(host, ".cumaru/index.md", Status::Invalid),
             row("domain.md", "src/covered.ts", Status::Ok),
         ];
-        let buckets = classify("specs", sources, rows);
+        let buckets = classify(&["specs".into()], sources, rows);
 
         assert_eq!(
             render(Mode::Rows, &buckets),

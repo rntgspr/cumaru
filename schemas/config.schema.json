@@ -50,7 +50,7 @@
       "type": "object", "required": ["targets"],
       "properties": {
         "targets": {"$ref": "#/$defs/targets"},
-        "specification_dir": {"$ref": "#/$defs/name", "x-cumaru-ownership": "adopter"},
+        "specification_dir": {"oneOf": [{"$ref": "#/$defs/name"}, {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/name"}}], "x-cumaru-ownership": "adopter"},
         "coverage": {"type": "object", "required": ["source"], "properties": {"source": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}, "additionalProperties": false},
         "context": {"$ref": "#/$defs/context"},
         "doctor": {"type": "object", "properties": {"after": {"type": "object", "properties": {"warm": {"type": "boolean", "x-cumaru-ownership": "adopter"}}, "additionalProperties": false}}, "additionalProperties": false}

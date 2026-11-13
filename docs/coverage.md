@@ -46,7 +46,7 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 
 | Attribute | Default | Description |
 |---|---|---|
-| `specification_dir` | `specs` | Which pillar holds the durable specification whose `reference` tables count. Domains ship it preset: `specs` (sdlc), `topology` (iac-basic), `coverage` (qa-basic). |
+| `specification_dir` | `specs` | Which pillar, or list of pillars, holds the durable specification whose `reference` tables count. A list counts rows hosted under any of them. Domains ship it preset: `specs` (sdlc), `topology` (iac-basic), `coverage` (qa-basic), `[formulae, casks]` (homebrew-management). |
 | `coverage.source` | `[]` (everything) | Array of fnmatch-style globs narrowing which tracked files count as coverable source (`*` crosses `/`, so `src/**` ≡ `src/*`). Supports both block and inline YAML list forms. `.cumaru/` and native agent adapter files are always excluded. |
 
 The `.codex/` directory is currently not excluded; tracked files there remain

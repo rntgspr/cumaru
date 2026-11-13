@@ -35,7 +35,10 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 2. Reference targets are project-root-relative repository source files, never
    `.cumaru/` paths, directories, absolute paths, URLs, or anchors.
 3. Only reference rows hosted below `meta.specification_dir` count; template
-   and empty rows are skipped before host filtering.
+   and empty rows are skipped before host filtering. The value is one pillar
+   name or a non-empty list of unique names; a list counts rows hosted below
+   any of them, and every listed pillar must resolve to an existing configured
+   directory. Accepting a list was additive: no `version` change or snapshot.
 4. `--strict` fails only when uncovered, stale, or invalid entries exist;
    foreign entries are informational.
 

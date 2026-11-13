@@ -88,7 +88,14 @@ def validate_meta($value):
   if ($value | type) != "object" then err(["meta"]; "must be an object")
   else unknown($value; ["targets", "specification_dir", "coverage", "context", "doctor"]; ["meta"]),
     if ($value.targets? | type) != "object" or ($value.targets.values? | strings | not) or ($value.targets.values | length) == 0 or (($value.targets.values | unique | length) != ($value.targets.values | length)) then err(["meta", "targets", "values"]; "must be a non-empty array of unique strings") else unknown($value.targets; ["values"]; ["meta", "targets"]) end,
-    if $value.specification_dir? != null and ($value.specification_dir | name | not) then err(["meta", "specification_dir"]; "invalid entity name") else empty end,
+    if $value.specification_dir? != null and (
+      ($value.specification_dir | type) as $kind
+      | if $kind == "string" then ($value.specification_dir | name | not)
+        elif $kind == "array" then (($value.specification_dir | length) == 0
+          or any($value.specification_dir[]; (type != "string") or (name | not))
+          or (($value.specification_dir | unique | length) != ($value.specification_dir | length)))
+        else true end
+    ) then err(["meta", "specification_dir"]; "must be an entity name or a non-empty array of unique entity names") else empty end,
     if $value.coverage? != null then if ($value.coverage | type) != "object" or ($value.coverage.source? | strings | not) then err(["meta", "coverage", "source"]; "must be an array of strings") else unknown($value.coverage; ["source"]; ["meta", "coverage"]) end else empty end,
     if $value.context? != null then validate_context($value.context) else empty end,
     if $value.doctor? != null then validate_doctor($value.doctor) else empty end
