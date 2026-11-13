@@ -42,7 +42,14 @@ defaults: each `domains/<domain>/config.yaml`):
 |---|---|---|
 | `framework` | `.cumaru/` | Visible `.md` files; framework-owned material such as `domain.md`, `disciplines`, `roles`, `templates`. |
 | `adopter` | `.cumaru/` | Visible `.md` files; pillars that grow with adopter content such as `specs`, `plans`. |
-| `source` | project root | Every visible UTF-8 text file up to 1 MiB; binary, non-UTF-8, and larger files are skipped silently. `.gitignore` is not honored. |
+| `source` | project root | Every visible UTF-8 text file up to 1 MiB; binary, non-UTF-8, and larger files are skipped silently. `.gitignore` is not honored. Entries may be globs (see below). |
+
+A literal `source` directory is indexed recursively. A `source` entry may also
+be a gitignore-style glob to filter by name or extension: `*` and `?` stay
+within one path segment and `**/` spans zero or more directories, so
+`app/src/**/*.ts` selects every `.ts` file under `app/src` at any depth. The
+glob walks from its literal prefix (`app/src`); a missing prefix is diagnosed
+like a missing path, while a glob that matches no file is not.
 
 A `.cumaru/` file covered by both lists belongs to the longest (most specific)
 entry; one covered by neither is not indexed. Absolute paths, `..` segments, and

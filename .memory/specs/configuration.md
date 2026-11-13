@@ -76,8 +76,10 @@ cumaru update config [--from <source>]
    prerequisite succeeds. Configuration validity does not imply execution.
 12. Optional `meta.context.{framework,adopter,source}` arrays are adopter-owned
    file or directory paths that select [context scopes](../../docs/context.md#scopes).
-   Absolute paths and `..` segments are invalid; adding the key was additive and
-   did not change `version` or create a schema snapshot.
+   `source` entries may also be gitignore-style globs (`**/` spans directories,
+   `*` stays in one segment). Absolute paths and `..` segments are invalid; adding
+   the key and its source globs was additive and did not change `version` or
+   create a schema snapshot.
 13. Optional `meta.doctor.after.warm` is an adopter-owned boolean (domains ship
    `false`) enabling doctor's post-check adopter cache warm
    ([doctor](doctor.md)). It is additive: no `version` change or snapshot.

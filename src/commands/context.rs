@@ -444,14 +444,41 @@ fn inventory(
     if let Some(plan) = plan.filter(|_| selected(Scope::Source)) {
         let project = root.parent().ok_or(".cumaru/ has no parent directory")?;
         let mut targets = Vec::new();
+        let mut literals = Vec::new();
+        let mut patterns = Vec::new();
         for entry in &plan.source {
-            let target = project.join(entry);
-            if fs::symlink_metadata(&target).is_ok() {
-                targets.push(target);
-            } else {
-                diagnostics.push(missing(Scope::Source, entry));
+            let (base, pattern) = match glob_base(entry) {
+                Some(base) => {
+                    let pattern = glob::Pattern::new(entry).map_err(|error| {
+                        format!(
+                            "invalid .cumaru/config.yaml: meta.context.source glob {}: {error}",
+                            crate::text::shell_quote(entry)
+                        )
+                    })?;
+                    (base, Some(pattern))
+                }
+                None => (entry.as_str(), None),
+            };
+
+            let target = project.join(base);
+            if fs::symlink_metadata(&target).is_err() {
+                diagnostics.push(missing(Scope::Source, base));
+                continue;
             }
+
+            match pattern {
+                Some(pattern) => patterns.push(pattern),
+                None => literals.push(target.clone()),
+            }
+            targets.push(target);
         }
+
+        // Gitignore-style matching: `*` stays within one segment, `**/` spans zero or more directories.
+        let options = glob::MatchOptions {
+            case_sensitive: true,
+            require_literal_separator: true,
+            require_literal_leading_dot: true,
+        };
 
         let mut seen = HashSet::new();
         let defects = Walk {
@@ -472,6 +499,16 @@ fn inventory(
                     .map_err(|e| e.to_string())?
                     .to_string_lossy()
                     .into_owned();
+                let wanted = literals
+                    .iter()
+                    .any(|literal| found.path.starts_with(literal))
+                    || patterns
+                        .iter()
+                        .any(|pattern| pattern.matches_with(&rel, options));
+                if !wanted {
+                    return Ok(());
+                }
+
                 hosts.push((Scope::Source, format!("./{rel}"), found.path.to_path_buf()));
 
                 Ok(())
@@ -481,6 +518,16 @@ fn inventory(
     }
 
     Ok(hosts)
+}
+
+/// Returns the literal directory prefix of a glob `entry` (segments before the first wildcard), or `None` when it has no wildcard.
+fn glob_base(entry: &str) -> Option<&str> {
+    let wildcard = entry.find(['*', '?', '['])?;
+    Some(
+        entry[..wildcard]
+            .rfind('/')
+            .map_or("", |slash| &entry[..slash]),
+    )
 }
 
 /// Formats the diagnostic for a listed `meta.context` path that does not exist.
@@ -704,6 +751,110 @@ mod tests {
         hosts.sort();
 
         (hosts, diagnostics)
+    }
+
+    /// Filters source files through gitignore-style globs rooted at their literal prefix, diagnosing only a missing prefix.
+    #[test]
+    fn source_globs_filter_by_extension_across_subdirectories() {
+        let root = fixture("globs");
+        fs::create_dir_all(root.join("project")).unwrap();
+        fs::create_dir_all(root.join("app/src/deep/er")).unwrap();
+        fs::write(root.join("app/src/a.ts"), "a").unwrap();
+        fs::write(root.join("app/src/deep/er/b.ts"), "b").unwrap();
+        fs::write(root.join("app/src/deep/c.md"), "c").unwrap();
+        fs::write(root.join("app/top.ts"), "t").unwrap();
+        configure(
+            &root,
+            "{source: ['app/src/**/*.ts', 'app/*.md', 'nope/**/*.rs']}",
+        );
+
+        let (hosts, diagnostics) = listed(&root, None);
+        assert_eq!(
+            hosts,
+            vec![
+                ("source", "./app/src/a.ts".to_string()),
+                ("source", "./app/src/deep/er/b.ts".to_string()),
+            ]
+        );
+        assert_eq!(
+            diagnostics,
+            vec!["meta.context.source: nope: listed path does not exist".to_string()]
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    /// Splits a glob entry at the last `/` before its first wildcard; literal entries yield `None`.
+    #[test]
+    fn glob_base_returns_the_literal_directory_prefix() {
+        assert_eq!(glob_base("app/src"), None);
+        assert_eq!(glob_base("app/src/**/*.ts"), Some("app/src"));
+        assert_eq!(glob_base("app/src/*.ts"), Some("app/src"));
+        assert_eq!(glob_base("app/fi?e.ts"), Some("app"));
+        assert_eq!(glob_base("app/[ab].ts"), Some("app"));
+        assert_eq!(glob_base("app/src*/x.ts"), Some("app"));
+        assert_eq!(glob_base("**/*.ts"), Some(""));
+        assert_eq!(glob_base("*.ts"), Some(""));
+    }
+
+    /// Root-level globs skip hidden trees, `?`/`[]` match one segment character, and literal/glob overlaps are indexed once.
+    #[test]
+    fn source_globs_from_the_project_root_deduplicate_and_skip_hidden() {
+        let root = fixture("root-globs");
+        fs::create_dir_all(root.join("lib/nested")).unwrap();
+        fs::create_dir_all(root.join(".secret")).unwrap();
+        fs::write(root.join("top.ts"), "t").unwrap();
+        fs::write(root.join("lib/a.ts"), "a").unwrap();
+        fs::write(root.join("lib/b1.rs"), "b").unwrap();
+        fs::write(root.join("lib/b22.rs"), "b").unwrap();
+        fs::write(root.join("lib/nested/c.ts"), "c").unwrap();
+        fs::write(root.join(".secret/d.ts"), "d").unwrap();
+        configure(
+            &root,
+            "{source: ['**/*.ts', 'lib', 'lib/b?.rs', 'lib/[xa].ts']}",
+        );
+
+        let (hosts, diagnostics) = listed(&root, None);
+        assert_eq!(
+            hosts,
+            vec![
+                ("source", "./lib/a.ts".to_string()),
+                ("source", "./lib/b1.rs".to_string()),
+                ("source", "./lib/b22.rs".to_string()),
+                ("source", "./lib/nested/c.ts".to_string()),
+                ("source", "./top.ts".to_string()),
+            ]
+        );
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+
+        configure(&root, "{source: ['lib/b?.rs', 'lib/*.ts']}");
+        let (hosts, _) = listed(&root, None);
+        assert_eq!(
+            hosts,
+            vec![
+                ("source", "./lib/a.ts".to_string()),
+                ("source", "./lib/b1.rs".to_string()),
+            ]
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    /// A malformed source glob is a configuration error, not a silent skip.
+    #[test]
+    fn rejects_malformed_source_globs() {
+        let root = fixture("bad-glob");
+        fs::create_dir_all(root.join("lib")).unwrap();
+        configure(&root, "{source: ['lib/[.ts']}");
+
+        let project = fs::canonicalize(root.join("project")).unwrap();
+        let plan = resolve(&project).unwrap();
+        let Err(error) = inventory(&project, plan.as_ref(), None, &mut Vec::new()) else {
+            panic!("malformed glob must fail");
+        };
+        assert!(
+            error.contains("meta.context.source glob lib/\\[.ts: Pattern syntax error"),
+            "{error}"
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 
     /// Classifies by the longest covering entry, skips uncovered/hidden/binary-size files, prefixes source rows, and filters by scope.

@@ -38,6 +38,13 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 6. Context's scales remain experimental and backend-specific. Known weak paraphrases
    in fallback and positive encoder similarities for irrelevant content are not
    represented as calibrated semantic quality. BM25 remains an experiment only.
+7. `source` entries are literal paths (directories indexed recursively) or
+   gitignore-style globs walked from their literal prefix: `*`, `?`, and `[]` stay
+   within one segment, `**/` spans zero or more directories, and hidden entries
+   never match. A missing prefix is diagnosed like a missing path; an empty match
+   is silent; a malformed glob is a configuration error. Overlapping entries index
+   each file once. `framework` and `adopter` entries stay literal
+   ([`docs/context.md`](../../docs/context.md#scopes)).
 
 ## Implementation map
 
@@ -47,7 +54,7 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 | `src/models.rs` | Closed catalog, cache safety, integrity/publication, offline encoder loading and token-aware inference. |
 | `src/vectors.rs` | Per-scope token-ID-addressed chunk vector cache, stale/legacy-file cleanup, and its `.gitignore` entry. |
 | `models/catalog.json` | Initial pinned BGE package metadata and compatibility inventory. |
-| `src/commands/context.rs` | `meta.context` scope resolution and path validation, safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
+| `src/commands/context.rs` | `meta.context` scope resolution, path validation and source glob filtering, safe host inventory, backend choice, diagnostics, sorting, and TSV emission. |
 | `src/relevance.rs` | Dependency-free lexical features and compact numerical head. |
 | `src/distribution.rs` | Existing bounded cURL download shared by catalog/package reads. |
 | `src/walk.rs`, `tsv.rs` | Existing guarded traversal and TSV output. |
