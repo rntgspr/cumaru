@@ -83,6 +83,7 @@ starts may leave a partial installation.
 - **`qa-basic`** — test-strategy & coverage workflow: durable `coverage/` + `standards/` pillars alongside the lifecycle pillars; `targets:` enumerates test levels; ships five domain-specific skills (`cumaru-intake`, `cumaru-explore`, `cumaru-plan`, `cumaru-coverage`, `cumaru-absorb`).
 - **`vault-memory`** — personal/team memory-vault workflow: transient `inbox/`, rough `drafts/`, durable graph-shaped `memories/`, and retained `attachments/`; ships four domain-specific skills (`cumaru-capture`, `cumaru-draft`, `cumaru-distill`, `cumaru-link`).
 - **`focus`** — directive-driven triage workflow: `directives/` declare priority scope, `threads/` retain source context with a dated state history and yearly archival, and `outcomes/` group results by adopter-declared area with cumulative value/work/policy views, and `sources/` describe read-only access to each data source; single Admin role; ships five domain-specific skills (`cumaru-directives`, `cumaru-sources`, `cumaru-thread`, `cumaru-outcome`, `cumaru-zoom`). Intake is declared per source in `sources/`; adopter intake policy stays in the `root` tag.
+- **`homebrew-management`** — one Homebrew tap: durable `formulae/` and `casks/` pillars with one entity per `Formula/<name>.rb` or `Casks/<token>.rb`, each tied to the real Ruby by `reference` rows that `cumaru coverage` checks; a `release/` pillar with the shipped bump procedure; the `package-change` verification discipline; single Admin role; no domain-specific skills.
 
 A domain is discoverable once `domains/<name>/config.yaml` exists on `main`;
 `help domains` uses the H1 of its `domain.md` as the one-line summary.
@@ -173,6 +174,7 @@ cumaru install --domain sdlc-full                # explicit domain
 cumaru install agent claude --domain iac-basic   # explicit adapter and domain
 cumaru install --domain vault-memory             # memory vault domain
 cumaru install --domain focus                    # directive-driven threads and outcomes
+cumaru install --domain homebrew-management      # Homebrew tap formulae and casks
 cumaru update skills claude --with git --apply   # opt-in skill, after adoption
 ```
 

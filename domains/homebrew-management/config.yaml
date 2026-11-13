@@ -1,0 +1,21 @@
+version: 9
+domain: homebrew-management
+rules:
+  markdown: {required_heading: h1, frontmatter: {human_revised: {}, summary: {}}}
+  index_md: {frontmatter: {targets: {}}}
+  pillar_index: {frontmatter: {targets: {}, summary: {}}}
+root:
+  framework: true
+  frontmatter: {depends-on: {optional: true}}
+  domain.md: {framework: true, tags: [components, root]}
+  disciplines: {framework: true, "*.md": {framework: true}}
+  roles: {framework: true, "*.md": {framework: true}}
+  templates:
+    framework: true
+    formula.md: {framework: true, tags: [reference]}
+    cask.md: {framework: true, tags: [reference]}
+    "*.md": {framework: true}
+  formulae: {framework: true, "*": {frontmatter: {name: {}, summary: {}, targets: {}, upstream: {}, visibility: {}}}}
+  casks: {framework: true, "*": {frontmatter: {name: {}, summary: {}, targets: {}, upstream: {}, visibility: {}}}}
+  release: {framework: true, bump.md: {framework: true}, "*.md": {}}
+meta: {targets: {values: [platform, meta]}, specification_dir: [formulae, casks], coverage: {source: ["Formula/*.rb", "Casks/*.rb"]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [formulae, casks, release], source: []}, doctor: {after: {warm: false}}}

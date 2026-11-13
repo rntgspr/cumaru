@@ -20,7 +20,7 @@ Describe 'cumaru-flow workflow orchestrator skill'
 
     The path "$canonical_skill" should be file
     The path "$canonical_launcher" should be file
-    for domain in design-as-code iac-basic qa-basic sdlc-full sdlc-light vault-memory; do
+    for domain in design-as-code iac-basic qa-basic sdlc-full sdlc-light vault-memory homebrew-management; do
       The value "$(files_equal "$canonical_skill" "$CONTRACT_ROOT/domains/$domain/skills/cumaru-flow/SKILL.md"; printf '%s' $?)" should equal 0
       The value "$(files_equal "$canonical_launcher" "$CONTRACT_ROOT/domains/$domain/commands/cumaru/flow.md"; printf '%s' $?)" should equal 0
     done

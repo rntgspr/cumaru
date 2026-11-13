@@ -28,7 +28,7 @@ cumaru help domains
 cumaru install [agent <none|claude|codex|opencode>]
                [--domain <name>] [--with <skill>...]
 domains/__base/
-domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,focus}/
+domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,focus,homebrew-management}/
 ```
 
 ## Invariants
@@ -109,6 +109,16 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
     compaction; `cumaru-thread` and `cumaru-sources` apply it, and the focus
     `cumaru-doctor` skill adds a semantic review of what `cumaru doctor`
     cannot check structurally.
+17. `homebrew-management` models one Homebrew tap. `formulae/<name>/` and
+    `casks/<token>/` are durable entities created from `templates/formula.md`
+    and `templates/cask.md`; each records what the Ruby does not say, never a
+    version or checksum, and points at its `Formula/<name>.rb` or
+    `Casks/<token>.rb` through `reference` rows. `meta.specification_dir` lists
+    both pillars so `cumaru coverage` checks every package file. The shipped
+    `release/bump.md` is a procedure document, not orchestration: the domain
+    ships no bump skill or command, consistent with invariant 9. The
+    `package-change` discipline gates every `.rb` change on downloaded-artifact
+    checksums and tap-clone audit, install, and test.
 
 ## Inputs and ownership
 

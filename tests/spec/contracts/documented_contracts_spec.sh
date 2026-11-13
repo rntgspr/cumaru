@@ -245,7 +245,7 @@ Describe 'documented CLI contracts'
 
   It 'ships one canonical update skill in every domain'
     canonical="$CONTRACT_ROOT/domains/__base/skills/cumaru-update/SKILL.md"
-    for domain in iac-basic qa-basic sdlc-full sdlc-light vault-memory; do
+    for domain in iac-basic qa-basic sdlc-full sdlc-light vault-memory homebrew-management; do
       The value "$(files_equal "$canonical" "$CONTRACT_ROOT/domains/$domain/skills/cumaru-update/SKILL.md"; printf '%s' $?)" should equal 0
     done
   End
@@ -261,7 +261,7 @@ Describe 'documented CLI contracts'
     The contents of file "$canonical" should include 'cumaru doctor'
     The contents of file "$canonical" should include 'cumaru update'
     The contents of file "$canonical" should include 'cumaru migrate'
-    for domain in iac-basic qa-basic sdlc-full sdlc-light vault-memory; do
+    for domain in iac-basic qa-basic sdlc-full sdlc-light vault-memory homebrew-management; do
       The value "$(files_equal "$canonical" "$CONTRACT_ROOT/domains/$domain/disciplines/cumaru-first.md"; printf '%s' $?)" should equal 0
       The contents of file "$CONTRACT_ROOT/domains/$domain/domain.md" should include '| cumaru-first |'
     done
@@ -277,7 +277,7 @@ Describe 'documented CLI contracts'
       The value "$(files_equal "$canonical" "$CONTRACT_ROOT/domains/$domain/disciplines/code-comments.md"; printf '%s' $?)" should equal 0
       The contents of file "$CONTRACT_ROOT/domains/$domain/domain.md" should include '| code-comments | code or related artifacts are written, edited, reviewed, refactored, or documented'
     done
-    for domain in __base design-as-code focus vault-memory; do
+    for domain in __base design-as-code focus vault-memory homebrew-management; do
       The path "$CONTRACT_ROOT/domains/$domain/disciplines/code-comments.md" should not be exist
       The contents of file "$CONTRACT_ROOT/domains/$domain/domain.md" should not include '| code-comments |'
     done
@@ -328,7 +328,7 @@ Describe 'documented CLI contracts'
   End
 
   It 'documents eager discipline delivery without a selective-loading path'
-    for domain in __base design-as-code iac-basic qa-basic sdlc-full sdlc-light vault-memory; do
+    for domain in __base design-as-code iac-basic qa-basic sdlc-full sdlc-light vault-memory homebrew-management; do
       index="$CONTRACT_ROOT/domains/$domain/disciplines/index.md"
       The contents of file "$index" should include 'eager delivery does not mean universal application'
       The contents of file "$index" should include 'Strictness | Required consideration'

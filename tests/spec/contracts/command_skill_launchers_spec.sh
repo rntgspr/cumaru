@@ -40,7 +40,7 @@ Describe 'slash command skill launchers'
   It 'keeps role as a universal mirrored skill'
     canonical="$CONTRACT_ROOT/domains/__base/skills/cumaru-role/SKILL.md"
     The path "$canonical" should be file
-    for domain in design-as-code iac-basic qa-basic sdlc-full sdlc-light vault-memory; do
+    for domain in design-as-code iac-basic qa-basic sdlc-full sdlc-light vault-memory homebrew-management; do
       The value "$(files_equal "$canonical" "$CONTRACT_ROOT/domains/$domain/skills/cumaru-role/SKILL.md"; printf '%s' $?)" should equal 0
     done
   End

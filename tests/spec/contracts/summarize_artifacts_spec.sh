@@ -10,7 +10,7 @@ Describe 'cumaru-summarize artifacts'
   End
 
   It 'keeps the skill and command byte-identical in every domain'
-    for domain in iac-basic qa-basic sdlc-full sdlc-light vault-memory; do
+    for domain in iac-basic qa-basic sdlc-full sdlc-light vault-memory homebrew-management; do
       The path "$CONTRACT_ROOT/domains/$domain/skills/cumaru-summarize/SKILL.md" should be file
       The path "$CONTRACT_ROOT/domains/$domain/commands/cumaru/summarize.md" should be file
       The value "$(files_equal "$SKILL" "$CONTRACT_ROOT/domains/$domain/skills/cumaru-summarize/SKILL.md"; printf '%s' $?)" should equal 0
