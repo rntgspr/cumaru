@@ -8,7 +8,7 @@ summary: Defines where to plan posts and how to identify them by creator prefix 
 
 Plan each post in its own directory under `.cumaru/posts/`. Keep the plan in that directory's `index.md` and place supporting planning documents alongside it.
 
-Name the directory after the post ID, such as `CRE-1234`. Use the three uppercase letters from the [creator's profile](../creator/index.md), a hyphen, and the four-digit post number. The post number is unique within that creator's prefix.
+Name the directory after the post ID, such as `CRE-1234`. Use the `post-prefix` from the [creator's profile](../creator/index.md), a hyphen, and the four-digit post number. The post number is unique within that creator's prefix.
 
 ## Post standard
 

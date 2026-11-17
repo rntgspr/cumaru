@@ -122,8 +122,8 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
 18. `ai-ccn` models one Content Creator Network of AI characters and agents.
     `constitution.md` ships as starter governance text and is adopter-owned,
     so update never replaces it. `creator/<creator_slug>/` holds one profile
-    from `templates/creator.md` with a unique three-letter uppercase post
-    prefix; `posts/` declares the entry selector `<PREFIX>-<four digits>` for
+    from `templates/creator.md`; doctor requires its `slug` and `post-prefix`
+    frontmatter, the latter a unique three-letter uppercase post prefix; `posts/` declares the entry selector `<PREFIX>-<four digits>` for
     plans from `templates/post.md`. Doctor does not reject an entry outside
     that selector, so the ID convention is prose-enforced. Creator media lives outside `.cumaru/` in
     `assets/<creator_slug>/`. The domain ships no domain-specific skill,

@@ -12,6 +12,6 @@ root:
   roles: {framework: true, "*.md": {framework: true}}
   templates: {framework: true, "*.md": {framework: true}}
   constitution.md: {}
-  creator: {framework: true, "*": {}}
+  creator: {framework: true, "*": {frontmatter: {slug: {}, post-prefix: {}}}}
   posts: {framework: true, "[A-Z][A-Z][A-Z]-[0-9][0-9][0-9][0-9]": {}}
 meta: {targets: {values: [platform, meta]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [constitution.md, creator, posts], source: []}, doctor: {after: {warm: false}}}

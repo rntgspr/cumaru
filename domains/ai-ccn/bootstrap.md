@@ -19,7 +19,8 @@ and `templates/` stay as shipped.
 3. **Creators.** Ask which creators the network has. For each one, ask the
    slug and a unique three-letter uppercase post prefix, then create
    `creator/<creator_slug>/index.md` from `templates/creator.md` with
-   `cumaru fs`. Fill each characteristic from the user's answers; mark one
+   `cumaru fs`. Write both in the profile frontmatter as `slug` and
+   `post-prefix`. Fill each characteristic from the user's answers; mark one
    that does not apply and give the reason.
 4. **Assets.** Propose one `assets/<creator_slug>/` directory per confirmed
    creator at the repository root, outside `.cumaru/`, under the same slug.

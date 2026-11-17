@@ -2,14 +2,13 @@
 human_revised: false
 targets: [meta]
 summary: Template for defining a creator's identity, voice, visual style, and editorial boundaries.
+slug: <creator_slug, equal to the directory name>
+post-prefix: <CRE, three unique uppercase letters>
 ---
 
 # <Creator public name>
 
 > Follow the [creator index](../creator/index.md) for slug and prefix rules. In the new spec, replace `summary` with one sentence describing the creator's persona and niche. Remove this note.
-
-- **Slug** — `<creator_slug>`.
-- **Post prefix** — `<CRE>`.
 
 ## Characteristics
 

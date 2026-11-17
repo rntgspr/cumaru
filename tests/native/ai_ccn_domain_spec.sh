@@ -14,12 +14,11 @@ Describe 'native ai-ccn domain'
 human_revised: false
 targets: [platform]
 summary: Fixture creator who explains personal finance to first-time investors.
+slug: ada
+post-prefix: ADA
 ---
 
 # Ada
-
-- **Slug** — `ada`.
-- **Post prefix** — `ADA`.
 
 ## Characteristics
 ENTITY
@@ -64,5 +63,16 @@ ENTITY
     When call cli doctor
     The output should include '0 error(s)'
     The error should be blank
+  End
+
+  It 'reports a creator profile without its post prefix'
+    cli install --domain ai-ccn >/dev/null
+    ai_ccn_entities
+    sed -i.bak '/^post-prefix:/d' "$PROJECT/.cumaru/creator/ada/index.md"
+    rm "$PROJECT/.cumaru/creator/ada/index.md.bak"
+    When call cli doctor
+    The status should be failure
+    The output should include 'post-prefix'
+    The output should include '1 error(s)'
   End
 End

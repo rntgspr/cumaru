@@ -45,7 +45,8 @@ one plan per post.
 
 - **`creator/` — one directory per creator.** `creator/<creator_slug>/index.md`,
   from `templates/creator.md`. The pillar name is singular. Each profile
-  records a unique three-letter uppercase post prefix.
+  records `slug` and a unique three-letter uppercase `post-prefix` in its
+  frontmatter.
 - **`posts/` — one directory per post.** `posts/<PREFIX>-<number>/index.md`,
   from `templates/post.md`. The ID is the creator prefix, a hyphen, and a
   four-digit number unique within that prefix.

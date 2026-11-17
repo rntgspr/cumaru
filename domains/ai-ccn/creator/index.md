@@ -8,7 +8,7 @@ summary: Organizes creator profiles, characteristics, and supporting documentati
 
 Use one directory per creator at `.cumaru/creator/<creator_slug>/`. Copy the [creator template](../templates/creator.md) to that directory as `index.md`. Replace the placeholders and link to supporting files from the spec.
 
-Record the creator's unique three-letter uppercase prefix in their profile. Use it in [post IDs](../posts/index.md).
+Record `slug` and `post-prefix` in the profile frontmatter. `slug` equals the directory name. `post-prefix` is the creator's unique three-letter uppercase prefix; use it in [post IDs](../posts/index.md).
 
 Store source media and produced content in `./assets/<creator_name_slug>/` using the same slug. Follow the [constitution](../constitution.md) for network rules on creator autonomy and collaboration.
 
