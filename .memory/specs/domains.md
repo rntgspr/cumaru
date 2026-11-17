@@ -28,7 +28,7 @@ cumaru help domains
 cumaru install [agent <none|claude|codex|opencode>]
                [--domain <name>] [--with <skill>...]
 domains/__base/
-domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,focus,homebrew-management}/
+domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,focus,homebrew-management,ai-ccn}/
 ```
 
 ## Invariants
@@ -119,6 +119,15 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
     ships no bump skill or command, consistent with invariant 9. The
     `package-change` discipline gates every `.rb` change on downloaded-artifact
     checksums and tap-clone audit, install, and test.
+18. `ai-ccn` models one Content Creator Network of AI characters and agents.
+    `constitution.md` ships as starter governance text and is adopter-owned,
+    so update never replaces it. `creator/<creator_slug>/` holds one profile
+    from `templates/creator.md` with a unique three-letter uppercase post
+    prefix; `posts/` declares the entry selector `<PREFIX>-<four digits>` for
+    plans from `templates/post.md`. Doctor does not reject an entry outside
+    that selector, so the ID convention is prose-enforced. Creator media lives outside `.cumaru/` in
+    `assets/<creator_slug>/`. The domain ships no domain-specific skill,
+    command, or discipline, and nothing that publishes or schedules content.
 
 ## Inputs and ownership
 

@@ -1,0 +1,17 @@
+version: 9
+domain: ai-ccn
+rules:
+  markdown: {required_heading: h1, frontmatter: {human_revised: {}, summary: {}}}
+  index_md: {frontmatter: {targets: {}}}
+  pillar_index: {frontmatter: {targets: {}, summary: {}}}
+root:
+  framework: true
+  frontmatter: {depends-on: {optional: true}}
+  domain.md: {framework: true, tags: [components, root]}
+  disciplines: {framework: true, "*.md": {framework: true}}
+  roles: {framework: true, "*.md": {framework: true}}
+  templates: {framework: true, "*.md": {framework: true}}
+  constitution.md: {}
+  creator: {framework: true, "*": {}}
+  posts: {framework: true, "[A-Z][A-Z][A-Z]-[0-9][0-9][0-9][0-9]": {}}
+meta: {targets: {values: [platform, meta]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [constitution.md, creator, posts], source: []}, doctor: {after: {warm: false}}}

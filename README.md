@@ -94,6 +94,7 @@ not compose.
 | `vault-memory` | `memories/` | Personal or team memory as a typed graph |
 | `focus` | `directives/`, `threads/`, `outcomes/` | Priority directives over captured work threads and their results |
 | `homebrew-management` | `formulae/`, `casks/` | One Homebrew tap: package entities tied to the real Ruby, bump procedure, verification gate |
+| `ai-ccn` | `creator/`, `posts/` | One Content Creator Network of AI characters: governance constitution, creator profiles, post plans |
 | `base` *(default)* | Custom | Minimal kernel for a new domain |
 
 A music-production domain could use the same model: durable pillars for sonic
@@ -114,6 +115,7 @@ cumaru install --domain iac-basic                    # infrastructure workflow
 cumaru install --domain vault-memory                 # memory-vault workflow
 cumaru install --domain focus                        # directive-driven threads and outcomes
 cumaru install --domain homebrew-management          # Homebrew tap formulae and casks
+cumaru install --domain ai-ccn                       # AI creator network profiles and posts
 cumaru install --domain base                         # build a custom domain
 cumaru update skills codex --with git --apply         # add an opt-in after adoption
 ```
