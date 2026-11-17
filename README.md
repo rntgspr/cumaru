@@ -94,7 +94,7 @@ not compose.
 | `vault-memory` | `memories/` | Personal or team memory as a typed graph |
 | `focus` | `directives/`, `threads/`, `outcomes/` | Priority directives over captured work threads and their results |
 | `homebrew-management` | `formulae/`, `casks/` | One Homebrew tap: package entities tied to the real Ruby, bump procedure, verification gate |
-| `ai-ccn` | `creator/`, `posts/` | One Content Creator Network of AI characters: governance constitution, creator profiles, post plans |
+| `ai-ccn` | `creator/`, `posts/`, `tasks/` | One Content Creator Network of AI characters: governance constitution, creator profiles, post plans, manual or automatic tasks |
 | `base` *(default)* | Custom | Minimal kernel for a new domain |
 
 A music-production domain could use the same model: durable pillars for sonic

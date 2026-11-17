@@ -4,8 +4,8 @@ summary: Ordered bootstrap steps for the ai-ccn domain after install.
 
 ## ai-ccn — bootstrap steps
 
-The install ships a starter `constitution.md` and empty `creator/` and
-`posts/` pillars. Work through the steps in order. Where a step allows a
+The install ships a starter `constitution.md` and empty `creator/`,
+`posts/`, and `tasks/` pillars. Work through the steps in order. Where a step allows a
 proposal, present it and write only what the user confirms. `disciplines/`
 and `templates/` stay as shipped.
 
@@ -28,3 +28,6 @@ and `templates/` stay as shipped.
    `domain.md`, linking the profile.
 6. **Posts.** The pillar stays empty. Create the first plan from
    `templates/post.md` only when the user asks for a post.
+7. **Tasks.** The pillar stays empty. Create a task from
+   `templates/task.md` only when the user names work to describe or script;
+   never write a script the user did not ask for.

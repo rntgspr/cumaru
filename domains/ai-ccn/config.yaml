@@ -14,4 +14,5 @@ root:
   constitution.md: {}
   creator: {framework: true, "*": {frontmatter: {slug: {}, post-prefix: {}}}}
   posts: {framework: true, "[A-Z][A-Z][A-Z]-[0-9][0-9][0-9][0-9]": {}}
-meta: {targets: {values: [platform, meta]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [constitution.md, creator, posts], source: []}, doctor: {after: {warm: false}}}
+  tasks: {framework: true, "*": {frontmatter: {status: {}, mode: {}, creator: {optional: true}}}}
+meta: {targets: {values: [platform, meta]}, context: {framework: [domain.md, index.md, disciplines, roles, templates], adopter: [constitution.md, creator, posts, tasks], source: []}, doctor: {after: {warm: false}}}

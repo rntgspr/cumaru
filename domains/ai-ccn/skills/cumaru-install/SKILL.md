@@ -19,9 +19,9 @@ cumaru install --domain ai-ccn
 cumaru install --domain ai-ccn agent claude
 ```
 
-The copy brings the starter `constitution.md`, the empty `creator/` and
-`posts/` pillars with their contracts, the `creator.md` and `post.md`
-templates, and the Admin role.
+The copy brings the starter `constitution.md`, the empty `creator/`,
+`posts/`, and `tasks/` pillars with their contracts, the `creator.md`,
+`post.md`, and `task.md` templates, and the Admin role.
 
 ## Bootstrap
 
@@ -33,5 +33,5 @@ document is never installed into `.cumaru/`.
 
 - Invent a creator, a persona, or a post. Every profile comes from the user's
   answers.
-- Publish or schedule content on any channel.
+- Publish or schedule content on any channel, or write a task script.
 - Store media inside `.cumaru/`. Assets live in `assets/<creator_slug>/`.

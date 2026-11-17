@@ -126,7 +126,11 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
     frontmatter, the latter a unique three-letter uppercase post prefix; `posts/` declares the entry selector `<PREFIX>-<four digits>` for
     plans from `templates/post.md`. Doctor does not reject an entry outside
     that selector, so the ID convention is prose-enforced. Creator media lives outside `.cumaru/` in
-    `assets/<creator_slug>/`. The domain ships no domain-specific skill,
+    `assets/<creator_slug>/`. `tasks/<task_slug>/` holds one entry from
+    `templates/task.md` per unit of work; doctor requires its `status` and
+    `mode` (`manual` or `automatic`) and accepts an optional `creator`. A
+    task may produce a script, kept outside `.cumaru/` in
+    `scripts/<task_slug>/`. The domain ships no domain-specific skill,
     command, or discipline, and nothing that publishes or schedules content.
 
 ## Inputs and ownership
