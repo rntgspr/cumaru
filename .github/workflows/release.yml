@@ -112,3 +112,13 @@ jobs:
           sha256sum cumaru-* LICENSE > SHA256SUMS
           gh release create "$RELEASE_VERSION" cumaru-* LICENSE SHA256SUMS --verify-tag --draft --title "Cumaru $RELEASE_VERSION" --generate-notes
           gh release edit "$RELEASE_VERSION" --draft=false --latest
+      # Hands the published version to the npm wrapper, which mirrors the release and publishes to npm.
+      - name: Notify npm wrapper
+        env:
+          GH_TOKEN: ${{ secrets.CUMARU_NODE_DISPATCH_TOKEN }}
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::warning::CUMARU_NODE_DISPATCH_TOKEN is not set; npm wrapper not notified"
+            exit 0
+          fi
+          gh api repos/rntgspr/cumaru-node/dispatches -f event_type=cumaru-release -F "client_payload[version]=$RELEASE_VERSION"
