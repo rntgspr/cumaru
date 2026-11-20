@@ -53,14 +53,14 @@ A literal `source` directory is indexed recursively. A `source` entry may also
 be a gitignore-style glob to filter by name or extension: `*` and `?` stay
 within one path segment and `**/` spans zero or more directories, so
 `app/src/**/*.ts` selects every `.ts` file under `app/src` at any depth. The
-glob walks from its literal prefix (`app/src`); a missing prefix is diagnosed
-like a missing path, while a glob that matches no file is not.
+glob walks from its literal prefix (`app/src`); a missing prefix is skipped
+like a missing path, and a glob that matches no file is silent.
 
 A `.cumaru/` file covered by both lists belongs to the longest (most specific)
 entry; one covered by neither is not indexed. Absolute paths, `..` segments, and
 (`framework`/`adopter`) symlinked entries are configuration errors. A listed path
-that does not exist is diagnosed on stderr with status 1, while other rows still
-print. Without a config, an unreadable one, or no `meta.context`, every visible
+that does not exist is skipped silently and does not change the exit status;
+`cumaru doctor` reports it under [Context paths](doctor.md#the-11-checks). Without a config, an unreadable one, or no `meta.context`, every visible
 `.cumaru/` Markdown file is ranked as `adopter`.
 
 `--scope framework|adopter|source` restricts ranking, `--warm`, and `--reset` to

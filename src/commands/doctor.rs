@@ -321,6 +321,11 @@ pub(crate) fn inspect(root: &Path) -> Result<Report, String> {
     report.check("Retained file references", false, retained);
     report.check("External tools", false, missing_tools());
     report.check(
+        "Context paths",
+        false,
+        crate::commands::context::absent(&root)?,
+    );
+    report.check(
         "Agent instructions",
         false,
         instruction_issues(project, &files),

@@ -44,7 +44,8 @@ cumaru doctor [--quiet]
    fail configuration preflight. Graph validation does not execute a skill.
 6. The remaining installed-tree checks cover indexes, summaries, discipline
    metadata, markers, file references, tools, adapter instructions, retired
-   adapter state, and configuration drift. Checks never edit adopter files.
+   adapter state, absent `meta.context` paths (a warning; `context` skips them
+   silently), and configuration drift. Checks never edit adopter files.
 7. The single side effect is opt-in and runs after the checks: when the report
    passes and `meta.doctor.after.warm` is `true`
    ([configuration](configuration.md)), doctor warms only the `adopter`

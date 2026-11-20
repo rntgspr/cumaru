@@ -37,7 +37,6 @@ from 172.
 | [160](issue_160.md) | low | Realign workflows.md with the native implementation |
 | [161](issue_161.md) | high | Keep released binaries able to read the main domain config after additive meta keys ship |
 | [162](issue_162.md) | high | Keep doctor reporting when the downloaded drift reference fails this binary's schema |
-| [164](issue_164.md) | high | Stop a missing meta.context path from failing ordinary context queries |
 | [165](issue_165.md) | high | Make doctor survive an unwritable or contended drift reference cache |
 | [166](issue_166.md) | medium | Bound the network cost of a drift reference that cannot be fetched |
 | [167](issue_167.md) | medium | Decide whether cumaru context keeps ranking when the installed config is invalid |

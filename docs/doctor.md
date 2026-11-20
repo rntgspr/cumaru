@@ -49,7 +49,7 @@ Each check emits one line, followed by its diagnostics:
 A summary line follows: `Summary: X error(s), Y warning(s), Z ok`. It counts
 checks, not individual defects.
 
-## The 10 checks
+## The 11 checks
 
 | # | Check | On issue |
 |---|---|---|
@@ -61,8 +61,9 @@ checks, not individual defects.
 | 6 | **Unrefined RAW blocks** — any Markdown file containing `<!-- BEGIN RAW`. | warn |
 | 7 | **Retained file references** — only declared `files`, `touched`, and `reference` tags are path-resolved. `touched` accepts explicitly removed files; `reference` follows the [coverage](coverage.md) source-file rule. | warn |
 | 8 | **External tools** — `git` and `curl` on PATH, checked without running them. | warn |
-| 9 | **Agent instructions** — at least one complete Generic, Claude, Codex, or OpenCode instruction set with the installed discipline bodies. Skills, commands, and hooks are outside this check. | warn |
-| 10 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the domain's `config.yaml` on GitHub main ([reference](#configuration-drift-reference)). Formatting, order, and additive local entries are ignored. Entries of the reference `meta.context.framework` / `meta.context.adopter` lists absent locally are named. | warn; error for a newer reference version |
+| 9 | **Context paths** — every `meta.context` entry (`framework`, `adopter`, and each `source` literal or glob prefix) that does not exist. `cumaru context` and `cumaru update` warming skip such paths silently; doctor is where they surface. | warn |
+| 10 | **Agent instructions** — at least one complete Generic, Claude, Codex, or OpenCode instruction set with the installed discipline bodies. Skills, commands, and hooks are outside this check. | warn |
+| 11 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the domain's `config.yaml` on GitHub main ([reference](#configuration-drift-reference)). Formatting, order, and additive local entries are ignored. Entries of the reference `meta.context.framework` / `meta.context.adopter` lists absent locally are named. | warn; error for a newer reference version |
 
 ### Configuration drift reference
 

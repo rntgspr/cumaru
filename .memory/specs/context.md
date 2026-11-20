@@ -22,8 +22,8 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
    `path:start,end`/two-decimal score TSV, the `get` selector shared with `map`, widened to the innermost `map` section of the best paragraph (raw chunk range for non-Markdown `source` files, whose rows carry a `./` project-relative prefix), then narrowed past blank edge lines exactly as `get` prints its header, merged across scopes and capped at the best 16 rows unless `--full`. With an enabled encoder it maintains one token-ID-addressed chunk vector cache per scope
    in `.cumaru/.cache/context/<scope>/` and the `.gitignore` entry
    ([`docs/context.md`](../../docs/context.md#scopes), [vector cache](../../docs/context.md#vector-cache)).
-   `--scope` filters ranking, `--warm`, and `--reset`. A warm checks listed
-   paths even without an encoder. Callers: `update --apply` warms every scope
+   `--scope` filters ranking, `--warm`, and `--reset`. Absent listed paths
+   are skipped silently by ranking and warm; only doctor reports them. Callers: `update --apply` warms every scope
    warn-only; doctor warms `adopter` per [doctor](doctor.md) invariant 7.
 2. A valid enabled cached BGE Micro is preferred; absence or explicit release permits
    the lightweight fallback. Invalid enabled packages, unsafe cache paths, and invalid
@@ -41,7 +41,7 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 7. `source` entries are literal paths (directories indexed recursively) or
    gitignore-style globs walked from their literal prefix: `*`, `?`, and `[]` stay
    within one segment, `**/` spans zero or more directories, and hidden entries
-   never match. A missing prefix is diagnosed like a missing path; an empty match
+   never match. A missing prefix is skipped like a missing path; an empty match
    is silent; a malformed glob is a configuration error. Overlapping entries index
    each file once. `framework` and `adopter` entries stay literal
    ([`docs/context.md`](../../docs/context.md#scopes)).

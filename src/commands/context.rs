@@ -93,7 +93,7 @@ pub fn run(args: ContextArgs) -> ExitCode {
 
 /// Builds the vector cache of one scope (or every scope) for `project` when an encoder is enabled.
 ///
-/// Returns an error for cache/encoder failures and for partial failures (such as a missing listed path),
+/// Returns an error for cache/encoder failures and for partial failures (such as a traversal defect),
 /// whose diagnostics were already printed; no enabled encoder is not an error.
 pub(crate) fn warm(project: &Path, scope: Option<Scope>) -> Result<(), String> {
     match execute(None, project, &models::cache_root(), false, None, scope)? {
@@ -388,7 +388,7 @@ fn covers(entry: &str, rel: &str) -> bool {
             .is_some_and(|rest| rest.starts_with('/'))
 }
 
-/// Collects `(scope, selector path, file)` hosts for the selected scopes, recording traversal defects and missing listed paths.
+/// Collects `(scope, selector path, file)` hosts for the selected scopes, recording traversal defects and skipping absent listed paths.
 fn inventory(
     root: &Path,
     plan: Option<&Plan>,
@@ -413,12 +413,11 @@ fn inventory(
         None if selected(Scope::Adopter) => targets.push(root.to_path_buf()),
         None => {}
         Some(_) => {
-            for (entry, owner) in entries.iter().filter(|(_, owner)| selected(*owner)) {
+            for (entry, _) in entries.iter().filter(|(_, owner)| selected(*owner)) {
                 let target = root.join(entry);
+                // An absent listed path is skipped silently; `cumaru doctor` reports it.
                 if fs::symlink_metadata(&target).is_ok() {
                     targets.push(target);
-                } else {
-                    diagnostics.push(missing(*owner, entry));
                 }
             }
         }
@@ -476,7 +475,6 @@ fn inventory(
 
             let target = project.join(base);
             if fs::symlink_metadata(&target).is_err() {
-                diagnostics.push(missing(Scope::Source, base));
                 continue;
             }
 
@@ -542,6 +540,34 @@ fn glob_base(entry: &str) -> Option<&str> {
             .rfind('/')
             .map_or("", |slash| &entry[..slash]),
     )
+}
+
+/// Lists every `meta.context` entry whose path does not exist, for `cumaru doctor`; ranking skips them silently.
+pub(crate) fn absent(root: &Path) -> Result<Vec<String>, String> {
+    let Some(plan) = resolve(root)? else {
+        return Ok(Vec::new());
+    };
+    let project = root.parent().ok_or(".cumaru/ has no parent directory")?;
+
+    let mut issues = Vec::new();
+    for (scope, entries) in [
+        (Scope::Framework, &plan.framework),
+        (Scope::Adopter, &plan.adopter),
+    ] {
+        for entry in entries {
+            if fs::symlink_metadata(root.join(entry)).is_err() {
+                issues.push(missing(scope, entry));
+            }
+        }
+    }
+    for entry in &plan.source {
+        let base = glob_base(entry).unwrap_or(entry);
+        if fs::symlink_metadata(project.join(base)).is_err() {
+            issues.push(missing(Scope::Source, base));
+        }
+    }
+
+    Ok(issues)
 }
 
 /// Formats the diagnostic for a listed `meta.context` path that does not exist.
@@ -800,8 +826,9 @@ mod tests {
                 ("source", "./app/src/deep/er/b.ts".to_string()),
             ]
         );
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
         assert_eq!(
-            diagnostics,
+            absent(&fs::canonicalize(root.join("project")).unwrap()).unwrap(),
             vec!["meta.context.source: nope: listed path does not exist".to_string()]
         );
         fs::remove_dir_all(root).unwrap();
@@ -909,8 +936,9 @@ mod tests {
                 ("source", "./src/x.rs".to_string()),
             ]
         );
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
         assert_eq!(
-            diagnostics,
+            absent(&fs::canonicalize(root.join("project")).unwrap()).unwrap(),
             vec!["meta.context.source: gone: listed path does not exist".to_string()]
         );
 
@@ -924,8 +952,9 @@ mod tests {
         );
         assert!(diagnostics.is_empty());
 
+        // An absent listed source path no longer turns a usable ranking into a partial failure.
         assert!(
-            !execute(
+            execute(
                 Some("domain"),
                 &root.join("project"),
                 &Ok(root.join("cache")),

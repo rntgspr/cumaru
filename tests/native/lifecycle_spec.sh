@@ -230,15 +230,14 @@ Describe 'doctor post-check vector cache warm (meta.doctor.after.warm)'
     The path "$PROJECT/.cumaru/.cache/context" should not be exist
   End
 
-  It 'fails a passing report when a listed adopter path is missing'
+  It 'warns about a missing listed adopter path without failing the warm'
     set_warm true
     break_adopter
     When call cli doctor
-    The status should be failure
-    The output should include 'Summary: 0 error(s)'
-    The error should include 'meta.context.adopter'
-    The error should include 'missing-area'
-    The error should include 'cumaru doctor: vector cache warm failed'
+    The status should be success
+    The output should include '[warn] Context paths'
+    The output should include 'meta.context.adopter: missing-area: listed path does not exist'
+    The error should not include 'vector cache warm failed'
   End
 
   It 'succeeds without an enabled encoder'
