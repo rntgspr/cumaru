@@ -19,7 +19,7 @@ canonical in [context](../../docs/context.md) and [model](../../docs/model.md).
 ## Invariants
 
 1. Context is offline, never changes knowledge files, and emits only
-   `path:start,end`/two-decimal score TSV, the `get` selector shared with `map`, widened to the innermost `map` section of the best paragraph (raw chunk range for non-Markdown `source` files, whose rows carry a `./` project-relative prefix), merged across scopes and capped at the best 16 rows unless `--full`. With an enabled encoder it maintains one token-ID-addressed chunk vector cache per scope
+   `path:start,end`/two-decimal score TSV, the `get` selector shared with `map`, widened to the innermost `map` section of the best paragraph (raw chunk range for non-Markdown `source` files, whose rows carry a `./` project-relative prefix), then narrowed past blank edge lines exactly as `get` prints its header, merged across scopes and capped at the best 16 rows unless `--full`. With an enabled encoder it maintains one token-ID-addressed chunk vector cache per scope
    in `.cumaru/.cache/context/<scope>/` and the `.gitignore` entry
    ([`docs/context.md`](../../docs/context.md#scopes), [vector cache](../../docs/context.md#vector-cache)).
    `--scope` filters ranking, `--warm`, and `--reset`. A warm checks listed

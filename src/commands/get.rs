@@ -199,7 +199,7 @@ fn resolve(range: &Range, total: usize) -> Result<(usize, usize), String> {
 }
 
 /// Narrows an inclusive range past leading and trailing blank lines, keeping an all-blank range intact.
-fn trim(lines: &[&str], mut start: usize, mut end: usize) -> (usize, usize) {
+pub(crate) fn trim(lines: &[&str], mut start: usize, mut end: usize) -> (usize, usize) {
     let blank = |line: usize| lines[line - 1].trim().is_empty();
     if (start..=end).all(blank) {
         return (start, end);

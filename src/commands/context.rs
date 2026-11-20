@@ -112,6 +112,17 @@ fn section(file: &Path, (start, end): models::Lines) -> models::Lines {
         .map_or((start, end), |(first, last, _)| (first, last))
 }
 
+/// Narrows a ranked range past blank edge lines so it equals the header `get` prints for it; an empty range stays as is.
+fn emitted(document: &str, lines: models::Lines) -> models::Lines {
+    match lines {
+        (_, 0) => lines,
+        (start, end) => {
+            let rows: Vec<&str> = document.split_inclusive('\n').collect();
+            crate::commands::get::trim(&rows, start, end.min(rows.len()))
+        }
+    }
+}
+
 /// Collect safe hosts per scope, refresh each scope's vector cache with progress, and emit bounded two-decimal ranking TSV for a query.
 fn execute(
     query: Option<&str>,
@@ -226,7 +237,10 @@ fn execute(
                     },
                 };
 
-                Ok::<_, String>(Some(((score * 100.0).round() as u16, lines)))
+                Ok::<_, String>(Some((
+                    (score * 100.0).round() as u16,
+                    emitted(&document, lines),
+                )))
             })();
 
             match evaluated {
@@ -654,6 +668,16 @@ mod tests {
         fs::create_dir_all(root.join("project")).unwrap();
 
         root
+    }
+
+    /// Emits the blank-edge-trimmed range that `get` would print, keeping empty and all-blank ranges intact.
+    #[test]
+    fn emitted_range_matches_the_get_header() {
+        let document = "\n\n# Bananas\n\nbanana split\n\n\n";
+        assert_eq!(emitted(document, (1, 7)), (3, 5));
+        assert_eq!(emitted(document, (3, 5)), (3, 5));
+        assert_eq!(emitted(document, (6, 7)), (6, 7));
+        assert_eq!(emitted("", (1, 0)), (1, 0));
     }
 
     /// Rank raw Markdown without config or summaries and prove project/cache non-mutation.
