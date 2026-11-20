@@ -8,7 +8,8 @@ priority: high
 # Issue 171: Align user and agent guidance with observed CLI behavior
 
 The November 18 review compared the public guides and shipped agent instructions
-with the Linux CLI 0.15.1 and source at `7483145`. The command catalog broadly
+with the Linux CLI 0.15.1. The cited source commit `7483145` is not in this
+repository's history; findings were re-verified at `aaa3975`. The command catalog broadly
 matches. The highest-impact gaps affect what users delete and whether agents
 can read what search returns.
 
@@ -34,8 +35,8 @@ describes network access, cache writes and adapter changes.
    can rank a whole file. A source result such as `./src/auth.rs:1,3` fails
    when passed to `get`. Document a working repository-relative read for source
    results, or support those selectors in `get` and test that contract.
-   Done in part: `context` now trims blank edge lines with `get::trim`, so a
-   Markdown result's range equals the header `get` prints for it. Done: the
+   Done: `context` trims blank edge lines with `get::trim`, so a Markdown
+   result's range equals the header `get` prints for it; the
    recipe, its mirrors and `docs/context.md` route `./` source rows to a
    project-relative `sed -n` read and send whole-file lightweight rows through
    `map` first; verified on a Markdown and a Rust row with both backends.
@@ -43,6 +44,8 @@ describes network access, cache writes and adapter changes.
    can fetch the drift reference and write a cache entry and ignore rule.
    Clarify which context operations preserve knowledge files and which write
    vectors or ignore rules. Track the no-encoder reset defect in [169](issue_169.md).
+   Done: the upgrade guide no longer claims doctor is always offline, and the
+   context guide names its cache and ignore writes and the open 169 defect.
 4. Align the install, uninstall and adapter guides with Codex discipline delivery
    through the session hook and its fallback. Document removal of Cumaru-owned
    SessionStart, UserPromptSubmit and PreToolUse entries and preservation of
@@ -67,6 +70,9 @@ describes network access, cache writes and adapter changes.
   Verify the reset outcome against issue 169 with the encoder disabled.
 - Compare the command and skill inventories with CLI help and the canonical
   domain. Run the existing universal skill mirror checks after editing the recipe.
+- Negative: passing a `./` source row to `get` exits 1 with `target not found`
+  and prints no body. With network blocked and no cached reference, doctor
+  warns that drift was not checked and still exits 0.
 
 ## References
 
