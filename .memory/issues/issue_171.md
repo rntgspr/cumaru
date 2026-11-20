@@ -29,6 +29,7 @@ describes network access, cache writes and adapter changes.
 
 1. State the full uninstall scope in the README command table. The dedicated
    uninstall guide already describes deletion of adopter knowledge.
+   Done: the README row names deletion of adopter specs and notes.
 2. Correct the universal search recipe and its mirrors. The lightweight backend
    can rank a whole file. A source result such as `./src/auth.rs:1,3` fails
    when passed to `get`. Document a working repository-relative read for source

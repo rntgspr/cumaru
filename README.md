@@ -151,7 +151,7 @@ ranking while retaining the package; pull verifies and re-enables it. See [conte
 | Command | Purpose |
 |---|---|
 | `cumaru install` | Install a domain and an explicit agent-adapter target |
-| `cumaru uninstall` | Remove Cumaru-owned project and shared adapter artifacts under explicit confirmation |
+| `cumaru uninstall` | Delete the entire `.cumaru/` tree, including adopter specs and notes, plus Cumaru-owned adapter artifacts, under explicit confirmation |
 | `cumaru doctor` | Validate structural health and discover complete agent instructions; also the default command |
 | `cumaru tag` | Inspect or update config-declared semantic tags |
 | `cumaru coverage` | Report source files covered by durable-specification references |
