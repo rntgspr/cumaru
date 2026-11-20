@@ -94,9 +94,11 @@ equivalent inline `[hooks]` table in `.codex/config.toml`; Cumaru writes
 `hooks.json`.
 
 Registration is a **merge**: an existing `settings.json` or `hooks.json` keeps
-its own keys, its other hook events, and its own `SessionStart` entries.
-Re-applying is idempotent. `uninstall` removes only the entry whose command is
-Cumaru's, and deletes the file only when nothing else remains in it.
+its own keys, its other hook events, and its own entries under each event.
+Re-applying is idempotent. `uninstall` removes only the `SessionStart`,
+`UserPromptSubmit`, and `PreToolUse` entries whose commands are Cumaru's,
+preserves unrelated hooks, and deletes the file only when nothing else remains
+in it.
 
 The generic and OpenCode adapters have no session-start event to bind to, so
 they rely on the ordered instruction prose alone. OpenCode's plugin API exposes

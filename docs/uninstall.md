@@ -37,9 +37,11 @@ cumaru uninstall [-y|--yes]
    Markdown file, or Cumaru's exact entries from `opencode.json.instructions`.
    A Markdown file is deleted only when install created it and nothing else
    remains.
-6. **Removes the session hook** — deletes only Cumaru's `SessionStart` entry
-   from `.claude/settings.json` or `.codex/hooks.json`. Other keys, events, and
-   entries are preserved; a changed JSON file is deleted only when empty.
+6. **Removes the hooks** — deletes only Cumaru's `SessionStart`,
+   `UserPromptSubmit`, and `PreToolUse` entries from `.claude/settings.json` or
+   `.codex/hooks.json`. Unrelated hooks (for example a `Stop` entry), other
+   keys, and other entries are preserved; a changed JSON file is deleted only
+   when empty.
 7. **Removes the install tree** — rechecks the snapshot, then deletes the
    entire `.cumaru/` directory. Adapter directories and empty namespaces may
    remain.

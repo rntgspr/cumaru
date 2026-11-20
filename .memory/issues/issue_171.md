@@ -44,6 +44,8 @@ describes network access, cache writes and adapter changes.
    through the session hook and its fallback. Document removal of Cumaru-owned
    SessionStart, UserPromptSubmit and PreToolUse entries and preservation of
    unrelated hooks.
+   Done: install, uninstall and adapter guides updated; a disposable uninstall
+   kept a `Stop` hook and removed the three Cumaru entries.
 5. Reconcile the inventory of 16 command families with the 18 entries in CLI
    help, accounting explicitly for help and hooks. Include `cumaru-search` and
    `cumaru-discipline` in the architecture guide's universal skill inventory.

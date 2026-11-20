@@ -56,11 +56,13 @@ skills, and supported commands use the paths in
 5. **Installs skills** — copies the domain's `cumaru-*` skills into the
    selected adapter's native skill directory, keeping existing skill folders.
 6. **Wires durable instructions** — `.cumaru/index.md`, `.cumaru/domain.md`, the
-   discipline index, and every installed discipline. Claude receives explicit
-   imports, Generic and Codex receive materialized discipline bodies in their
-   managed block, and OpenCode receives its native instructions glob. Existing
-   files are merged, never overwritten.
-7. **Registers the session hook** — Claude and Codex only. See
+   discipline index, and every installed discipline. Claude and Codex receive a
+   fallback pointer to the disciplines in their managed block, since their
+   bodies arrive through the session hook; Generic receives materialized
+   discipline bodies, and OpenCode receives its native instructions glob.
+   Existing files are merged, never overwritten.
+7. **Registers the hooks** — Claude and Codex only: `SessionStart`,
+   `UserPromptSubmit`, and a Bash `PreToolUse` entry. See
    [`agent-adapters.md`](agent-adapters.md#context-bootstrap).
 8. **Installs command launchers** — Generic and OpenCode only, when absent.
    Claude and Codex invoke the skills directly.
