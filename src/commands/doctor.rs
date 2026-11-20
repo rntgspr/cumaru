@@ -325,11 +325,8 @@ pub(crate) fn inspect(root: &Path) -> Result<Report, String> {
         false,
         instruction_issues(project, &files),
     );
-    report.check(
-        "Configuration drift",
-        false,
-        drift(&root, &config_text, &config, &today(), &fetch_main)?,
-    );
+    let (blocking, drift_issues) = drift(&root, &config_text, &config, &today(), &fetch_main)?;
+    report.check("Configuration drift", blocking, drift_issues);
     Ok(report)
 }
 
@@ -491,7 +488,7 @@ fn instruction_issues(project: &Path, files: &BTreeMap<String, String>) -> Vec<S
     ]
 }
 
-/// Highest configuration version this binary validates; a newer reference requires `cumaru migrate`.
+/// Highest configuration version this binary validates; a newer reference requires `cumaru upgrade`, then `cumaru migrate`.
 const SUPPORTED_VERSION: i64 = 9;
 
 /// Reference domain config chosen for drift, with the calendar date of its cached copy.
@@ -643,26 +640,30 @@ fn reference(
 }
 
 /// Compares local config with the domain config on GitHub main, cached daily under `.cumaru/.cache/`.
+/// Returns whether the issues are blocking: only a reference newer than this binary supports is.
 fn drift(
     root: &Path,
     text: &str,
     local: &Yaml,
     today: &str,
     fetch: &dyn Fn(&str) -> Result<Vec<u8>, String>,
-) -> Result<Vec<String>, String> {
+) -> Result<(bool, Vec<String>), String> {
     let domain = local["domain"].as_str().unwrap_or_default();
     let mut issues = Vec::new();
     let Some(reference) = reference(root, domain, today, fetch, &mut issues)? else {
-        return Ok(issues);
+        return Ok((false, issues));
     };
     let raw = raw_yaml(&reference.text)?;
     if raw["version"]
         .as_i64()
         .is_some_and(|version| version > SUPPORTED_VERSION)
     {
-        return Err(format!(
-            "domain '{domain}' reference config on main is version {}, newer than this binary supports ({SUPPORTED_VERSION}); run cumaru migrate",
-            raw["version"].as_i64().unwrap_or_default()
+        return Ok((
+            true,
+            vec![format!(
+                "domain '{domain}' reference config on main is version {}, newer than this binary supports ({SUPPORTED_VERSION}); run cumaru upgrade, then cumaru migrate",
+                raw["version"].as_i64().unwrap_or_default()
+            )],
         ));
     }
     let source = config::parse(&reference.text)?;
@@ -689,7 +690,7 @@ fn drift(
     let (candidate, removed) = config::reconcile(text, &source)?;
     let candidate = config::parse(&candidate)?;
     if config::yaml_to_json(&candidate)? == config::yaml_to_json(local)? && removed.is_empty() {
-        return Ok(issues);
+        return Ok((false, issues));
     }
     review_properties(
         &config::yaml_to_json(local)?,
@@ -701,7 +702,7 @@ fn drift(
         "reference: domains/{domain}/config.yaml on GitHub main, cached .cumaru/.cache/config-{}.yaml; review with cumaru update config",
         reference.date
     ));
-    Ok(issues)
+    Ok((false, issues))
 }
 
 /// Names changed configuration properties by JSON Pointer rather than reporting formatting differences.
@@ -931,6 +932,7 @@ mod tests {
         assert!(
             drift(&root, text, &local, "2026-01-02", &offline)
                 .unwrap()
+                .1
                 .is_empty()
         );
 
@@ -938,6 +940,7 @@ mod tests {
         let changed = config::parse(&changed_text).unwrap();
         let issues = drift(&root, &changed_text, &changed, "2026-01-02", &offline)
             .unwrap()
+            .1
             .join("\n");
         assert!(issues.contains("/root/frontmatter/depends-on"), "{issues}");
         assert!(issues.contains("config-2026-01-02.yaml"), "{issues}");
@@ -954,6 +957,7 @@ mod tests {
                 &offline
             )
             .unwrap()
+            .1
             .is_empty()
         );
     }
@@ -979,6 +983,7 @@ mod tests {
         assert!(
             drift(&root, text, &local, "2026-01-02", &online)
                 .unwrap()
+                .1
                 .is_empty()
         );
         assert_eq!(calls.get(), 1);
@@ -993,12 +998,14 @@ mod tests {
         assert!(
             drift(&root, text, &local, "2026-01-02", &online)
                 .unwrap()
+                .1
                 .is_empty()
         );
         assert_eq!(calls.get(), 1);
 
         let stale = drift(&root, text, &local, "2026-01-03", &offline)
             .unwrap()
+            .1
             .join("\n");
         assert!(
             stale.contains("stale reference") && stale.contains("2026-01-02"),
@@ -1010,21 +1017,28 @@ mod tests {
             text.replace("domain: base", "domain: focus"),
         )
         .unwrap();
-        drift(&root, text, &local, "2026-01-03", &online).unwrap();
+        drift(&root, text, &local, "2026-01-03", &online).unwrap().1;
         assert_eq!(calls.get(), 2);
         assert!(!root.join(".cache/config-2026-01-02.yaml").exists());
 
         fs::remove_dir_all(root.join(".cache")).unwrap();
         let none = drift(&root, text, &local, "2026-01-04", &offline)
             .unwrap()
+            .1
             .join("\n");
         assert!(none.contains("drift was not checked"), "{none}");
 
         let newer = |_: &str| -> Result<Vec<u8>, String> {
             Ok(text.replace("version: 9", "version: 10").into_bytes())
         };
-        let error = drift(&root, text, &local, "2026-01-05", &newer).unwrap_err();
-        assert!(error.contains("cumaru migrate"), "{error}");
+        let (blocking, issues) = drift(&root, text, &local, "2026-01-05", &newer).unwrap();
+        let issue = issues.join("\n");
+        assert!(blocking, "{issue}");
+        assert!(
+            issue.contains("run cumaru upgrade, then cumaru migrate"),
+            "{issue}"
+        );
+        assert!(!drift(&root, text, &local, "2026-01-06", &online).unwrap().0);
 
         let removed = text.replace("framework: [domain.md, index.md,", "framework: [domain.md,");
         let issues = drift(
@@ -1035,6 +1049,7 @@ mod tests {
             &online,
         )
         .unwrap()
+        .1
         .join("\n");
         assert!(
             issues.contains("/meta/context/framework: reference entry 'index.md'"),

@@ -57,8 +57,9 @@ cumaru doctor [--quiet]
    once per UTC calendar day and written to `.cumaru/.cache/config-<date>.yaml`
    (atomic, symlinks refused, older files deleted). Offline it uses a stale
    matching file with a dated warning, or degrades to schema-only validation
-   with a non-failing warning. A newer reference `version` fails with a
-   `cumaru migrate` direction. Resolution order is canonical in
+   with a non-failing warning. A newer reference `version` turns the drift
+   check into an error after every other check is reported (exit 1), directing
+   `cumaru upgrade`, then `cumaru migrate`; it is the only blocking drift outcome. Resolution order is canonical in
    [the public doctor doc](../../docs/doctor.md#configuration-drift-reference).
 
 ## Inputs and ownership

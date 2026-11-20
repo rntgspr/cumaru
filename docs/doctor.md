@@ -62,7 +62,7 @@ checks, not individual defects.
 | 7 | **Retained file references** — only declared `files`, `touched`, and `reference` tags are path-resolved. `touched` accepts explicitly removed files; `reference` follows the [coverage](coverage.md) source-file rule. | warn |
 | 8 | **External tools** — `git` and `curl` on PATH, checked without running them. | warn |
 | 9 | **Agent instructions** — at least one complete Generic, Claude, Codex, or OpenCode instruction set with the installed discipline bodies. Skills, commands, and hooks are outside this check. | warn |
-| 10 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the domain's `config.yaml` on GitHub main ([reference](#configuration-drift-reference)). Formatting, order, and additive local entries are ignored. Entries of the reference `meta.context.framework` / `meta.context.adopter` lists absent locally are named. | warn |
+| 10 | **Configuration drift** — missing domain defaults, by JSON Pointer, compared with the domain's `config.yaml` on GitHub main ([reference](#configuration-drift-reference)). Formatting, order, and additive local entries are ignored. Entries of the reference `meta.context.framework` / `meta.context.adopter` lists absent locally are named. | warn; error for a newer reference version |
 
 ### Configuration drift reference
 
@@ -79,8 +79,10 @@ by the adopter's `domain` and cached as `.cumaru/.cache/config-<YYYY-MM-DD>.yaml
    a warning says drift was not checked; doctor relies on schema validation
    and does not fail for this.
 
-A reference `version` newer than this binary supports stops doctor with an
-error asking for `cumaru migrate`. Symlinked cache paths are refused.
+A reference `version` newer than this binary supports makes the drift check an
+error: the rest of the report still prints, doctor exits `1`, and the message
+directs `cumaru upgrade`, then `cumaru migrate`, since the installed binary cannot
+migrate to a version it does not know. Symlinked cache paths are refused.
 `meta.context.source` is not compared. Use `cumaru update config` to review the
 full candidate.
 
