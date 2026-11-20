@@ -50,7 +50,9 @@ Two version identities are independent:
 command. Both `behind` and `up to date` exit `0`. Missing tags, unavailable Git
 or network, or an invalid build version print `cannot check` on stderr and exit
 `1`. Neither field says anything about a project's config. `cumaru doctor`
-never checks staleness; it stays offline.
+never checks CLI staleness, but it is not always offline: on a cold cache its
+configuration drift check fetches the domain config from GitHub main and writes
+a cache entry and an ignore rule ([doctor](doctor.md#configuration-drift-reference)).
 
 ## Kernel integrity
 

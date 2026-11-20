@@ -1,9 +1,12 @@
 # `cumaru context`
 
 Rank the files of three [scopes](#scopes) (`framework`, `adopter`, `source`)
-against an English query. It is offline, never changes knowledge files, needs no
-config or summaries, and returns paths and scores rather than generated text or
-retrieved fragments.
+against an English query. It is offline and never changes knowledge files, needs
+no config or summaries, and returns paths and scores rather than generated text
+or retrieved fragments. With an enabled encoder, ranking, `--warm` and `--reset`
+write the [vector cache](#vector-cache) under `.cumaru/.cache/context/` and may
+add an ignore rule to the project `.gitignore`; the lightweight backend writes
+nothing.
 
 ```bash
 cumaru context "look for egg recipes"
@@ -105,7 +108,9 @@ cumaru context: .cumaru/.cache/context/framework/: cached 992 chunks (992 new fr
 `--warm` builds without ranking and reports `vector cache is up to date` when
 nothing changed; without an enabled encoder it reports that there is nothing to
 cache and exits 0. `--reset` deletes `.cumaru/.cache/context/` first, or only
-`.cumaru/.cache/context/<scope>/` with `--scope`.
+`.cumaru/.cache/context/<scope>/` with `--scope`. Known defect: without an
+enabled encoder, `--reset` currently prints the nothing-to-cache notice, exits
+0, and leaves the cache on disk ([issue 169](../.memory/issues/issue_169.md)).
 `cumaru update --apply` warms every scope's cache after a successful publication or an
 up-to-date check, warning instead of failing. `cumaru doctor` warms only the
 `adopter` scope, after a passing report and only with `meta.doctor.after.warm: true`,
