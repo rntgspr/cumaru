@@ -35,7 +35,10 @@ describes network access, cache writes and adapter changes.
    when passed to `get`. Document a working repository-relative read for source
    results, or support those selectors in `get` and test that contract.
    Done in part: `context` now trims blank edge lines with `get::trim`, so a
-   Markdown result's range equals the header `get` prints for it.
+   Markdown result's range equals the header `get` prints for it. Done: the
+   recipe, its mirrors and `docs/context.md` route `./` source rows to a
+   project-relative `sed -n` read and send whole-file lightweight rows through
+   `map` first; verified on a Markdown and a Rust row with both backends.
 3. Reconcile the upgrade guide with the doctor guide. On a cold cache, doctor
    can fetch the drift reference and write a cache entry and ignore rule.
    Clarify which context operations preserve knowledge files and which write

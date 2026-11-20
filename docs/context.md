@@ -24,7 +24,9 @@ index.md:14,41	6.12
 ```
 
 `framework` and `adopter` rows are relative to `.cumaru/`; `source` rows start
-with `./` and are relative to the project root.
+with `./` and are relative to the project root. `get` reads only `.cumaru/`
+Markdown, so read a source row's lines with normal tools (`sed -n 'START,ENDp' PATH`).
+Every range is trimmed of blank edge lines, matching the `get` header.
 
 With the encoder, the range is the innermost `map` section containing the paragraph whose chunk scored best (the paragraph itself before any heading; for a non-Markdown source file, the raw best-chunk range); with the
 lightweight scorer it is the whole file (`path:1,N`), and an empty file prints

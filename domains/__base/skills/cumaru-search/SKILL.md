@@ -24,9 +24,14 @@ and semantic links rather than assuming a `specs/` directory.
 ## Select and verify
 
 1. Inspect the returned paths and signals. For `context`, start with the most
-   promising ranked candidates; each row is a `cumaru get` selector for the
-   best-matching passage. Scores are experimental and backend-specific;
-   no score threshold proves relevance or absence of knowledge.
+   promising ranked candidates. A Markdown row is a `cumaru get` selector
+   relative to `.cumaru/`; pass it to `get` unchanged. A source row starts with
+   `./` and is relative to the project root; `get` rejects it, so read its
+   `START,END` lines with normal tools, for example `sed -n 'START,ENDp' PATH`.
+   The lightweight backend ranks whole files, so its range can span the entire
+   host; run `cumaru map` first and read only the relevant section. Scores are
+   experimental and backend-specific; no score threshold proves relevance or
+   absence of knowledge.
 2. Read selected files to verify that their contents answer the task. Use
    `cumaru map <path>` when a large host needs a heading map first. Follow only
    relevant domain-declared links and keep any active plan's context boundaries.
