@@ -840,8 +840,8 @@ when the root still has regular `index.md` and `config.yaml` markers.
    `DOT-LLM-HOOK` blocks. Delete a native Markdown file only when a `created`
    marker proves install provenance and only empty content or the generated
    project header remains. Preserve unrelated prose and existing permissions.
-4. Remove exact OpenCode instruction entries and exact owned SessionStart hook
-   commands through shared adapter cleanup. Preserve unrelated native keys,
+4. Remove exact OpenCode instruction entries and the exact owned SessionStart,
+   UserPromptSubmit, and PreToolUse hook commands through shared adapter cleanup. Preserve unrelated native keys,
    instructions, events, and hook entries. Changed JSON files are removed only
    when empty after cleanup; unrelated empty files are not deletion targets.
 5. With an actual footprint, require `--yes` outside a TTY. Otherwise display

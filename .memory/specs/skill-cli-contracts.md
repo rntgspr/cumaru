@@ -52,7 +52,9 @@ The universal `cumaru-search` recipe owns read-only knowledge discovery when
 the owning file is unknown. `cumaru-first` routes that need to the installed
 skill; the [canonical recipe](../../domains/__base/skills/cumaru-search/SKILL.md)
 defines tool selection and content verification without duplicating the policy
-in the discipline. Every domain receives the skill and its Generic/OpenCode
+in the discipline. A Markdown `context` row passes to `get` unchanged; a `./`
+source row is read project-relative with normal tools, since `get` reads only
+`.cumaru/` Markdown. Every domain receives the skill and its Generic/OpenCode
 launcher through universal synchronization. The inventory below is the earlier
 review snapshot, before this addition.
 

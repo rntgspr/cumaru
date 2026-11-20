@@ -45,7 +45,6 @@ from 172.
 | [168](issue_168.md) | medium | Make files outside the meta.context lists visible instead of silently unranked |
 | [169](issue_169.md) | medium | Honor cumaru context --reset when no encoder is enabled |
 | [170](issue_170.md) | low | Resolve the base/__base domain alias through one helper and fix the drift message path |
-| [171](issue_171.md) | high | Correct misleading uninstall and search guidance and reconcile the remaining CLI documentation findings |
 
 ## Notes
 
