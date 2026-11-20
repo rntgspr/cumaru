@@ -15,8 +15,8 @@ The root Bash entry point and deprecated `src/*.sh` CLI modules have been remove
 tag 0.10.0 keeps them for reference. Legacy ShellSpec scenarios remain as input for
 the later test port, without a supported Bash CLI invocation. `src/install.sh`
 is the native binary installer; its public URL also serves legacy Bash upgrades.
-The Rust CLI implements 16 command families: `version`,
-`tree`, `map`, `fs`, `tag`, `coverage`, `doctor`, `install`, `uninstall`, `bootstrap`, `migrate`, `update`, `upgrade`, `help`, `context`, and `model`, with no claim of complete Bash parity.
+The Rust CLI implements 18 command families, one per CLI help entry: `version`,
+`tree`, `map`, `get`, `fs`, `tag`, `coverage`, `doctor`, `install`, `uninstall`, `bootstrap`, `migrate`, `update`, `upgrade`, `help`, `hooks`, `context`, and `model`, with no claim of complete Bash parity.
 The [context and models contract](context.md) owns optional external encoder
 packages, offline ranking, the lightweight fallback, and their verification limits.
 

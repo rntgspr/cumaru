@@ -47,8 +47,10 @@ describes network access, cache writes and adapter changes.
    Done: install, uninstall and adapter guides updated; a disposable uninstall
    kept a `Stop` hook and removed the three Cumaru entries.
 5. Reconcile the inventory of 16 command families with the 18 entries in CLI
-   help, accounting explicitly for help and hooks. Include `cumaru-search` and
-   `cumaru-discipline` in the architecture guide's universal skill inventory.
+   help. Include `cumaru-search` and `cumaru-discipline` in the architecture
+   guide's universal skill inventory.
+   Done: the missing families were `get` and `hooks` (`help` was already
+   listed); the Rust spec lists all 18 and the architecture guide both skills.
 
 ## Tests
 
