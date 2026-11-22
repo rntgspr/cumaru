@@ -161,37 +161,39 @@ boundary before cleanup.
 | `domains/sdlc-light/skills/cumaru-absorb/SKILL.md` | Direct plans-to-specs absorption. |
 | `domains/iac-basic/skills/cumaru-absorb/SKILL.md` | Changeset delta absorption into topology. |
 | `domains/qa-basic/skills/cumaru-absorb/SKILL.md` | Campaign delta absorption into coverage. |
-| `src/cmd_tree.sh` | Durable-target discovery. |
-| `src/cmd_fs.sh` | Guarded transient file operations. |
-| `src/cmd_doctor*.sh` | Post-edit structural acceptance. |
+| [`src/commands/tree.rs`](../../src/commands/tree.rs) | Durable-target discovery through summaries. |
+| [`src/commands/fs.rs`](../../src/commands/fs.rs) | Guarded transient file operations inside `.cumaru/`. |
+| [`src/commands/tag.rs`](../../src/commands/tag.rs), [`src/tags.rs`](../../src/tags.rs) | Validated semantic tag body replacement. |
+| [`src/commands/doctor.rs`](../../src/commands/doctor.rs) | Post-edit structural acceptance. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `cmd_tree` | Enumerate durable candidates and summaries without loading bodies. |
-| `cmd_fs` | Perform one contained create/copy/move/remove operation. |
-| `_fs_resolve_inside` | Canonicalize parents and reject `.cumaru/` escapes. |
-| `cmd_doctor_checks` | Validate navigation, tags, references, and adapter state. |
-| `fm_block_replace` | Replace one validated semantic tag body when recipes require it. |
+| `tree::execute` | Enumerate durable candidates and summaries without loading bodies. |
+| `fs::execute` | Perform one contained create/copy/move/remove operation after every guardrail passes. |
+| `fs::resolve_inside` | Resolve through the nearest existing ancestor and reject `.cumaru/` escapes and direct symlinks. |
+| `doctor::inspect` | Validate configured contracts, summaries, tags, references, workflows, and adapter instructions. |
+| `tags::replace` | Replace one validated semantic tag body when recipes require it. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| `tests/spec/cli/fs_spec.sh` | Fs verbs, containment, shape, and protected removals. |
-| `tests/spec/cli/tree_spec.sh` | Durable-pillar candidate discovery. |
-| `tests/spec/cli/doctor_spec.sh` | Resulting navigation and semantic reference checks. |
-| `tests/spec/contracts/documented_contracts_spec.sh` | Completion/evidence blockers, recovery ordering, canonical role routing, and retired-ledger prose contracts. |
+| [`tests/native/fs_spec.sh`](../../tests/native/fs_spec.sh) | Fs verbs, containment, shape, and protected removals. |
+| [`tests/native/navigation_spec.sh`](../../tests/native/navigation_spec.sh) | Durable-pillar candidate discovery. |
+| `src/commands/doctor.rs` unit tests | Resulting tree contracts and semantic reference checks. |
+| `tests/spec/contracts/documented_contracts_spec.sh` | Completion/evidence blockers, recovery ordering, canonical role routing, and retired-ledger prose contracts; not selected by `tests/run.sh` (see the [native regression inventory](../../tests/native/README.md)). |
 
 ## Known gaps
 
-None currently recorded.
+The written absorb contracts in `documented_contracts_spec.sh` have no selected
+native process suite; issue 139 tracks the port.
 
 ## Verification
 
 ```bash
-shellspec tests/spec/cli/fs_spec.sh tests/spec/cli/tree_spec.sh tests/spec/cli/doctor_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 

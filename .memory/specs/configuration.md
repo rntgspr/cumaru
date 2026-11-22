@@ -14,12 +14,12 @@ Cumaru v9 validates every domain source `config.yaml` and adopter
 `.cumaru/config.yaml` against one global model. `cumaru update config` reports
 reconciliation context; the agent edits adopter state deliberately.
 
-The [native configuration contract](rust.md#invariants) embeds versioned JSON
-Schemas and parses YAML in-process. Native `config::load` applies declarative
-validation; [doctor](rust.md#native-doctor) separately checks workflow graphs and
-installed skill availability. Native reconciliation remains read-only and uses
-remote main-HEAD defaults through [update config](rust.md#native-project-update).
-The Bash validator/dependency contract below is unchanged.
+The [native configuration contract](rust.md#invariants) embeds the active JSON
+Schema and parses YAML in-process; no runtime `yq`, `jq`, or schema-file lookup
+exists. `config::load` applies declarative validation;
+[doctor](rust.md#native-doctor) separately checks workflow graphs and installed
+skill availability. Reconciliation is read-only and uses remote main-HEAD
+defaults through [update config](rust.md#native-project-update).
 
 ## Public surface
 
@@ -27,7 +27,7 @@ The Bash validator/dependency contract below is unchanged.
 schemas/config.schema.json
 domains/<domain>/config.yaml
 .cumaru/config.yaml
-cumaru update config [--from <source>]
+cumaru update config
 ```
 
 ## Invariants
@@ -52,28 +52,34 @@ cumaru update config [--from <source>]
    its literal selector with `optional: true` so doctor accepts the absence
    and update does not recreate it.
 5. Recursive `**` selectors are forbidden. Undeclared entries receive only
-   global rules. Overlapping wildcard rules compose; a contradictory reserved
-   attribute declaration is a configuration error.
+   global rules. Overlapping wildcard rules compose; conflicting frontmatter
+   fields and physical destination collisions are configuration errors.
+   Rejecting conflicting reserved attributes declared by sibling wildcards has
+   no native owner yet and is tracked by
+   [issue 144](../issues/issue_144.md).
 6. Reconciliation reports model-incompatible properties and missing source
    defaults as a candidate diff; arrays and scalars remain adopter-owned values.
 7. A permitted but invalid local value blocks the report instead of falling back.
 8. Cumaru never rewrites `config.yaml` or creates a persistent config backup.
 9. A pillar entry's navigation `index.md` never carries a glob leaf contract.
    `rules.index_md`, `rules.pillar_index`, and an explicitly named `index.md`
-   selector are its only sources, however the parent entry was selected. A
-   source domain that expresses leaf `tags` through a wildcard which also
-   matches `index.md` fails source-domain validation, which names the pillar
-   and the wildcard.
+   selector are its only sources, however the parent entry was selected.
+   Native selector resolution exempts `index.md` from leaf wildcards. Failing
+   source-domain validation when a wildcard's leaf `tags` would also match
+   `index.md` has no native owner and is tracked by
+   [issue 172](../issues/issue_172.md).
 10. Reconciliation is asymmetric by design. Adding a key is additive and never
     reports drift. Replacing a shipped glob selector with more specific keys the
     glob itself would have matched is a structural refinement and is equally not
     drift, so the candidate does not restore the wildcard. Deleting a shipped
     key with nothing standing in for it still reports, YAML formatting alone is
     never drift, and every reported difference names the responsible property.
-11. Optional `workflows.<name>.steps.<step_id>` entries name a same-domain
-   installed skill and optional `needs` prerequisites. The graph must be
-   acyclic; the agent runs ready steps in lexical order and only after each
-   prerequisite succeeds. Configuration validity does not imply execution.
+11. Optional `workflows.<name>.steps.<step_id>` entries name an installed skill
+   and optional `needs` prerequisites. The graph must be acyclic; the agent
+   runs ready steps in lexical order and only after each prerequisite
+   succeeds. Configuration validity does not imply execution. Doctor checks
+   installed supported-adapter skill files, not same-domain membership
+   ([workflows](workflows.md)).
 12. Optional `meta.context.{framework,adopter,source}` arrays are adopter-owned
    file or directory paths that select [context scopes](../../docs/context.md#scopes).
    `source` entries may also be gitignore-style globs (`**/` spans directories,
@@ -102,19 +108,25 @@ cumaru update config [--from <source>]
 
 ### Preflight
 
-1. Require Mike Farah `yq` and `jq`; parse local YAML and validate the global
-   model's supported structural and semantic contract.
-2. Validate source config, selected domain, frontmatter/path semantics, and
-   the integer `config.version`; v9 has no Markdown `framework-version` field.
-3. Config mode may begin from parseable but invalid local YAML structure so it
-   can remove unknown properties; its final candidate must be fully valid.
+1. `config::load` requires a regular, non-symlink `config.yaml` with exactly
+   one YAML document, converts it to JSON without coercing non-string keys or
+   non-finite numbers, and validates it against the embedded schema before
+   returning. Schema failures aggregate JSON Pointer diagnostics.
+2. Remote source configs pass through `config::parse`; update and install also
+   require selected-domain and integer `config.version` agreement. v9 has no
+   Markdown `framework-version` field. Selector paths, collisions, and
+   frontmatter conflicts are validated by `config_tree` during resolution.
+3. Config mode starts from one parseable but possibly schema-invalid local YAML
+   document so it can remove unknown properties; its candidate must pass the
+   embedded schema.
 
 ### Report
 
-1. Canonicalize YAML, resolve local properties against the global model, report
-   each removed JSON Pointer and reason, recursively fill missing source values,
-   validate the candidate, and print the complete diff.
-2. Print the global schema and source-default paths needed by the agent.
+1. Convert local YAML to JSON, prune properties the model does not allow while
+   recording each removed JSON Pointer, recursively fill missing source
+   defaults while keeping refined glob selectors, validate the candidate, and
+   print the complete current and candidate documents.
+2. Print the embedded schema and source-default paths needed by the agent.
 3. Do not create a lock, staging tree, backup, or config mutation. `--apply` is
    a usage error.
 
@@ -122,8 +134,8 @@ cumaru update config [--from <source>]
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Invalid config or candidate | `1` | none |
-| Missing/incompatible dependency or validator runtime failure | `4` internally, command fails | none |
+| Invalid config, cross-version source, or invalid candidate | `1` | none |
+| Embedded-schema or conversion runtime failure | `1` | none |
 | Usage error | `2` | none |
 
 ## Transaction and recovery
@@ -145,43 +157,49 @@ current; the highest suffix is its immediate predecessor.
 The [Rust CLI specification](rust.md) documents the native `config::load` implementation,
 embedded schema selection, diagnostics, and its current validation boundaries.
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| [`schemas/config.schema.json`](../../schemas/config.schema.json) | Active declarative global model. |
-| [`schemas/schema-validate-v9.jq`](../../schemas/schema-validate-v9.jq) | Operational v9 structural and semantic validator. |
-| [`schemas/config-reconcile.jq`](../../schemas/config-reconcile.jq) | Model-aware pruning and recursive source-default fill. |
-| [`src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Dependency preflight, conversion, validation, typed reads, and reconciliation dispatch. |
-| [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Config drift reporting and conditional Git recovery handling. |
+| [`schemas/config.schema.json`](../../schemas/config.schema.json) | Active declarative global model, embedded at build time. |
+| [`src/config.rs`](../../src/config.rs) | `CUMARU_DIR`, `CONFIG_FILE`, loading, parsing, private embedded-schema validation, YAML-to-JSON conversion, and read-only reconciliation. |
+| [`src/config_tree.rs`](../../src/config_tree.rs) | V9 selector resolution, path safety, collisions, frontmatter conflicts, index exemption, and logical-to-physical lookup. |
+| [`src/commands/update.rs`](../../src/commands/update.rs) | `update config` report, version gate, and conditional Git recovery. |
+| [`src/commands/doctor.rs`](../../src/commands/doctor.rs) | Workflow graph validation and named drift review against main. |
+
+Historical, not executed by any command, test runner, or CI job:
+[`schemas/schema-validate-v9.jq`](../../schemas/schema-validate-v9.jq) and
+[`schemas/config-reconcile.jq`](../../schemas/config-reconcile.jq) remain only as
+the written reference for issue 144 and are removed by
+[issue 145](../issues/issue_145.md) after it lands.
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `schema_validate_file` | Validates one config; distinguishes invalid input from runtime failure. |
-| `schema_validate_installed` | Validates the installed versioned configuration. |
-| `schema_validate_domain` | Adds selected/source domain agreement and domain semantics. |
-| `schema_validate_source_wildcards` | Rejects a source wildcard whose leaf tags would fall on an entry `index.md`. |
-| `schema_get_domain`, `schema_get_version` | Return typed configuration values. |
-| `config_reconcile_plan` | Produces reconciled value plus removed-property diagnostics without mutation; a more specific local selector stands in for a shipped glob. |
-| `_doctor_config_review_properties` | Names each property that makes the candidate differ from the local configuration. |
-| `_update_check_git_recovery` | Requires clean recovery inside Git and permits warned mutation outside Git. |
+| `config::load` | Loads and validates the installed single-document regular configuration. |
+| `config::parse` | Parses one document and applies the private embedded-schema gate. |
+| `config::reconcile` | Prunes model-incompatible properties, fills missing source defaults, keeps refined glob selectors, and validates the candidate without mutation. |
+| `config_tree::contracts` | Resolves effective per-host frontmatter and tag contracts from the v9 tree. |
+| `config_tree::directory_path` | Resolves a logical directory name through `path` overrides. |
+| `doctor::validate_workflows` | Checks dependencies, cycles, and installed skill availability. |
+| `doctor::review_properties` | Names each property that makes the main candidate differ from the local configuration. |
+| `update::recovery` | Requires clean recovery inside Git and permits warned mutation outside Git. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| [`tests/spec/integration/schema_spec.sh`](../../tests/spec/integration/schema_spec.sh) | Source configs, closed objects, typed reads, semantics, reconciliation, and status classification. |
-| [`tests/spec/update/content_spec.sh`](../../tests/spec/update/content_spec.sh) | Read-only config drift reporting and invalid-value blocking. |
-| [`tests/spec/update/transaction_spec.sh`](../../tests/spec/update/transaction_spec.sh) | Config non-mutation and conditional Git recovery boundaries. |
-| [`tests/spec/update/version_gate_spec.sh`](../../tests/spec/update/version_gate_spec.sh) | Source/local integer-version gates without root frontmatter version. |
-| [`tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | Wildcard index exemption, glob stand-in acceptance, and named review diagnostics. |
-| [`tests/spec/integration/agent_adapters_spec.sh`](../../tests/spec/integration/agent_adapters_spec.sh) | Adapter switching without persisted selection. |
-| [`tests/spec/integration/workflow_graph_spec.sh`](../../tests/spec/integration/workflow_graph_spec.sh) | Optional workflow graph shape, skill availability, and stable order. |
+| `src/config.rs` unit tests | Shipped config acceptance, aggregate schema errors, nested types, unsupported versions, and reconciliation without overwriting local choices. |
+| `src/config_tree.rs` unit tests | Owned update pairs, missing required files, tag selectors, invalid trees, and initial domain selection. |
+| `src/commands/doctor.rs` unit tests | Workflow validation, offline default review, and the daily reference cache. |
+| [`tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Config reconciliation preview without modifying adopter bytes. |
+
+Remaining legacy schema and workflow-graph scenarios are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/integration/schema_spec.sh tests/spec/update/content_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 

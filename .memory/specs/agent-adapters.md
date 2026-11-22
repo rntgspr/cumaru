@@ -15,16 +15,19 @@ client's native instructions, skills, commands, and session-hook surfaces.
 They are explicit stateless command targets and may coexist; config does not
 select or persist an active adapter.
 
-The [Rust installer](rust.md#project-installation) keeps adapter
-instruction/hook wiring but omits separate Claude slash-command files in favor
-of skills. That decision has not changed the implemented Bash adapter matrix.
+The [native installer](rust.md#project-installation) and
+[update](rust.md#native-project-update) record the detailed adapter publication
+and refresh execution. Claude and Codex use skills directly and receive no
+separate command files.
 
 ## Public surface
 
 ```text
 cumaru install [agent <none|claude|codex|opencode>]
-cumaru update agent <none|claude|codex|opencode> [--apply]
-cumaru uninstall [--yes]
+cumaru update agent <none|claude|codex|opencode> [--skills] [--apply|--clear]
+cumaru update skills|commands|agent --clear
+cumaru uninstall [-y|--yes]
+cumaru hooks session|prompt|pretool
 ```
 
 ## Invariants
@@ -40,16 +43,18 @@ cumaru uninstall [--yes]
    per-prompt discipline digest through `UserPromptSubmit`.
 4. Cumaru merges or removes only its owned adapter artifacts; adopter-owned
    instructions, hooks, skills, commands, and configuration remain intact.
-5. Claude and OpenCode commands forward `$ARGUMENTS` to a required namesake
+5. Generic and OpenCode commands forward `$ARGUMENTS` to a required namesake
    skill. The command contains no workflow recipe, and source validation rejects
-   command-without-skill packages before adapter writes.
+   command-without-skill packages before adapter writes. Claude and Codex
+   reject a separate commands refresh; legacy Claude commands under
+   `.claude/commands/cumaru/` remain Cumaru-owned for clear and uninstall.
 
 ## Adapter matrix
 
 | Adapter target | Instructions | Skills | Commands | Hooks |
 |---|---|---|---|---|
 | generic (`none`) | `.agents/AGENTS.md` | `.agents/skills/cumaru-*` | `.agents/commands/cumaru/` | none |
-| `claude` | `CLAUDE.md` | `.claude/skills/cumaru-*` | `.claude/commands/cumaru/` | `.claude/settings.json` |
+| `claude` | `CLAUDE.md` | `.claude/skills/cumaru-*` | none | `.claude/settings.json` |
 | `codex` | `AGENTS.md` | `.agents/skills/cumaru-*` | none | `.codex/hooks.json` |
 | `opencode` | `opencode.json.instructions` | `.agents/skills/cumaru-*` | `.opencode/commands/cumaru/` | none |
 
@@ -67,24 +72,28 @@ cumaru uninstall [--yes]
 
 ### Preflight
 
-1. Validate `.cumaru/config.yaml`, its domain/version agreement, the explicit
-   adapter name, source domain, and required adapter paths.
+1. Validate the explicit adapter name, `.cumaru/config.yaml`, its domain and
+   version agreement with main, and the installed discipline index.
 2. Resolve the complete expected skills, supported commands, instructions, and
-   canonical hook shape before mutation.
+   canonical hook shape, and require unchanged original bytes for every
+   native merge, before mutation. Malformed adopter JSON or instruction blocks
+   fail before writes.
 
-### Dry-run
+### Preview
 
-1. `cumaru update agent <name>` reports current and requested surfaces.
+1. `cumaru update agent <name>` reports add/replace/remove classifications for
+   the target surfaces.
 2. It creates no staging tree, lock, config write, or adapter mutation.
 
 ### Apply
 
-1. Remove only the selected adapter's retired Cumaru-owned footprint.
-2. Install target instructions, skills, commands, and SessionStart hook where
-   supported; do not write adapter selection into config.
-3. Run `cumaru doctor --quiet` after mutation. An existing Git work tree must
-   provide a clean committed recovery boundary; a non-Git project proceeds with
-   a warning and no Git recovery point.
+1. Replace and prune only Cumaru-owned skill and command namespaces for the
+   selected adapter.
+2. Merge target instructions and supported hooks, preserving unrelated native
+   entries; do not write adapter selection into config.
+3. Run the native doctor inspection in quiet mode after mutation. An existing
+   Git work tree must provide a clean committed recovery boundary; a non-Git
+   project proceeds with a warning and no Git recovery point.
 
 ## Bootstrap order
 
@@ -134,35 +143,42 @@ not one filesystem-wide atomic operation.
 
 ## Implementation map
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| [`../../src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh) | Adapter paths, instruction/hook merge, validation, and cleanup. |
-| [`../../src/cmd_install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh) | Project install and initial adapter materialization. |
-| [`../../src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Dry-run, conditional Git recovery check, direct adapter mutation, and post-check. |
-| [`../../src/cmd_uninstall.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_uninstall.sh) | Scoped removal of active Cumaru artifacts. |
-| [`../../src/cmd_doctor.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor.sh) | Installed instruction-set discovery. |
+| [`../../src/adapter.rs`](../../src/adapter.rs) | Adapter paths, ordered instruction blocks, OpenCode entries, and owned hook merge/cleanup. |
+| [`../../src/artifacts.rs`](../../src/artifacts.rs) | Owned skill/command namespaces, clear planning, exact JSON merges, and direct publication. |
+| [`../../src/commands/install.rs`](../../src/commands/install.rs) | Project install and initial adapter materialization. |
+| [`../../src/commands/update.rs`](../../src/commands/update.rs) | Preview, conditional Git recovery check, direct adapter mutation, clear, and postcheck. |
+| [`../../src/commands/uninstall.rs`](../../src/commands/uninstall.rs) | Removal of every Cumaru-owned adapter artifact. |
+| [`../../src/commands/hooks.rs`](../../src/commands/hooks.rs) | Session, prompt-digest, and pre-tool hook payloads. |
+| [`../../src/commands/doctor.rs`](../../src/commands/doctor.rs) | Installed instruction-set discovery. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `_agent_wire_instructions`, `_agent_refresh_instructions` | Merge canonical eager bootstrap content without replacing adopter content. |
-| `_agent_wire_session_hook` | Merge one canonical Claude/Codex SessionStart entry. |
-| `_agent_remove_adapter` | Remove only artifacts owned by the prior adapter. |
-| `_agent_opencode_instructions_valid` | Require one kernel, domain, and discipline entry in relative order. |
+| `adapter::markdown` | Merge canonical eager bootstrap content into a Markdown instruction file without replacing adopter content. |
+| `adapter::opencode` | Merge exact kernel, domain, and discipline entries into `opencode.json` instructions. |
+| `adapter::hooks` | Merge the canonical SessionStart, UserPromptSubmit, and PreToolUse entries, replacing recognized retired commands. |
+| `adapter::clear` | Remove only exact Cumaru-owned instruction and hook entries. |
+| `artifacts::clear_plan` | Plan removal of one owned surface for one adapter. |
+| `doctor::instruction_issues` | Require at least one complete current instruction set. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| [`../../tests/spec/integration/agent_adapters_spec.sh`](../../tests/spec/integration/agent_adapters_spec.sh) | Install/switch/uninstall matrix, instruction preservation, hook shape, repair, and config ordering. |
-| [`../../tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | Adapter health diagnostics through doctor. |
-| [`../../tests/spec/update/transaction_spec.sh`](../../tests/spec/update/transaction_spec.sh) | Non-Git mutation, dirty-Git rejection, direct mutation, and transient-debris checks. |
+| `src/adapter.rs` unit tests | Exact owned clear, adopter-surface preservation, session/prompt/pre-tool hook merges, and hook adapters skipping static bodies. |
+| [`../../tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Four stateless adapters through install/uninstall, offline clear, integration refresh, repeated refresh idempotence, and dirty-Git refusal. |
+| `src/commands/doctor.rs` unit tests | Instruction-set health diagnostics. |
+
+Remaining adapter matrices are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/integration/agent_adapters_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 

@@ -13,10 +13,10 @@ version: 9
 `cumaru doctor` checks an installed adopter tree against the deterministic v9
 configuration and reports structural or metadata defects without editing it.
 
-The [native Rust doctor contract](rust.md#native-doctor) records its
-binary-only implementation, daily-cached main drift reference, ASCII presentation, installed
-workflow-skill boundary, default invocation, and verification. The Bash
-implementation below retains its separate source-snapshot contract.
+The [native Rust doctor contract](rust.md#native-doctor) records the detailed
+check order, daily-cached main drift reference, ASCII presentation, installed
+workflow-skill boundary, default invocation, and verification. The retired
+Bash doctor's local source-snapshot comparison has no native counterpart.
 
 ## Public surface
 
@@ -40,12 +40,14 @@ cumaru doctor [--quiet]
    requires presence; `optional: true` removes that presence requirement.
 4. Tags are arrays of marker names. Doctor does not validate tag-body formats
    or EARS/Gherkin prose through config.
-5. Invalid optional workflow graphs or unavailable referenced domain skills
-   fail configuration preflight. Graph validation does not execute a skill.
+5. Invalid optional workflow graphs or workflow skills absent from an
+   installed supported-adapter skill tree fail configuration preflight. Graph
+   validation does not execute a skill.
 6. The remaining installed-tree checks cover indexes, summaries, discipline
-   metadata, markers, file references, tools, adapter instructions, retired
-   adapter state, absent `meta.context` paths (a warning; `context` skips them
-   silently), and configuration drift. Checks never edit adopter files.
+   metadata, balanced and unknown/nested markers, stale work markers, RAW
+   blocks, retained file references, external tools, adapter instructions,
+   absent `meta.context` paths (a warning; `context` skips them silently), and
+   configuration drift. Checks never edit adopter files.
 7. The single side effect is opt-in and runs after the checks: when the report
    passes and `meta.doctor.after.warm` is `true`
    ([configuration](configuration.md)), doctor warms only the `adopter`
@@ -75,7 +77,7 @@ For a valid custom domain with no matching source on main, doctor skips drift
 with a warning and relies on schema validation. Its direct
 tree, rules, targets, and workflows remain adopter-owned, and workflow skills
 must exist in an installed supported-adapter skill tree. Distributed domains
-retain their own source-default and source-skill checks.
+also receive the main-HEAD source-default drift comparison.
 
 ## Execution and failure
 
@@ -88,12 +90,16 @@ retain their own source-default and source-skill checks.
 
 | Artifact | Responsibility |
 |---|---|
-| [`../../src/cmd_doctor.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor.sh) | Version routing, config preflight, reporting, and drift checks. |
-| [`../../src/cmd_doctor_checks.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor_checks.sh) | Direct-tree and installed-tree checks. |
-| [`../../src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Shared v9 tree resolution. |
-| [`../../tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | CLI health and non-mutation contracts. |
-| [`../../tests/spec/integration/tree_resolution_spec.sh`](../../tests/spec/integration/tree_resolution_spec.sh) | Direct-tree contract examples. |
+| [`../../src/commands/doctor.rs`](../../src/commands/doctor.rs) | Version routing, config preflight, workflow validation, cached checks, reporting, drift, and opt-in warm, with unit tests. |
+| [`../../src/config_tree.rs`](../../src/config_tree.rs) | Shared v9 tree resolution into per-host contracts. |
+| [`../../src/references.rs`](../../src/references.rs) | Retained reference rows and the source-file rule. |
+| [`../../src/adapter.rs`](../../src/adapter.rs) | Expected instruction sets for discovery. |
+| [`../../tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Warm opt-in, daily reference cache, offline drift, and update postchecks. |
+
+Remaining legacy doctor and tree-resolution scenarios are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ```bash
-shellspec tests/spec/cli/doctor_spec.sh tests/spec/integration/tree_resolution_spec.sh
+cargo test --locked
+bash tests/run.sh
 ```

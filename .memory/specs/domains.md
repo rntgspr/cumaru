@@ -13,10 +13,10 @@ version: 9
 Define how Cumaru packages one self-contained knowledge model per domain and
 installs exactly one validated domain plus one agent adapter into a project.
 
-The [Rust installer](rust.md#project-installation) uses `__base`
-by default and materializes remote main-HEAD content from the domain config
-instead of copying a complete local domain. Its separate native contract does
-not change the current Bash installation contract below.
+The [native installer](rust.md#project-installation) records the detailed
+main-HEAD resolution, selection, preflight, and publication. It uses `__base`
+by default and materializes remote content from the domain config instead of
+copying a complete domain.
 
 The [native domain catalog](rust.md#native-help) discovers HEAD of GitHub
 main instead of a local source snapshot, without requiring an adopter tree.
@@ -25,8 +25,9 @@ main instead of a local source snapshot, without requiring an adopter tree.
 
 ```text
 cumaru help domains
-cumaru install [agent <none|claude|codex|opencode>]
-               [--domain <name>] [--with <skill>...]
+cumaru install [agent <none|claude|codex|opencode>] [--domain <name>]
+cumaru bootstrap
+cumaru update skills <agent> --with <skill>...
 domains/__base/
 domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,focus,homebrew-management,ai-ccn}/
 ```
@@ -43,10 +44,10 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
    declared domain-owned artifacts such as `cumaru-install` and indexes.
 4. A domain author declares a pillar whose entries are directories with an
    entry selector, never with a wildcard child file key that also matches the
-   entry's own `index.md`. Source validation rejects such a wildcard when it
-   declares leaf `tags`, naming the pillar and the wildcard, because the
-   resolver keeps every entry `index.md` under `rules.index_md` and
-   `rules.pillar_index` alone. A domain that expects the adopter to name real
+   entry's own `index.md`, because the resolver keeps every entry `index.md`
+   under `rules.index_md` and `rules.pillar_index` alone. Rejecting such a
+   wildcard with leaf `tags` at source validation has no native owner yet
+   ([issue 172](../issues/issue_172.md)). A domain that expects the adopter to name real
    entries ships the pillar with no child key, as `focus` does for `outcomes`:
    the adopter then adds keys, which is additive and reports no drift, instead
    of replacing a shipped key. Replacing one is also accepted when the new keys
@@ -54,9 +55,11 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
    [configuration specification](configuration.md) for that asymmetry.
 5. Domain-specific pillars, roles, lifecycle, skills, and commands live only
    in that domain. `domain.md` carries domain semantics.
-6. Install validates the complete source before project writes, copies the
-   selected domain, excludes source-only skills/commands/migration and bootstrap
-   prose from `.cumaru/`, then installs native artifacts separately.
+6. Install validates the selected source before project writes, materializes
+   only the structure its config describes, never places source-only
+   skills/commands/migration and bootstrap prose in `.cumaru/`, then installs
+   native artifacts separately. Optional skills are outside install; they are
+   added through `update skills <agent> --with <skill>`.
 7. An omitted install adapter means generic; explicit targets are `claude`,
    `codex`, and `opencode`. Adapter choice is not persisted in config.
 8. Every `commands/cumaru/<name>.md` requires a regular
@@ -139,64 +142,73 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
 |---|---|---|
 | `domains/<domain>/config.yaml` | framework/domain author | Valid initial v9 configuration. |
 | `domains/<domain>/domain.md` | framework/domain author | Pillars, lifecycle, roles, and domain context. |
-| Universal mirrors | framework | Must match `__base` under distribution integrity checks. |
+| Universal mirrors | framework | Must match `__base` under `scripts/sync-domain-kernel.sh --check`. |
 | Domain skills and commands | framework/domain author | Installed only when the selected domain ships them. |
-| `--with <skill>` | user | Opt-in top-level skill, validated before writes. |
+| `update skills --with <skill>` | user | Opt-in top-level skill from main, validated before writes. |
 | `.cumaru/config.yaml` after install | adopter | Effective domain configuration; it carries no adapter selection. |
 
 ## Execution
 
 ### Preflight
 
-1. Parse domain, adapter, and opt-in skill arguments.
-2. Refuse every replacement of an existing install and route refresh or opt-in
-   additions to `cumaru update`.
-3. Resolve and fully validate the source domain and every requested opt-in.
-4. Distribution installation checks universal mirror drift before linking the
-   CLI snapshot.
+1. Parse domain and adapter arguments; `base` aliases `__base`, and unsafe
+   names or unknown adapters fail before network access.
+2. Refuse every replacement of an existing install, including files and broken
+   symlinks, and route refresh or opt-in additions to `cumaru update`.
+3. Resolve main HEAD, pin the domain inventory to one commit, and validate the
+   remote config, version, domain agreement, selected files, and discipline
+   metadata.
+4. Download every selected file into memory and prepare adapter merges before
+   the first write.
 
-### Dry-run
+### Read-only forms
 
 1. Domain discovery and help read source metadata without mutation.
-2. Project install has no dry-run mode; confirmation and validation are its
-   pre-mutation boundary.
+2. Project install has no preview mode; complete validation and preflight are
+   its pre-mutation boundary.
 
 ### Apply
 
-1. Copy the selected domain to `.cumaru/` and prune source-only artifacts.
-2. Install domain `cumaru-*` skills, supported commands, and requested opt-ins
-   into the selected adapter paths.
-3. Wire ordered kernel, domain, and discipline instructions plus SessionStart
-   where supported.
-4. Print doctor-oriented next steps without persisting adapter state.
+1. Exclusively create `.cumaru/` and publish only the files the domain config
+   selects.
+2. Install domain `cumaru-*` skills and supported commands into the selected
+   adapter paths, skipping existing skill directories and command files.
+3. Merge ordered kernel, domain, and discipline instructions plus supported
+   hooks.
+4. Print domain/config review and doctor-oriented next steps without
+   persisting adapter state or running doctor or bootstrap.
 
 ## Failure contract
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Usage, unknown domain/agent/skill | `2` or `1` as classified by CLI | none before copy |
-| Invalid source config | `1` | none |
+| Usage, unsafe domain name, unknown adapter | `2` | none |
+| Unknown domain, invalid source config, source or network failure | `1` | none |
 | Existing install | `1` | none; use update or uninstall deliberately first |
-| Kernel drift during tool installation | nonzero | tool snapshot not linked |
-| Adapter write failure | `1` | install may be incomplete; config remains adapter-neutral |
+| Filesystem failure after publication begins | `1` | install may be incomplete; config remains adapter-neutral |
 
 ## Transaction and recovery
 
 Project installation is ordered but is not the update transaction. It writes
-the requested native artifacts without adapter state. It never replaces an
-existing install; recovery and deliberate domain removal remain user-owned.
-`cumaru upgrade` is machine-global and destructive to `~/.cumaru`, and is not
-run or regression-tested without explicit authorization.
+the requested native artifacts without adapter state and has no automatic
+rollback. It never replaces an existing install; recovery and deliberate domain
+removal remain user-owned. `cumaru upgrade` is machine-global, replaces the
+installed binary and `~/.config/cumaru.json`, and is not run or
+regression-tested without explicit authorization
+([install and upgrade](install-upgrade.md)).
 
 ## Implementation map
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| `src/cmd_install.sh` | Project install parsing, domain copy, skills, commands, and help discovery. |
-| `src/cmd_bootstrap.sh` | Read-only delivery of `__base` plus domain `bootstrap.md`. |
-| `src/agent_adapter.sh` | Adapter normalization, paths, instructions, hooks, and cleanup. |
-| `src/schema.sh` | Complete source-domain validation. |
-| `src/install.sh` | Tool installation and distribution drift check. |
+| [`src/commands/install.rs`](../../src/commands/install.rs) | Domain/adapter arguments, complete download and preflight planning, and initial project publication. |
+| [`src/config_tree.rs`](../../src/config_tree.rs) | Remote initial-install file selection from the domain config. |
+| [`src/distribution.rs`](../../src/distribution.rs) | Main-HEAD resolution and commit-pinned domain inventories and downloads. |
+| [`src/commands/help.rs`](../../src/commands/help.rs) | Public domain discovery and `domain.md` title rendering. |
+| [`src/commands/bootstrap.rs`](../../src/commands/bootstrap.rs) | Read-only delivery of `__base` plus domain `bootstrap.md`. |
+| [`src/adapter.rs`](../../src/adapter.rs) | Adapter paths, instructions, hooks, and cleanup. |
+| [`src/commands/uninstall.rs`](../../src/commands/uninstall.rs) | Removal of the project tree and owned adapter artifacts. |
+| [`scripts/sync-domain-kernel.sh`](../../scripts/sync-domain-kernel.sh) | Universal mirror synchronization and `--check` integrity gate. |
 | `domains/*/config.yaml` | Domain initial configuration. |
 | `domains/*/domain.md` | Domain-specific model and lifecycle prose. |
 
@@ -204,37 +216,36 @@ run or regression-tested without explicit authorization.
 
 | Method | Contract |
 |---|---|
-| `cmd_install` | Validate and install one domain and adapter. |
-| `_install_list_domains` | Discover public domains and summarize their `domain.md`. |
-| `_framework_install_skills` | Install domain and universal managed skills. |
-| `_framework_copy_commands` | Copy only commands supported by the selected adapter. |
-| `schema_validate_domain` | Validate config and selected-domain agreement. |
-| `schema_validate_source_wildcards` | Reject a shipped wildcard whose leaf tags would fall on an entry `index.md`. |
-| `_agent_wire_instructions` | Materialize canonical bootstrap for one adapter. |
+| `install::validate_disciplines` | Require the discipline index and valid selected strictness metadata. |
+| `config_tree::install_files` | Select the structure and files the remote domain config describes. |
+| `distribution::domain_source` | Resolve one commit and the domain inventory for every read. |
+| `adapter::markdown`, `adapter::hooks` | Materialize canonical bootstrap for one adapter. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| `tests/spec/integration/schema_spec.sh` | Every domain config and semantic constraints. |
-| `tests/spec/integration/agent_adapters_spec.sh` | Domain artifacts across all adapters. |
-| `tests/spec/contracts/documented_contracts_spec.sh` | Domain help and universal mirror contracts. |
-| `tests/spec/cli/doctor_spec.sh` | Installed domain and adapter acceptance, including focus source frontmatter. |
-| `tests/spec/contracts/bootstrap_spec.sh` | Bootstrap delivery, source-only exclusion, and focus coverage. |
+| `src/commands/install.rs` unit tests | Argument validation, source disciplines, and project preflight preservation. |
+| `src/config_tree.rs`, `src/commands/help.rs`, `src/commands/bootstrap.rs` unit tests | Initial file selection, domain catalog, and bootstrap rendering. |
+| [`tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Stateless adapters, existing-install refusal, truncated inventories, and missing remote assets. |
+| [`tests/native/ai_ccn_domain_spec.sh`](../../tests/native/ai_ccn_domain_spec.sh), [`tests/native/homebrew_domain_spec.sh`](../../tests/native/homebrew_domain_spec.sh) | Domain-specific installed contracts. |
+
+Remaining legacy domain, schema, and bootstrap scenarios are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/integration/schema_spec.sh tests/spec/integration/agent_adapters_spec.sh
+cargo test --locked
 bash tests/run.sh
+scripts/sync-domain-kernel.sh --check
 ```
 
 ## References
 
 - [Design as Code domain contract](design-as-code.md) — six pillars, role boundaries, and evidence-driven delivery.
 
-- [`../../src/cmd_install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh)
-- [`../../src/install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/install.sh)
+- [`../../src/commands/install.rs`](../../src/commands/install.rs)
 - [`../../docs/install.md`](../../docs/install.md)
 - [`../../docs/agent-adapters.md`](../../docs/agent-adapters.md)
 - [`install-upgrade.md`](install-upgrade.md)

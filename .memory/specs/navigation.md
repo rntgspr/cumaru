@@ -14,20 +14,16 @@ Project the `.cumaru/` filesystem as a bounded, read-only candidate tree so an
 agent can select relevant knowledge from paths and summaries before loading
 Markdown bodies.
 
-The [native navigation contract](rust.md#execution) records Rust's config-free
-directory selection, TSV default, optional Markdown output, reusable walker,
-literal H1-H6 map with retained `#` markers and section start/end lines, and
-the `get` line-range reader ([`docs/get.md`](../../docs/get.md)). Native navigation has no
-`--pillars` or `--domain`. The Bash surface below retains its distinct defaults,
-filters, and level-two heading projection.
+The [native navigation contract](rust.md#execution) records the detailed
+execution of Rust's config-free directory selection, reusable walker, literal
+H1-H6 map, and the `get` line-range reader ([`docs/get.md`](../../docs/get.md)).
+This specification owns the capability-level invariants.
 
 ## Public surface
 
 ```text
-cumaru tree [<directory-or-md>] [--deep] [--rows]
-            [--pillars <name[,name...]>] [--domain <name>]
-cumaru map [<directory-or-md>] [--rows]
-           [--pillars <name[,name...]>] [--domain <name>]
+cumaru tree [<directory-or-md>...] [--deep] [--rows|--markdown]
+cumaru map [<directory-or-md>] [--rows|--markdown]
 .cumaru/**/index.md
 .cumaru/**/*.md summary:
 ```
@@ -36,14 +32,17 @@ cumaru map [<directory-or-md>] [--rows]
 
 1. The filesystem, not index marker rows, defines structural candidates.
 2. Every non-hidden directory has a regular `index.md`; each Markdown summary
-   is a trimmed string of 32-512 Unicode code points without CR, LF, or tab.
+   is a trimmed string of 32-512 Unicode code points without C0 or DEL
+   control characters.
 3. Shallow traversal is the default; deep traversal audits all descendants and
    continues after individual defects.
-4. Absolute paths, `..`, hidden paths, non-Markdown file targets, all symlinks,
-   and canonical escapes are rejected before body or frontmatter reads.
-5. Output is deterministic under `LC_ALL=C`; diagnostics use stderr only.
-6. `--pillars` restricts candidates to config-declared pillars; `--domain` is
-   an installed-domain guard, never a source switch.
+4. Absolute paths, `..`, hidden paths, control characters, non-Markdown file
+   targets, all symlinks, and canonical escapes are rejected before body or
+   frontmatter reads.
+5. Output is deterministic; diagnostics are deduplicated and use stderr only.
+6. Navigation never loads `.cumaru/config.yaml`; it has no pillar or domain
+   filter. The Bash-era `--pillars` and `--domain` options were intentionally
+   removed, not left unowned, and are rejected as usage errors.
 7. `depends-on` is the strongest candidate signal and `relates` is weaker;
    both remain relevance-prunable.
 8. Summary curation is explicitly selected only for `.cumaru` `summary:`
@@ -56,92 +55,101 @@ cumaru map [<directory-or-md>] [--rows]
 |---|---|---|
 | `.cumaru/` paths | adopter | Structural truth, constrained by v9 safety and index rules. |
 | Markdown `summary:` | framework or adopter by file ownership | Stable selection signal, not status metadata. |
-| `.cumaru/config.yaml` pillars/domain | adopter | Validated filter vocabulary and domain guard. |
 | Semantic relation fields/tags | domain and adopter | Domain declares shape; adopter declares links. |
-| Tree output | runtime | Read-only deterministic Markdown or TSV projection. |
+| Tree and map output | runtime | Read-only deterministic TSV or Markdown projection. |
 
 ## Execution
 
 ### Preflight
 
-1. Parse options and validate target syntax before traversal.
-2. Require a real `.cumaru/` root and compatible Mike Farah `yq` except for
-   `--help`.
-3. Require ripgrep for `map`; validate requested pillar/domain filters from
-   installed config.
-4. Reject symlink components and canonical paths outside `.cumaru/`.
+1. Clap parses options; every target is syntax-checked before filesystem
+   access.
+2. Require a real, non-symlink `.cumaru/` directory. No configuration file
+   or external YAML or search tool is required.
+3. Resolve each target to a directory or exact `.md` file, rejecting symlink
+   components and canonical paths outside `.cumaru/`.
 
 ### Read-only traversal
 
-1. `tree` normalizes a Markdown target to its parent directory. Shallow mode
-   lists direct Markdown files except `index.md` and indexed child directories.
+1. `tree` accepts several targets, defaulting to the root, and normalizes a
+   Markdown target to its parent directory; repeated canonical directories are
+   visited once. Shallow mode requires a regular target `index.md` and lists
+   direct Markdown files except `index.md` plus indexed child directories.
    Deep mode recursively validates all non-hidden descendants.
-2. `map` preserves a Markdown target as one exact file. Directory targets are
-   searched recursively for non-hidden Markdown descendants, and an omitted
-   target searches the complete `.cumaru/` tree.
-3. `tree` reads only YAML frontmatter to obtain summaries. `map` emits level-two
-   ATX headings that begin with `## `, using `rg -n`-compatible output by
-   default or TSV rows with `--rows`.
-4. Emit valid candidates or heading rows after C-locale path sorting; `map`
-   retains numeric source-line order within each file. Aggregate recursive
-   traversal defects and return nonzero after the walk without suppressing
-   valid output rows.
+2. `map` accepts one optional target. A Markdown target remains one exact
+   file; a directory, or the omitted root, is searched recursively for
+   non-hidden Markdown descendants without requiring indexes or summaries.
+3. `tree` reads only YAML frontmatter to obtain summaries and emits
+   `path<TAB>summary` rows, with a trailing `/` on directories. `map` emits
+   literal H1-H6 ATX headings with their `#` markers as
+   `path:start,end<TAB>title`, where the first field is a `get` selector.
+   `--markdown` selects an escaped table; `--rows` explicitly selects TSV.
+4. Emit valid candidates or heading rows after path sorting; `map` retains
+   numeric source-line order within each file. Aggregate traversal defects and
+   return nonzero after the walk without suppressing valid output rows.
 5. No lock, staging area, backup, or filesystem mutation is created.
 
 ## Failure contract
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Unknown option or malformed invocation | `2` | none |
-| Missing target/index, invalid summary, filter mismatch, or unsafe path | `1` | none |
-| Missing/incompatible `yq` | `1` | none |
-| Deep walk with one or more defects | `1` after complete walk | none |
+| Unknown or removed option, conflicting output modes, or extra `map` target | `2` | none |
+| Missing/symlinked `.cumaru/`, unsafe or missing target, or shallow target without a regular index | `1`, empty stdout | none |
+| Invalid summary, unreadable heading file, or deep walk defect | `1` after complete walk; valid rows still emitted | none |
 
 ## Implementation map
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| `src/cmd_tree.sh` | Parsing, safety, traversal, summaries, filtering, and output. |
-| `src/cmd_map.sh` | Read-only level-two heading projection with shared path and filter validation. |
-| `src/common.sh` | Shared config/frontmatter and path constants. |
-| `src/cmd_doctor_checks.sh` | Whole-tree navigation and summary acceptance checks. |
-| `domains/__base/index.md` | Kernel loading rule that consumes tree candidates. |
-| `src/agent_adapter.sh` | Session-start root projection where supported. |
+| [`src/commands/tree.rs`](../../src/commands/tree.rs) | Arguments, root checks, target-directory deduplication, index/summary parsing, diagnostics, and TSV/Markdown output. |
+| [`src/commands/map.rs`](../../src/commands/map.rs) | Exact-file or recursive heading projection, `get` selectors, diagnostics, and TSV/Markdown output. |
+| [`src/walk.rs`](../../src/walk.rs) | Contained traversal, file filters, hidden pruning, symlink rejection, deduplication, and filesystem diagnostics. |
+| [`src/paths.rs`](../../src/paths.rs) | Target normalization, syntax validation, exact resolution, symlink and containment checks. |
+| [`src/markdown.rs`](../../src/markdown.rs) | Frontmatter reading, summary validation, literal heading reading, and table-cell escaping. |
+| [`src/tsv.rs`](../../src/tsv.rs) | Tab-separated row writing. |
+| [`src/text.rs`](../../src/text.rs) | Control-character detection and diagnostic quoting. |
+| [`src/commands/doctor.rs`](../../src/commands/doctor.rs) | Whole-tree summary acceptance through `markdown::validate_summary`. |
+| [`src/commands/hooks.rs`](../../src/commands/hooks.rs) | Session-start payload that appends the root `cumaru tree .` projection. |
+| [`domains/__base/index.md`](../../domains/__base/index.md) | Kernel loading rule that consumes tree candidates. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `cmd_tree` | Parse, validate, traverse, and emit without mutation. |
-| `cmd_map` | Recursively map headings, or map one exact Markdown target, without mutation. |
-| `_tree_validate_target_syntax` | Reject unsafe or unsupported target forms. |
-| `_tree_canonicalize` | Resolve and prove containment without accepting symlinks. |
-| `_tree_summary` | Read and validate one summary from frontmatter. |
-| `_tree_walk_shallow` | Emit direct valid candidates only. |
-| `_tree_walk_deep` | Audit recursively while accumulating defects. |
-| `_tree_validate_filters` | Resolve pillar restrictions and installed-domain guard. |
+| `tree::execute` | Validate targets and root, walk once, then emit sorted unique records and diagnostics. |
+| `TreeParser::parse` | Interpret directory indexes and file candidates; enforce shallow target indexes and deep missing-index defects. |
+| `TreeParser::summary` | Read and validate one frontmatter summary, recording a diagnostic when unusable. |
+| `map::execute` | Resolve one scope, read headings from safe files, and emit sorted rows and diagnostics. |
+| `walk::Walk::run` | Deliver safe paths to a parser callback without reading content. |
+| `paths::validate_target_syntax` | Reject absolute, control-character, `..`, and hidden targets before filesystem access. |
+| `paths::resolve_target` | Resolve a safe directory or exact `.md` file inside the root. |
+| `markdown::validate_summary` | Enforce the trimmed 32-512 code-point, C0/DEL-free summary contract. |
+| `markdown::read_headings` | Read literal H1-H6 headings and their section line ranges. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| `tests/spec/cli/tree_spec.sh` | Targets, modes, summaries, sorting, filters, streams, and symlink safety. |
-| `tests/spec/cli/map_spec.sh` | Literal heading output, numeric line ordering, exact file targets, required ripgrep, and complete descendant path diagnostics. |
-| `tests/spec/cli/doctor_spec.sh` | Complete installed inventory and summary validation. |
-| `tests/spec/integration/agent_adapters_spec.sh` | Bootstrap instructions and SessionStart projection. |
-| `tests/spec/contracts/summarize_artifacts_spec.sh` | Universal summary-curation artifact contract. |
+| [`tests/native/navigation_spec.sh`](../../tests/native/navigation_spec.sh) | Shallow/deep tree rows, file-parent and overlapping targets, summary length limits, unsafe targets, literal map headings and section ends, `get` selections, partial results, and removed legacy options. |
+| `src/walk.rs` unit tests | Markdown filtering, overlapping-target deduplication, and symlink rejection before parsing. |
+| `src/commands/doctor.rs` unit tests | Installed-tree summary validation. |
+| [`tests/spec/contracts/summarize_artifacts_spec.sh`](../../tests/spec/contracts/summarize_artifacts_spec.sh) | Universal summary-curation artifact contract. |
+
+Remaining legacy tree/map scenarios and their disposition are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/cli/tree_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 
 ## References
 
-- [`../../src/cmd_tree.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_tree.sh)
 - [`../../docs/tree.md`](../../docs/tree.md)
+- [`../../docs/map.md`](../../docs/map.md)
+- [`rust.md`](rust.md#execution)
 - [`../../docs/architecture.md`](../../docs/architecture.md)
 - [`architecture.md`](architecture.md)
 - [`agent-adapters.md`](agent-adapters.md)

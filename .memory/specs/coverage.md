@@ -14,10 +14,9 @@ version: 9
 under the configured durable specification pillar. It reports gaps and malformed
 or out-of-scope references without modifying either source or specifications.
 
-The [native coverage contract](rust.md#native-coverage) records the Rust port,
-shared reference parser, configured physical directory resolution, malformed-host
-diagnostics, and offline verification. The Bash surface below remains available;
-the `.codex/` exclusion gap applies to both implementations.
+The [native coverage contract](rust.md#native-coverage) records the detailed
+guard order, shared reference parser, configured physical directory resolution,
+malformed-host diagnostics, and offline verification.
 
 ## Public surface
 
@@ -67,20 +66,22 @@ cumaru coverage [--refs|--gaps|--rows] [--strict]
 | Input or surface | Owner | Contract |
 |---|---|---|
 | Git index | repository | Defines tracked candidates through `git ls-files`. |
-| `meta.specification_dir` | adopter | Selects the durable pillar; defaults to `specs` when empty. |
-| `meta.coverage.source` | adopter | Optional array of Bash fnmatch-style globs; `*` crosses `/`. |
+| `meta.specification_dir` | adopter | Selects the durable pillar; defaults to `specs`. V9 resolves each logical name through `path` overrides; an undeclared or wildcard name fails. |
+| `meta.coverage.source` | adopter | Optional array of globs; `*` crosses `/`, leading dots match, and no backslash escapes or extglob are supported. |
 | `reference` tag bodies | adopter | Valid `[Link, Description]` rows maintained through Cumaru tag/refs workflows. |
 
 ## Execution
 
 ### Preflight
 
-1. Require `.cumaru/`, `config.yaml`, the selected specification directory,
-   and a Git work tree.
-2. Read source globs, enumerate tracked files, and enumerate parsed reference
-   rows through the shared tag machinery.
+1. Require `.cumaru/`, `config.yaml`, a config that passes the embedded
+   schema, the selected specification directory, and a Git work tree, in that
+   order. Each failure prints one diagnostic on stderr with empty stdout.
+2. Read source globs, enumerate tracked files through read-only `git ls-files`,
+   and enumerate reference rows from safe Markdown hosts through the shared
+   walker, balanced tag parser, and reference row parser.
 
-### Dry-run
+### Read-only reports
 
 All modes are reports and perform no writes, locks, staging, backups, Git index
 changes, or tag mutations.
@@ -108,7 +109,8 @@ does not claim exclusion or prescribe a change.
 | Condition | Status | Mutation |
 |---|---:|---|
 | Unknown/multiple output modes | `2` | none |
-| Missing tree, config, specification pillar, or Git work tree | `1` | none |
+| Missing tree, config, or specification pillar, invalid config or glob, or non-Git project | `1`, empty stdout | none |
+| Malformed host or traversal defect | `1` after the report; defects on stderr | none |
 | `--strict` with uncovered/stale/invalid | `1` | none |
 | Successful report, including foreign-only gaps | `0` | none |
 
@@ -116,32 +118,37 @@ does not claim exclusion or prescribe a change.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`../../src/cmd_coverage.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_coverage.sh) | Source inventory, filtering, bucket adjudication, rendering, and strict status. |
-| [`../../src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Shared reference-row parsing and target resolution. |
-| [`../../src/cmd_tag.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_tag.sh) | Reference tag read/write primitive. |
+| [`../../src/commands/coverage.rs`](../../src/commands/coverage.rs) | Guards, source inventory, exclusions/globs, bucket adjudication, rendering, and strict status. |
+| [`../../src/references.rs`](../../src/references.rs) | Reference-row parsing and target resolution shared with doctor. |
+| [`../../src/commands/tag.rs`](../../src/commands/tag.rs) | Reference tag read/write primitive used by the refs workflow. |
 | [`../../domains/__base/skills/cumaru-refs/SKILL.md`](../../domains/__base/skills/cumaru-refs/SKILL.md) | Gap-remediation workflow. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `_coverage_spec_dir` | Read the configured durable specification directory. |
-| `_coverage_source_globs` | Emit block or inline source globs one per line. |
-| `_coverage_source_files` | Emit sorted unique tracked candidates after exclusions and glob filtering. |
-| `cmd_coverage` | Validate mode, classify rows, render output, and enforce strict status. |
-| `fm_tag_table_rows` | Emit normalized reference rows and resolution statuses. |
+| `coverage::specification_dirs` | Resolve the configured durable specification directories. |
+| `coverage::source_globs` | Compile optional `meta.coverage.source` patterns. |
+| `coverage::tracked_files`, `coverage::source_files` | Emit tracked candidates after exclusions and glob filtering. |
+| `coverage::reference_rows` | Collect rows from innermost `reference` blocks in safe hosts. |
+| `coverage::classify`, `coverage::render` | Assign buckets and render each mode. |
+| `references::table_row`, `references::resolve` | Parse normalized rows and apply the source-file rule. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| [`../../tests/spec/cli/coverage_spec.sh`](../../tests/spec/cli/coverage_spec.sh) | Report, refs, gaps, rows, strict, all buckets, globs, exclusions, row rotation, and runtime guards. |
-| [`../../tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | Retained reference validation and shared row processing. |
+| `src/commands/coverage.rs` unit tests | Row parsing, innermost-block attribution, target statuses, exclusions with `.codex/`, globs, specification directories, and bucket rendering. |
+| [`../../tests/native/coverage_spec.sh`](../../tests/native/coverage_spec.sh) | Every bucket, strict status, mode conflict, and byte preservation. |
+| `src/commands/doctor.rs` unit tests | Retained reference validation through the shared parser. |
+
+Remaining legacy coverage scenarios are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/cli/coverage_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 

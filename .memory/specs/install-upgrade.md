@@ -1,6 +1,6 @@
 ---
 name: install-upgrade-specification
-description: "Current v9 contract separating project-domain installation from destructive global CLI upgrade."
+description: "Current v9 contract separating project-domain installation from the machine-global binary installer and upgrade."
 type: project
 status: implemented
 version: 9
@@ -11,190 +11,189 @@ version: 9
 ## Purpose
 
 `cumaru install` adopts Cumaru in the current project by creating `.cumaru/`
-and one agent adapter. `cumaru upgrade` replaces the machine-global Cumaru
-snapshot and executable link; it never updates an adopter project.
+and one agent adapter. `cumaru upgrade` replaces the machine-global `cumaru`
+executable with the latest release binary; it never updates an adopter project.
 
-This specification describes the deprecated Bash distribution as shipped before the
-native CLI, retained for reference and legacy regression; its scripts survive only
-in Git history. The supported native executable is `cumaru`, published to
-`/usr/local/bin/cumaru` by `src/install.sh`, which replaced the destructive
-snapshot installer at the same public URL. A legacy Bash `cumaru upgrade` or the
-branding URL now runs the native installer: it leaves `~/.cumaru` and the old
-`~/.local/bin/cumaru` link untouched and warns when that link shadows the new
-executable in PATH. The separate
-[Rust specification](rust.md) records binary-only global installation and the
-[native project-install contract](rust.md#project-installation).
-Native project removal is recorded in the
-[Rust uninstall contract](rust.md#native-project-uninstall).
+The [Rust specification](rust.md) records the detailed
+[project-install](rust.md#project-installation), binary installer
+([execution items 9-12](rust.md#execution)), and
+[uninstall](rust.md#native-project-uninstall) contracts. The retired Bash
+snapshot distribution is summarized under [Historical](#historical-bash-snapshot-distribution).
 
 ## Public surface
 
 ```text
-cumaru install [agent <none|claude|codex|opencode>] [--domain <name>] [--with <skill>...]
+cumaru install [agent <none|claude|codex|opencode>] [--domain <name>]
 cumaru upgrade
 cumaru upgrade --check
 cumaru version
-~/.cumaru
-~/.local/bin/cumaru
+/usr/local/bin/cumaru
+~/.config/cumaru.json
 curl -fsSL https://raw.githubusercontent.com/rntgspr/cumaru/main/src/install.sh | bash
 ```
 
-The branding URL `https://pixelpunk.works/cumaru/install.sh` does nothing but
-delegate to the canonical GitHub URL above. The surface above is historical; the
-URL now serves the native installer described in [rust.md](rust.md).
+The branding URL `https://pixelpunk.works/cumaru/install.sh` only delegates to
+the canonical GitHub URL above. A legacy Bash `cumaru upgrade` reaches the same
+native installer.
 
 ## Invariants
 
-1. Project install always targets `./.cumaru`, defaults to domain `sdlc-full`
-   and the generic adapter target, and validates source config before project writes.
+1. Project install always targets `./.cumaru`, defaults to domain `__base` and
+   the generic adapter target, and validates the remote source config before
+   project writes.
 2. Fresh installs are v9, use `.cumaru/config.yaml`, install no `.state/`, and
    exclude source-only skills, commands, and migration and bootstrap documents
-   from `.cumaru/`.
-3. Global upgrade is deliberately destructive: it downloads and unpacks
-   GitHub's tarball of the latest release tag into a temporary directory, then
-   replaces `~/.cumaru` with it, verifies kernel integrity, and relinks `~/.local/bin/cumaru`
-   without touching project `.cumaru/` trees.
-4. The global snapshot carries runtime paths only: `cumaru`, `src/`,
-   `domains/`, `skills/`, `schemas/`, `VERSION`, and `README.md`. Maintainer-only paths
-   (`.memory/`, `tests/`, `.shellspec`, `docs/`, `.github/`, `.claude/`,
-   `.codex/`, `report/`, `scripts/`, `.gitignore`, `.gitattributes`) are marked
-   `export-ignore` in `.gitattributes`, which GitHub's archive tarballs honor,
-   and never ship; adopters do not need them. The installer adds `VERSION`.
-5. `src/install.sh` on `main` is the single installer source. First install
-   and `cumaru upgrade` both run it from GitHub; upgrade never runs the
-   installed copy, so installer fixes apply on the upgrade that fetches them.
-6. The installer uses public HTTPS only and requires no SSH key. It makes no
-   clone: Git is needed only for `git ls-remote --tags --refs
-   https://github.com/rntgspr/cumaru.git`, and cURL downloads
-   `https://github.com/rntgspr/cumaru/archive/refs/tags/<tag>.tar.gz`, or
-   `.../archive/refs/heads/main.tar.gz` while no release tag exists.
-7. Existing project trees cross versions only through `cumaru migrate`, not
-   reinstall or global upgrade.
-8. Two versions coexist. The integer `config.version` is the framework
-   contract. The distribution version is a plain `X.Y.Z` Git tag (no `v`
-   prefix; the first is `9.0.0`) whose major equals that contract; releases
-   are tags only, cut by the maintainer. The installer installs the highest
-   strictly `X.Y.Z` tag (numeric order) and falls back to `main` only when none
-   exists.
-9. The snapshot identity does not depend on Git history, because `main` is
-   amended and force-pushed: the installer writes the resolved tag name, or
-   `main` for the fallback, into `~/.cumaru/VERSION`. Tag tarballs remain
-   downloadable regardless of `main`.
-10. `cumaru version` is offline and exits `0`; a Git checkout without
-    `VERSION` reports `development build`.
-11. The network is used only by the explicit `cumaru upgrade --check`, which
-    reads `git ls-remote --tags --refs` of the public repository, compares the
-    installed tag with the highest remote `X.Y.Z`, and never writes. A lower
-    installed tag, or `main` once any tag exists, is behind.
-    `cumaru doctor` stays offline and never reports staleness.
+   from `.cumaru/`. Optional skills are added later through `update`.
+3. The global installation is binary-only: `src/install.sh` downloads the
+   release asset `cumaru-<target>` for macOS ARM64/x86_64 or Linux
+   ARM64/x86_64 musl, verifies that `--version` reports the selected version,
+   and publishes `/usr/local/bin/cumaru` with mode 755, using `sudo` only when
+   the destination is not writable. No domain, skill, or source snapshot is
+   installed globally.
+4. After binary publication the invoking user's `~/.config/cumaru.json` is
+   replaced with `{"version":"X.Y.Z"}` at mode 600. It records that user's
+   installation; `version` and `upgrade --check` use the build identity.
+5. `src/install.sh` on `main` is the single installer source for direct curl
+   installation. Bare `cumaru upgrade` selects the latest release once and runs
+   the copy embedded in the binary with that version as its argument.
+6. Release selection uses only `git ls-remote --tags --refs` of the public
+   repository and the highest plain `X.Y.Z` tag by numeric components. There is
+   no `main` fallback; no valid tag fails.
+7. Existing project trees cross config versions only through `cumaru migrate`,
+   not reinstall or global upgrade.
+8. Two versions coexist independently: the CLI package version (`X.Y.Z`, baked
+   in at build time) and the integer `config.version` framework contract.
+   Neither is derived from the other.
+9. `upgrade --check` reads release tags, prints installed, latest, status, and
+   upgrade lines, and never writes. `version` prints the CLI identity and, when
+   an adopter exists, compares its config with the domain config on main.
+10. The installer ends with a warning when an earlier `PATH` entry, such as a
+    legacy `~/.local/bin/cumaru` link, shadows the published executable.
+11. A Homebrew installation owns its binary: its launcher rejects bare
+    `cumaru upgrade` ([Homebrew distribution](rust.md#homebrew-distribution)).
 
 ## Inputs and ownership
 
 | Input or surface | Owner | Contract |
 |---|---|---|
-| `domains/<domain>/` | framework | Validated source copied as the project starter. |
-| `skills/<name>/SKILL.md` selected by `--with` | framework | Optional skill copied into the selected adapter. |
+| `domains/<domain>/` at main HEAD | framework | Validated source whose config selects the project starter. |
 | Existing project adapter siblings | adopter | Preserved except exact Cumaru-owned entries. |
-| `~/.cumaru` | framework installation | Wholesale replacement target of global upgrade. |
-| `.gitattributes` | framework | `export-ignore` list defining what never ships in the global snapshot. |
+| `/usr/local/bin/cumaru` | machine installation | Replaced by the installer and bare upgrade. |
+| `~/.config/cumaru.json` | invoking user | Replaced with the installed version after binary publication. |
 | Project `.cumaru/` after install | adopter plus framework ownership rules | Updated later through `cumaru update`, never by upgrade. |
 
 ## Execution
 
 ### Preflight
 
-1. Install requires Bash, cURL, Git, ripgrep (`rg`), `jq`, and Mike Farah `yq`
-   v4; validates the selected domain and every requested opt-in skill.
+1. Install validates the domain and adapter arguments and refuses any existing
+   `.cumaru` entry before network access, then resolves main HEAD and validates
+   the complete selected source and native merges before writes. Remote source
+   access needs cURL only.
 2. An existing `.cumaru/` is never replaced by install. Same-domain refresh and
    opt-in additions use update; domain replacement requires uninstall first.
-3. Upgrade performs no project preflight because its target is global; its
-   downloaded snapshot must pass universal-artifact byte-drift checks.
+3. The installer resolves the release, detects the platform, downloads to a
+   temporary directory, and verifies the binary version before touching the
+   global destination.
 
-### Dry-run
+### Preview
 
-Neither command has a dry-run mode. Project install refuses an existing tree;
-global upgrade is immediate and must not be invoked without explicit user
-authorization.
+Neither command has a preview mode. Project install refuses an existing tree;
+bare global upgrade is immediate and must not be invoked without explicit user
+authorization. `upgrade --check` is the read-only freshness probe.
 
 ### Apply
 
-1. Install copies the validated domain, prunes source-only directories/files,
-   installs domain and opt-in skills, wires instructions and supported commands,
-   and registers hooks where supported without persisting adapter selection.
-2. Upgrade fetches and runs `src/install.sh` from `main` on GitHub, never the
-   installed copy. The installer resolves the latest release tag, downloads and
-   unpacks its tarball (`--strip-components=1`) into a temporary directory,
-   writes `VERSION`, and only then removes `~/.cumaru` and moves the snapshot
-   into place. It checks `index.md` plus universal skills, commands, and
-   disciplines against `domains/__base`, then updates the executable symlink.
-   The temporary directory is removed on exit.
+1. Install exclusively creates `.cumaru/`, publishes the selected files,
+   installs domain skills and supported commands, and merges instructions and
+   supported hooks without persisting adapter selection.
+2. The installer stages `~/.config/cumaru.json`, stages the verified binary
+   beside `/usr/local/bin/cumaru`, renames it over the previous executable
+   without truncating a running one, then renames the config into place.
+   Temporary files are removed on exit.
 
 ## Failure contract
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Install usage, domain, skill, dependency, or source validation failure | nonzero | no project write before validation |
-| Existing project install | nonzero | existing project preserved |
-| Upgrade kernel drift | `1` | global snapshot already replaced; executable is not relinked |
-| Installer script fetch, tag listing, tarball download, or unpack failure | nonzero | existing global installation untouched |
-| Global filesystem failure while replacing `~/.cumaru` | nonzero | global installation may be absent or partial |
-| `upgrade --check`: installed tag equals or exceeds the latest remote tag | `0`, `status: up to date` | none |
-| `upgrade --check`: newer remote tag, or `main` snapshot with any remote tag | `0`, `status: behind` | none |
-| `upgrade --check`: remote unreachable, no `X.Y.Z` tag, or development build | `1`, `cannot check` on stderr | none |
-| `upgrade --check` with extra arguments | `2` | none; installer not run |
+| Install invalid domain, adapter, or option | `2` | none |
+| Install existing `.cumaru`, source, network, config, adapter, or preflight failure | `1` | no project write |
+| Install filesystem failure after publication begins | `1` | partial install may remain; no automatic rollback |
+| `upgrade --check`: installed version equals or exceeds the latest tag | `0`, `status: up to date` | none |
+| `upgrade --check`: newer remote tag | `0`, `status: behind` | none |
+| `upgrade --check`: no tags, unavailable Git or network, or non-release binary | `1`, `cannot check` on stderr | none |
+| `upgrade` with extra arguments | `2` | none; installer not run |
+| Download, unsupported platform, HTTP 404, or version verification failure | `1` | existing binary and user JSON preserved |
+| Binary or config publication failure | `1` | published binary may be newer than the user JSON |
+| Successful upgrade or direct installation | `0` | global binary and invoking user's JSON replaced |
 
 ## Transaction and recovery
 
 Project install is ordered but not the steady-state conditional-Git update
-flow; adapter selection is stateless. Global upgrade has no rollback
-transaction: it downloads and unpacks before deleting `~/.cumaru`, so network
-and archive failures preserve the old snapshot, but replacement or drift
-failures leave it replaced or partial. Recovery is rerunning the installer after
-correcting the failure. This destructive boundary is why agents must never run
-upgrade without an explicit request.
+flow; adapter selection is stateless. The global installer downloads and
+verifies before publication, and binary and config writes are separate renames
+with no rollback. Recovery is rerunning the installer after correcting the
+failure. Because it replaces a machine-global executable, possibly through
+`sudo`, agents never run it without an explicit request
+([destructive installer discipline](../disciplines/install_sh_destructive.md)).
 
 ## Implementation map
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| [`../../src/cmd_install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_install.sh) | Project install parsing, source validation, copy, pruning, and adapter installation. |
-| [`../../src/install.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/install.sh) | Latest-tag resolution, tarball download, `VERSION`, destructive global snapshot replacement, drift check, and symlink. |
-| [`../../.gitattributes`](../../.gitattributes) | Maintainer-only `export-ignore` paths excluded from GitHub's archive tarballs. |
-| [`../../src/cmd_version.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_version.sh) | `cumaru version` and the read-only `cumaru upgrade --check` comparison. |
-| Removed root Bash entry point | Former install/version/upgrade dispatch, retained only through Git history. |
-| [`../../src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh) | Native adapter artifact wiring. |
+| [`../../src/commands/install.rs`](../../src/commands/install.rs) | Project install arguments, remote selection, preflight, and publication. |
+| [`../../src/install.sh`](../../src/install.sh) | Release resolution, platform asset download, version verification, global binary publication, user JSON, and PATH shadow warning. |
+| [`../../src/commands/upgrade.rs`](../../src/commands/upgrade.rs) | `upgrade` arguments, `--check` comparison, and installer dispatch. |
+| [`../../src/release.rs`](../../src/release.rs) | Build-time `VERSION` and plain numeric release parsing and selection. |
+| [`../../src/distribution.rs`](../../src/distribution.rs) | Release-tag listing, main-HEAD domain access, and embedded installer execution. |
+| [`../../src/commands/version.rs`](../../src/commands/version.rs) | CLI identity and adopter config version/drift report. |
+| [`../../src/adapter.rs`](../../src/adapter.rs) | Native adapter artifact wiring. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `cmd_install` | Validate options/domain and materialize one v9 project install. |
-| `_framework_install_skills` | Install domain universal skills plus requested opt-ins into the explicit adapter path. |
-| `_framework_copy_commands` | Install only commands supported by the adapter. |
-| `src/install.sh` integrity loops | Require every non-exempt universal mirror to equal `__base` byte-for-byte. |
+| `install::validate_disciplines` | Reject invalid selected source discipline metadata before writes. |
+| `upgrade::check` | Compare the build version with the highest remote release without writing. |
+| `distribution::latest_release` | List tags and select the highest plain `X.Y.Z` release. |
+| `distribution::install` | Run the embedded installer for the selected release with inherited streams. |
+| `release::release_parts` | Parse a plain numeric release version. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| [`../../tests/spec/integration/agent_adapters_spec.sh`](../../tests/spec/integration/agent_adapters_spec.sh) | Project-install fixtures and all adapter artifact matrices. |
-| [`../../tests/spec/integration/schema_spec.sh`](../../tests/spec/integration/schema_spec.sh) | Every source domain config validates under the v9 global model. |
-| [`../../tests/spec/contracts/documented_contracts_spec.sh`](../../tests/spec/contracts/documented_contracts_spec.sh) | Public install/upgrade help and documented surface. |
-| [`../../tests/spec/cli/version_spec.sh`](../../tests/spec/cli/version_spec.sh) | A rewritten installer copy (scratch `DEST`/`BIN`, stubbed `curl`, redirected `ls-remote`): highest-tag install writing `VERSION`, `main` fallback, download failure preserving the old snapshot; `cumaru version`, development build, and `upgrade --check` behind / up to date / cannot check with HOME unchanged. |
+| `src/release.rs` unit tests | Plain release grammar and highest numeric selection. |
+| `src/commands/version.rs` unit tests | CLI-only output, installed identity, older contracts, malformed metadata, unsafe layouts, and shipped config alignment. |
+| `src/commands/install.rs` unit tests | Install arguments, source disciplines, and project preflight preservation. |
+| [`../../tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Stateless adapter installs, existing-install refusal, truncated inventories, and missing remote assets. |
 
-Bare `cumaru upgrade` is intentionally not automated-tested. It destroys the
-machine-global `~/.cumaru`. The installer is exercised only as a copy whose
-`DEST` and `BIN` are rewritten to scratch paths with the network stubbed; the
-real `src/install.sh` is never run against `~/.cumaru` by tests.
+Bare `cumaru upgrade` and the real `src/install.sh` are intentionally not
+automated-tested against the machine-global destination. Installer behavior was
+verified only on scratch copies with destinations rewritten and the network
+stubbed ([binary installer verification](rust.md#current-boundaries)); process
+installer cases remain in the [native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/integration/agent_adapters_spec.sh tests/spec/integration/schema_spec.sh
+cargo test --locked
 bash tests/run.sh
+bash -n src/install.sh
 ```
 
-Do not run `src/install.sh` as verification without explicit authorization.
+Do not run `src/install.sh` or `cumaru upgrade` as verification without explicit
+authorization.
+
+## Historical Bash snapshot distribution
+
+Historical, retained only in tag 0.10.0: the Bash installer replaced a global
+`~/.cumaru` source snapshot unpacked from a release tarball (falling back to
+`main`), wrote `~/.cumaru/VERSION`, checked kernel mirror drift at upgrade time,
+and relinked `~/.local/bin/cumaru`. `src/cmd_install.sh` and `src/cmd_version.sh`
+owned project install and the offline version report. None of this is current
+behavior: the native installer creates and removes no `~/.cumaru` snapshot, and
+mirror integrity is enforced in CI by `scripts/sync-domain-kernel.sh --check`.
 
 ## References
 
@@ -203,4 +202,3 @@ Do not run `src/install.sh` as verification without explicit authorization.
 - [`../../docs/agent-adapters.md`](../../docs/agent-adapters.md)
 - [`agent-adapters.md`](agent-adapters.md)
 - [`testing.md`](testing.md)
-- [`../disciplines/install_sh_destructive.md`](../disciplines/install_sh_destructive.md)

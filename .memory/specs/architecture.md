@@ -14,25 +14,23 @@ Define Cumaru's v9 system boundaries: a domain-neutral kernel, self-contained
 domains, filesystem-backed knowledge navigation, one global configuration
 model, semantic tag islands, and agent-native delivery.
 
-The [Rust CLI contract](rust.md#port-status) records all 14 native commands and
-their shared module boundaries. Rust is the supported CLI; the Bash CLI is
-removed at the root entry point; deprecated modules and tests remain as port
-reference. Rust
-uses a binary-only global installation and remote main-HEAD domain source resolution.
-Runtime navigation/config/Markdown mechanics need no Bash, jq, yq, or rg;
-domain source access uses cURL against main HEAD; binary release checks and
-coverage use read-only Git commands.
-The following dependency and source tables describe the Bash implementation.
+The [Rust CLI contract](rust.md#port-status) records every native command and
+its shared module boundaries. Rust is the only supported CLI; tag 0.10.0 keeps
+the removed Bash modules as port reference. Rust uses a binary-only global
+installation and remote main-HEAD domain source resolution.
 
 ## Public surface
 
 ```text
-cumaru install|uninstall|update|migrate|upgrade
-cumaru tree|map|tag|fs|coverage|doctor|help
+cumaru install|uninstall|update|migrate|bootstrap|upgrade|version
+cumaru tree|map|get|tag|fs|coverage|doctor|help|hooks|context|model
 .cumaru/{index.md,domain.md,config.yaml}
 schemas/config.schema.json
-domains/{__base,sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory}/
+domains/__base/
+domains/<domain>/
 ```
+
+The shipped domain catalog is canonical in [domains](domains.md).
 
 ## Invariants
 
@@ -78,13 +76,18 @@ domains/{__base,sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-mem
 
 ### Preflight
 
-1. Require compatible Bash, Git, cURL, ripgrep (`rg`), `jq`, and Mike Farah
-   `yq` where the invoked command needs them.
-2. Validate config shape, semantics, selected domain, and integer config version
-   before steady-state mutation; no Markdown `framework-version` is required.
+1. The native binary embeds its schema and parses YAML, Markdown, and tags
+   in-process. Domain source access (install, update, bootstrap, migrate,
+   version, help domains, doctor drift) uses cURL against main HEAD. Git is
+   used read-only: release tags for `upgrade --check`, `ls-files` for
+   coverage, and the work-tree probe for update recovery. Bare `upgrade` runs
+   the embedded `src/install.sh` through Bash. No other external runtime tool
+   is spawned.
+2. Validate config shape, selected domain, and integer config version before
+   steady-state mutation; no Markdown `framework-version` is required.
 3. Reject cross-version update; migration converges supported N directly to v9.
 
-### Dry-run
+### Preview
 
 1. Update modes calculate canonical content, ownership-preserving tag merges,
    adapter changes, or config reconciliation without mutation.
@@ -94,7 +97,8 @@ domains/{__base,sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-mem
 
 ### Apply
 
-1. Install copies one validated domain and wires one selected adapter.
+1. Install materializes the structure one validated domain config selects and
+   wires one selected adapter.
 2. Update checks the conditional Git recovery boundary, writes only the
    selected managed surfaces directly, then validates them with doctor.
 3. `update config` reports `.cumaru/config.yaml` schema/default drift for the
@@ -106,7 +110,7 @@ domains/{__base,sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-mem
 |---|---:|---|
 | Usage error | `2` | none |
 | Invalid config, tree, source, or safety boundary | `1` | none |
-| Schema validator/runtime dependency failure | `4` internally | none |
+| Embedded-schema or source access runtime failure | `1` | none |
 | Update validation failure before mutation | `1` | none |
 | Update write or post-check failure | `1` | partial mutation possible; restore from Git history |
 
@@ -125,42 +129,45 @@ Git history before mutation.
 The separate [Rust CLI specification](rust.md) records the current native CLI surface,
 module boundaries, and implementation limits.
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| `src/main.rs` | Supported native CLI arguments and dispatch; root Bash entry point removed. |
-| `src/schema.sh` | Typed reads, global-model validation, and config reconciliation. |
-| `src/common.sh` | Shared frontmatter, balanced tags, inventory, and kernel helpers. |
-| `src/cmd_update.sh` | Ownership-aware planning, conditional Git recovery check, and direct mutation. |
-| `src/agent_adapter.sh` | Native adapter paths, instructions, hooks, and cleanup. |
-| `src/cmd_doctor*.sh` | Installed-tree acceptance gate. |
-| `domains/__base/` | Canonical kernel and universal artifacts. |
+| [`src/main.rs`](../../src/main.rs) | Native CLI arguments and dispatch. |
+| [`src/commands/`](../../src/commands.rs) | One module per command family. |
+| [`src/config.rs`](../../src/config.rs) | Embedded-schema loading, validation, and read-only reconciliation. |
+| [`src/config_tree.rs`](../../src/config_tree.rs) | V9 selector resolution, ownership, and per-host contracts. |
+| [`src/tags.rs`](../../src/tags.rs) | Balanced tag parsing, merge, and replacement. |
+| [`src/walk.rs`](../../src/walk.rs) | Contained traversal shared by navigation, tag, coverage, doctor, and update. |
+| [`src/artifacts.rs`](../../src/artifacts.rs) | Owned native artifact inventories, change planning, and direct publication. |
+| [`src/adapter.rs`](../../src/adapter.rs) | Native adapter paths, instructions, hooks, and cleanup. |
+| [`src/distribution.rs`](../../src/distribution.rs) | Main-HEAD resolution, commit-pinned domain reads, and binary release access. |
+| [`src/commands/doctor.rs`](../../src/commands/doctor.rs) | Installed-tree acceptance gate. |
+| [`domains/__base/`](../../domains/__base/index.md) | Canonical kernel and universal artifacts. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `schema_validate_file` | Validate one config; distinguish invalid input from runtime failure. |
-| `schema_validate_installed` | Validate the installed versioned config and tree contract. |
-| `fm_block_merge` | Fail-closed canonical Markdown merge preserving local tag bodies. |
-| `_update_check_git_recovery` | Enforce clean committed recovery inside Git and permit warned non-Git mutation. |
-| `_agent_wire_instructions` | Install selected adapter instructions without deleting adopter content. |
-| `cmd_doctor_checks` | Execute v9 tree validation and installed-tree checks. |
+| `config::load` | Validate the installed single-document config against the embedded schema. |
+| `config_tree::contracts` | Resolve the v9 tree into per-host frontmatter and tag contracts. |
+| `tags::merge` | Fail-closed canonical Markdown merge preserving local tag bodies. |
+| `update::recovery` | Enforce clean committed recovery inside Git and permit warned non-Git mutation. |
+| `adapter::markdown` | Install selected adapter instructions without deleting adopter content. |
+| `doctor::inspect` | Execute v9 tree validation and installed-tree checks. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| `tests/spec/integration/schema_spec.sh` | Global model, semantics, typed reads, reconciliation. |
-| `tests/spec/update/*.sh` | Ownership, version gates, dry-run, conditional Git recovery, direct mutation, tags. |
-| `tests/spec/integration/agent_adapters_spec.sh` | Adapter install, switch, repair, and removal. |
-| `tests/spec/cli/doctor_spec.sh` | Installed-tree acceptance and cached inspection. |
-| `tests/spec/contracts/documented_contracts_spec.sh` | Public and universal artifact contracts. |
+| Rust unit tests beside each module | Config, tree, tags, adapters, artifacts, update, doctor, and command mechanics. |
+| [`tests/native/`](../../tests/native/README.md) | Process-level navigation, fs, coverage, lifecycle, model, and domain scenarios. |
+| `tests/spec/contracts/` (selected subset) | Universal artifact contracts reused by `tests/run.sh`. |
 
 ## Verification
 
 ```bash
+cargo test --locked
 bash tests/run.sh
-shellspec --random examples
+bash tests/run.sh --random
 ```
 
 ## References

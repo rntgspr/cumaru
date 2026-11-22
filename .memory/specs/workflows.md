@@ -25,12 +25,15 @@ domains/<domain>/skills/cumaru-flow/SKILL.md
 
 1. `workflows` is optional; shipped domain configs do not invent a default
    delivery sequence.
-2. Every step has a `skill` naming a regular installed skill in the selected
-   domain. Its optional `needs` is an array of unique step identifiers; an
-   omitted or empty array means the step is initially ready.
-3. Validation rejects empty graphs, unknown properties, invalid names, missing
-   dependencies, duplicate prerequisites, self-dependencies, cycles, unavailable
-   domains, and unavailable skills before execution.
+2. Every step has a `skill` naming a regular installed skill. Its optional
+   `needs` is an array of unique step identifiers; an omitted or empty array
+   means the step is initially ready.
+3. The embedded schema rejects empty graphs, unknown properties, invalid
+   names, and duplicate prerequisites. Doctor rejects missing dependencies,
+   self-dependencies, cycles, and skills absent from `.agents/skills` or
+   `.claude/skills` before execution. It does not prove same-domain membership
+   against a remote package; that boundary is recorded in
+   [the native doctor contract](rust.md#native-doctor).
 4. When multiple unstarted steps are ready, choose the lexically first step
    identifier and recompute readiness after each successful step.
 5. A prerequisite succeeds only when its skill finishes with evidence required
@@ -61,12 +64,15 @@ domains/<domain>/skills/cumaru-flow/SKILL.md
 
 | Artifact | Responsibility |
 |---|---|
-| [`../../schemas/schema-validate-v9.jq`](../../schemas/schema-validate-v9.jq) | Graph shape and dependency validation. |
-| [`../../src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Domain-skill availability and stable topological order. |
-| [`../../domains/__base/skills/cumaru-flow/SKILL.md`](../../domains/__base/skills/cumaru-flow/SKILL.md) | Runtime orchestration and stop gates. |
-| [`../../tests/spec/integration/workflow_graph_spec.sh`](../../tests/spec/integration/workflow_graph_spec.sh) | Graph validity and ordering. |
-| [`../../tests/spec/contracts/workflow_orchestrator_skill_spec.sh`](../../tests/spec/contracts/workflow_orchestrator_skill_spec.sh) | Universal skill and launcher contract. |
+| [`../../schemas/config.schema.json`](../../schemas/config.schema.json) | Embedded graph shape: names, closed steps, non-empty steps, unique `needs`. |
+| [`../../src/commands/doctor.rs`](../../src/commands/doctor.rs) | `validate_workflows`: dependencies, self-dependencies, cycles, and installed skill availability, with unit tests. |
+| [`../../domains/__base/skills/cumaru-flow/SKILL.md`](../../domains/__base/skills/cumaru-flow/SKILL.md) | Runtime orchestration, lexical scheduling, and stop gates. |
+| [`../../tests/spec/contracts/workflow_orchestrator_skill_spec.sh`](../../tests/spec/contracts/workflow_orchestrator_skill_spec.sh) | Universal skill and launcher contract, selected by `tests/run.sh`. |
+
+The legacy graph process matrix remains unported; see the
+[native regression inventory](../../tests/native/README.md).
 
 ```bash
-shellspec tests/spec/integration/workflow_graph_spec.sh tests/spec/contracts/workflow_orchestrator_skill_spec.sh
+cargo test --locked
+bash tests/run.sh
 ```

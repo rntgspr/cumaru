@@ -15,18 +15,19 @@ for an installed project. The command is strictly read-only: an LLM executes and
 adjudicates the printed detection-first steps. It converges supported prior
 layouts directly from `N` to v9 rather than chaining historical adapters.
 
-The [native migration contract](rust.md#execution) resolves current/legacy config
-without requiring its schema to pass, then prints base/domain instructions from
-one resolved HEAD commit of main. Rust has no `--from` or local source snapshot.
-It remains read-only and does not deliver the missing migration skill. The Bash
-source-selection surface below retains its separate contract.
+The [native migration contract](rust.md#execution) records the detailed
+resolution and rendering: current/legacy config is read without requiring its
+schema to pass, and base/domain instructions come from one resolved HEAD commit
+of main. There is no source selector or local source snapshot. The command does
+not deliver the missing migration skill.
 
 ## Public surface
 
 ```text
-cumaru migrate [--from <source>]
+cumaru migrate
 domains/__base/migration.md
 domains/<domain>/migration.md
+<!-- cumaru:migration-domain-extension -->
 ```
 
 ## Invariants
@@ -69,17 +70,24 @@ domains/<domain>/migration.md
 
 ### Preflight
 
-1. Parse only `--from` or `--from=<source>`; reject `--apply` and unknown args.
-2. Resolve the installed domain from current config, then legacy config only when
-   current config is absent. Resolve the source checkout and require the base
-   migration document.
-3. Require the base preservation checkpoint and include the selected domain
-   extension there when present.
+1. Accept no arguments; the hidden `--apply` flag exits 2 with an explanation,
+   and any other argument is a usage error.
+2. Resolve the installed domain from the `domain` (or legacy `flavor`) string
+   of current `config.yaml`, then legacy `schema.yaml` only when current config
+   is absent. The selected entry must be a regular non-symlink file holding one
+   YAML document; `base` maps to `__base`, and the name is validated before any
+   network access.
+3. Resolve main HEAD and read `domains/__base/migration.md` plus an inventoried
+   domain `migration.md` at that one commit. A domain absent from the main
+   inventory receives the base document only.
+4. Require the whole-line `<!-- cumaru:migration-domain-extension -->`
+   checkpoint in the base document.
 
-### Dry-run
+### Read-only output
 
-1. Strip YAML frontmatter and print the base body in deterministic order, with
-   the optional domain body inserted at the preservation checkpoint.
+1. Print the heading and execution preamble, the base body before the
+   checkpoint, the optional domain body with frontmatter stripped, then the
+   base body after it. The whole document is assembled before printing.
 2. Perform no mutation. Because the command is strictly read-only, this is its
    only execution mode.
 
@@ -94,35 +102,40 @@ checkpoint or the explicit warning that non-Git execution has no recovery.
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Missing installed current/legacy config or base migration document | `1` | none |
-| Usage error, including `--apply` | `2` | none |
+| Missing, symlinked, or unparsable config, unsafe domain, missing base document or checkpoint, network or UTF-8 failure | `1`, empty stdout | none |
+| Usage error, including `--apply` | `2`, empty stdout | none |
 | Valid instruction delivery | `0` | none |
 
 ## Implementation map
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`src/cmd_migrate.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_migrate.sh) | Argument parsing, domain/source resolution, frontmatter stripping, and ordered output. |
-| [`domains/__base/migration.md`](../../domains/__base/migration.md) | Universal direct N-to-v9 rolling procedure. |
+| [`src/commands/migrate.rs`](../../src/commands/migrate.rs) | Argument refusal, current/legacy domain resolution, pinned reads, checkpoint ownership, and ordered rendering. |
+| [`src/distribution.rs`](../../src/distribution.rs) | Main-HEAD resolution and commit-pinned inventory and document reads. |
+| [`src/markdown.rs`](../../src/markdown.rs) | Domain-document frontmatter stripping. |
+| [`domains/__base/migration.md`](../../domains/__base/migration.md) | Universal direct N-to-v9 rolling procedure and the extension checkpoint. |
 | `domains/<domain>/migration.md` | Optional domain-specific migration nuance. |
-| [`src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) | Current typed config reads reused where applicable. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `cmd_migrate` | Validates args, resolves current/legacy installed domain and source documents, then prints bodies without writes. |
-| `_migrate_installed_domain` | Reads the domain from current config or legacy schema without mutation. |
-| `_migrate_strip_frontmatter` | Removes leading domain-document frontmatter while preserving body content. |
-| `_migrate_base_part` | Prints each side of the base preservation checkpoint so the domain extension runs before refresh. |
+| `migrate::execute` | Resolves the installed domain and both documents from one pinned commit, then renders without writes. |
+| `migrate::installed_domain` | Reads the domain from current config or legacy schema without schema validation or mutation. |
+| `migrate::domain_from_config` | Extracts `domain` or legacy `flavor` and validates it as a domain name. |
+| `migrate::render` | Splits the base at the checkpoint and inserts the domain extension before refresh steps. |
+| `markdown::strip_frontmatter` | Removes leading domain-document frontmatter while preserving body content. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| [`tests/spec/contracts/migrate_spec.sh`](../../tests/spec/contracts/migrate_spec.sh) | Read-only delivery, `.cumaru/`-only discovery, preservation-first extension order, version convergence, recovery gates, idempotence, and usage failures. |
-| [`tests/spec/contracts/documented_contracts_spec.sh`](../../tests/spec/contracts/documented_contracts_spec.sh) | Public help and migration/update boundary. |
-| [`tests/spec/update/dry_run_spec.sh`](../../tests/spec/update/dry_run_spec.sh) | Managed-surface non-mutation conventions around preview operations. |
+| `src/commands/migrate.rs` unit tests | Checkpoint insertion and spacing, base-only forms, missing or inline checkpoint, `domain`/`flavor` resolution, current-over-legacy selection, and failures before network access. |
+| `src/markdown.rs` unit tests | Frontmatter stripping. |
+
+The legacy delivery, repeatability, and prose-policy process scenarios in
+`tests/spec/contracts/migrate_spec.sh` are not selected by `tests/run.sh`; see
+the [native regression inventory](../../tests/native/README.md).
 
 ## Known gap
 
@@ -133,12 +146,12 @@ tracks the agent-facing inspection, approval, and post-migration checks.
 ## Verification
 
 ```bash
-shellspec tests/spec/contracts/migrate_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 
 ## References
 
-- [`src/cmd_migrate.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_migrate.sh)
+- [`src/commands/migrate.rs`](../../src/commands/migrate.rs)
 - [`docs/migrate.md`](../../docs/migrate.md)
 - [`configuration.md`](configuration.md)

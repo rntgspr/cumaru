@@ -14,21 +14,26 @@ Semantic tags delimit adopter-owned bodies inside framework Markdown. The
 shared balanced parser powers `cumaru tag` and update preservation; configuration
 declares where tags are valid.
 
-The [native tag contract](rust.md#execution) retains balanced parsing, declaration
-gates, opaque get/set bodies, and staged single-file publication. Rust deliberately
-omits typed `tag all --rows`; table/reference interpretation lives in shared
-`references.rs` for coverage and doctor. The Bash rows surface below is unchanged.
+The [native tag contract](rust.md#execution) records the detailed balanced
+parsing, declaration gates, opaque get/set bodies, and staged single-file
+publication. The typed tree-wide rows listing was deliberately removed by
+maintainer decision; table/reference interpretation lives in
+[`src/references.rs`](../../src/references.rs) for coverage and doctor, never in
+`cumaru tag`.
 
 ## Public surface
 
 ```text
 <!-- cumaru:NAME -->...<!-- /cumaru:NAME -->
 cumaru tag
-cumaru tag all [--body|--rows]
+cumaru tag all [--body]
 cumaru tag <file>
 cumaru tag [<file>] get|set <tag> [<content>]
 cumaru tag get|set [<file>] <tag> [<content>]
 ```
+
+A bare `tag` audits `index.md`. A `get`/`set` without a file targets
+`index.md`. Any other `tag all` argument is a usage error.
 
 ## Invariants
 
@@ -40,8 +45,10 @@ cumaru tag get|set [<file>] <tag> [<content>]
    them by canonical name, including unknown/local-only tags.
 4. Duplicate top-level bodies are folded at first occurrence in document order;
    source-only tags retain canonical scaffolding.
-5. `get` and `set` require the tag to be declared for the target file and never
-   reinterpret opaque body content.
+5. `get` and `set` require the tag to be declared for the target file in the
+   validated v9 configuration and never reinterpret opaque body content. The
+   `reference` tag is the single exception: its get/set requires neither a
+   declaration nor configuration.
 6. Doctor promotes balanced-parser failures into a host-attributed error and
    status `1`; malformed hosts cannot pass as an empty successful tag inventory.
    Balanced unknown tags remain opaque and valid nesting remains warning-only.
@@ -59,23 +66,33 @@ cumaru tag get|set [<file>] <tag> [<content>]
 
 ### Preflight
 
-1. Normalize optional `cumaru:` prefix, validate the name and `.md` target, and
-   require containment inside `.cumaru/`.
-2. Parse the complete host with balanced stack semantics. For `get`/`set`, walk
-   validated config declarations and require the tag/host pairing.
+1. Strip an optional `cumaru:` prefix and validate the name before filesystem
+   access. Require a real `.cumaru/` directory.
+2. Resolve the host as a regular `.md` file inside `.cumaru/`, accepting
+   contained absolute and `.cumaru/`-prefixed paths and rejecting `..`,
+   control characters, and every symlink component.
+3. Parse the complete host with balanced stack semantics. Audits and non-
+   `reference` get/set load the validated configuration and resolve the host's
+   declared tags through the v9 selector tree.
 
-### Dry-run
+### Read-only forms
 
-1. Listing and audit forms are read-only. `all` groups bodies or emits typed
-   rows; file audit compares actual and expected tags.
-2. No listing operation changes Markdown or configuration.
+1. File audit compares declared and actual tag names and fails on any missing
+   or undeclared tag.
+2. `all` walks every safe Markdown host without configuration and lists tag
+   names per file, or prints each body between its markers with `--body`.
+   Malformed hosts and traversal defects are reported after the safe output.
+3. No read-only form changes Markdown or configuration.
 
 ### Apply
 
-1. `set` accepts positional content or stdin, writes through a temporary file,
-   validates the normalized result, and replaces the target only on success.
-2. Duplicate matching top-level bodies consolidate at the first occurrence with
-   one blank line; nested delimiters remain intact in outer bodies.
+1. `set` accepts positional content, including an explicitly empty string, or
+   piped stdin. A missing block is inserted after closed leading frontmatter.
+2. Duplicate matching top-level bodies consolidate at the first occurrence;
+   nested delimiters remain intact in outer bodies. The candidate must parse
+   as a balanced document before publication.
+3. Output is staged beside the host with exclusive creation and the host's
+   permissions, synced, rechecked against the original bytes, then renamed.
 
 ## Reference special rule
 
@@ -91,58 +108,68 @@ covered, uncovered, stale, invalid, and foreign entries.
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Invalid name or usage | `2` | none |
-| Undeclared tag/host, missing file/tag, malformed structure, or write failure | `1` | none |
-| Valid list/get/set | `0` | only successful `set` mutates its target |
+| Invalid name, unsupported `all` mode, surplus operands, or `set` without content on a terminal | `2` | none |
+| Missing/symlinked root, unsafe host, invalid config, undeclared/absent tag, malformed structure, or audit mismatch | `1` | none |
+| Malformed host or traversal defect during `all` | `1` after safe output | none |
+| Staging failure or detected concurrent edit during `set` | `1` | original host preserved |
+| Aligned audit, valid list, get, or set | `0` | only successful `set` mutates its target |
 
 ## Transaction and recovery
 
-`tag set` is a single-file fail-closed replacement, not a project transaction.
-It builds and validates temporary output before replacing the host. General
-update requires a clean baseline when the project already uses Git and writes
-merged tags directly during framework refresh. Outside Git it warns and
-continues without a Git recovery point.
+`tag set` is a single-file fail-closed replacement, not a project transaction or
+a filesystem-race-proof lock. It stages and validates output before renaming it
+over the host. Content update requires a clean baseline when the project
+already uses Git and writes merged tags directly during framework refresh.
+Outside Git it warns and continues without a Git recovery point.
 
 ## Implementation map
 
-| Script or artifact | Responsibility |
+| Artifact | Responsibility |
 |---|---|
-| [`src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh) | Grammar, balanced parsing, extraction, merge, replacement, and target resolution. |
-| [`src/cmd_tag.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_tag.sh) | CLI parsing, declaration validation, audit, typed listing, and set orchestration. |
-| [`src/cmd_coverage.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_coverage.sh) | Reference coverage bucket adjudication. |
-| [`src/cmd_doctor_checks.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_doctor_checks.sh) | Tag contracts, nesting warning, and retained-reference checks. |
-| [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) | Canonical Markdown reconstruction using shared merge semantics. |
+| [`src/tags.rs`](../../src/tags.rs) | Grammar, balanced parsing, extraction, duplicate consolidation, merge, and validated replacement. |
+| [`src/commands/tag.rs`](../../src/commands/tag.rs) | CLI parsing, host resolution, declaration gates, audit, tree-wide listing, and staged set publication. |
+| [`src/config_tree.rs`](../../src/config_tree.rs) | Per-host tag declarations resolved from the v9 selector tree. |
+| [`src/references.rs`](../../src/references.rs) | Innermost-block table rows and the reference source-file rule shared by coverage and doctor. |
+| [`src/commands/coverage.rs`](../../src/commands/coverage.rs) | Reference coverage bucket adjudication. |
+| [`src/commands/doctor.rs`](../../src/commands/doctor.rs) | Required tags, malformed-host errors, nesting warnings, and retained-reference checks. |
+| [`src/commands/update.rs`](../../src/commands/update.rs) | Canonical Markdown reconstruction using shared merge semantics. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `_fm_block_parse` | Validates stack balance and supports list/extract/top-level/nesting operations. |
-| `fm_block_merge` | Restores local bodies into canonical source, folds duplicates, and retains orphans/scaffolds. |
-| `fm_block_replace` | Validates and atomically prepares one normalized body replacement. |
-| `fm_tag_table_rows` | Emits resolved default-table rows using cached tag specifications. |
-| `_fm_resolve_reference_target` | Applies project-root source-file restrictions. |
-| `cmd_tag` | Dispatches list, audit, get, set, and tree-wide typed views. |
+| `tags::valid_name` | Accepts the canonical colon-segment grammar. |
+| `tags::parse` | Validates stack balance and returns nested blocks with depth. |
+| `tags::extract` | Returns a block body, folding duplicates in document order. |
+| `tags::merge` | Restores local bodies into canonical source, folds duplicates, and retains orphans/scaffolds. |
+| `tags::replace` | Prepares one validated body replacement or missing-block insertion. |
+| `tag::operation` | Parses both positional orders without interpreting content as options. |
+| `tag::publish` | Stages beside the host and refuses detected concurrent edits before rename. |
+| `config_tree::tag_contracts` | Resolves declared tag names per host. |
+| `references::resolve` | Applies project-root source-file restrictions. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| [`tests/spec/update/tags_spec.sh`](../../tests/spec/update/tags_spec.sh) | Grammar, duplicates, nesting, malformed structures, preservation, and idempotence. |
-| [`tests/spec/update/transaction_spec.sh`](../../tests/spec/update/transaction_spec.sh) | Public update rejection and non-mutation for malformed source/local tags. |
-| [`tests/spec/cli/coverage_spec.sh`](../../tests/spec/cli/coverage_spec.sh) | Reference buckets, source rule, modes, scope, and runtime guards. |
-| [`tests/spec/cli/doctor_spec.sh`](../../tests/spec/cli/doctor_spec.sh) | Malformed-tag error attribution and non-mutation, balanced duplicates, opaque unknown tags, nesting, references, and cached row processing. |
+| `src/tags.rs` unit tests | Grammar, nested extraction/replacement, duplicate folding, malformed rejection, prose preservation, and opaque bodies. |
+| `src/commands/tag.rs` unit tests | Positional orders, surplus operands, and publication without clobbering concurrent changes. |
+| [`tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Update preservation of opaque bodies and refusal of unbalanced tag edits. |
+| [`tests/native/navigation_spec.sh`](../../tests/native/navigation_spec.sh) | Rejection of the removed typed listing mode. |
+| [`tests/native/coverage_spec.sh`](../../tests/native/coverage_spec.sh) | Reference buckets and strict status. |
+
+Remaining legacy tag scenarios are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/update/tags_spec.sh tests/spec/cli/coverage_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 
 ## References
 
-- [`src/common.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/common.sh)
 - [`docs/tag.md`](../../docs/tag.md)
 - [`docs/coverage.md`](../../docs/coverage.md)
 - [`update.md`](update.md)

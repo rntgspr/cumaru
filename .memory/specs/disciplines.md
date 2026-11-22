@@ -96,13 +96,17 @@ adapter instructions and SessionStart hook
 
 ### Preflight
 
-1. Discover regular installed `.cumaru/disciplines/*.md` files from the
-   selected domain and validate required strictness metadata before writes.
+1. Install discovers the selected domain's discipline files, requires the
+   discipline index, and validates every selected strictness value before
+   writes. Update does not repeat that source check before publication; its
+   doctor postcheck reports invalid installed strictness afterward
+   ([issue 174](../issues/issue_174.md)).
 2. Validate the explicit adapter target and its native instruction/hook structures.
-3. Distribution installation verifies universal discipline mirror integrity,
-   excluding declared domain-owned index content.
+3. Universal discipline mirror integrity across shipped domains is enforced
+   in CI by `scripts/sync-domain-kernel.sh --check`
+   ([sync domain kernel](sync-domain-kernel.md)), not at installation time.
 
-### Dry-run
+### Preview
 
 1. Agent update describes adapter and managed-surface changes without writing.
 2. Discipline applicability is evaluated by the agent after eager delivery;
@@ -122,18 +126,18 @@ adapter instructions and SessionStart hook
 4. The universal `cumaru-role` skill reloads kernel, domain, discipline index,
    remaining discipline bodies in C-locale path order, and root candidates
    before loading a requested role; it writes no active-role state.
-5. Doctor validates discipline metadata, mandatory loading, exact hook shape
-   where supported, skills, commands, and adapter state.
+5. Doctor validates discipline strictness metadata and discovers at least one
+   complete current instruction set. Skills, commands, and hooks are outside
+   its instruction-health check.
 
 ## Failure contract
 
 | Condition | Status | Mutation |
 |---|---:|---|
-| Missing or invalid discipline strictness in a source domain | `1` | none before install/update writes |
+| Missing or invalid discipline strictness in a source domain during install | `1` | none before install writes |
 | Missing or invalid installed discipline strictness | doctor error; effective `0/10` | none during doctor |
-| Invalid adapter state | `1` | none before reconciliation |
+| Malformed adopter JSON or instruction blocks | `1` | none before reconciliation |
 | Missing, duplicate, reordered, or malformed managed instructions | doctor warning | none during doctor |
-| Invalid required adapter state | doctor error | none during doctor |
 | Failed adapter update | `1` | partial mutation possible after preflight; restore from Git history |
 
 ## Transaction and recovery
@@ -150,47 +154,49 @@ configuration remains intact.
 |---|---|
 | `domains/__base/disciplines/` | Canonical universal discipline sources. |
 | `domains/*/domain.md` | Domain applicability triggers and execution context. |
-| `src/agent_adapter.sh` | Static instruction and SessionStart merge/validation. |
-| `src/common.sh` | Canonical managed Markdown bootstrap block. |
-| `src/schema.sh` | Source-domain discipline metadata validation. |
-| `src/cmd_install.sh` | Initial adapter and discipline delivery. |
-| `src/cmd_update.sh` | Transactional adapter refresh and switching. |
-| `src/cmd_doctor_checks.sh` | Installed discipline metadata and delivery acceptance. |
+| [`src/adapter.rs`](../../src/adapter.rs) | Ordered static instruction blocks and owned hook merge/cleanup. |
+| [`src/commands/hooks.rs`](../../src/commands/hooks.rs) | Session payload, per-prompt digest, and pre-tool hook output. |
+| [`src/markdown.rs`](../../src/markdown.rs) | Shared strictness validation. |
+| [`src/commands/install.rs`](../../src/commands/install.rs) | Source discipline metadata validation and initial adapter delivery. |
+| [`src/commands/update.rs`](../../src/commands/update.rs) | Adapter refresh and switching from installed discipline bodies. |
+| [`src/commands/doctor.rs`](../../src/commands/doctor.rs) | Installed discipline metadata and instruction-set acceptance. |
 
 ## Principal methods
 
 | Method | Contract |
 |---|---|
-| `discipline_metadata_issues` | Report missing or out-of-range strictness, excluding the discipline index. |
-| `schema_validate_disciplines` | Reject invalid source-domain discipline metadata before writes. |
-| `_agent_wire_instructions` | Write canonical static discipline delivery for the selected adapter. |
-| `_agent_refresh_instructions` | Repair Cumaru-owned entries while preserving project entries. |
-| `_agent_wire_session_hook` | Merge exactly one canonical hook into supported adapter JSON. |
-| `_agent_session_hook_valid` | Validate matcher, nesting, type, command, and uniqueness. |
-| `_agent_opencode_instructions_valid` | Require one ordered kernel/domain/discipline sequence. |
-| `_agent_remove_adapter` | Remove only Cumaru-owned native artifacts. |
+| `markdown::validate_strictness` | Require the canonical integer `N/10` strictness range. |
+| `install::validate_disciplines` | Require the discipline index and reject invalid selected source discipline metadata before writes. |
+| `adapter::markdown`, `adapter::opencode` | Write canonical static discipline delivery while preserving project entries. |
+| `adapter::hooks` | Merge exactly one canonical entry per owned hook event into supported adapter JSON. |
+| `adapter::clear` | Remove only Cumaru-owned native entries. |
+| `hooks::session`, `hooks::prompt` | Emit the session payload and per-prompt digest from installed disciplines. |
+| `doctor::instruction_issues` | Warn unless one complete current instruction set exists. |
 | `cumaru-role` skill | Restore the complete ordered bootstrap before applying one role. |
 
 ## Regression coverage
 
 | Test | Covered behavior |
 |---|---|
-| `tests/spec/integration/agent_adapters_spec.sh` | Ordered delivery, hook shape, repair, switching, and uninstall symmetry. |
-| `tests/spec/integration/schema_spec.sh` | Required closed strictness metadata at the source-domain boundary. |
-| `tests/spec/cli/doctor_spec.sh` | Missing strictness, drifted adapter, and mandatory-discipline diagnostics. |
-| `tests/spec/update/transaction_spec.sh` | Conditional Git recovery and transient-debris boundaries. |
-| `tests/spec/contracts/documented_contracts_spec.sh` | Universal artifact, public bootstrap, and bounded ownership/evidence/authorization guidance. |
+| `src/adapter.rs` unit tests | Ordered delivery, session/prompt/pre-tool hook shape, hook adapters skipping static bodies, and exact owned cleanup. |
+| `src/commands/install.rs` unit tests | Valid and out-of-range source strictness before writes. |
+| `src/commands/doctor.rs` unit tests | Installed strictness and instruction-set diagnostics. |
+| [`tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Adapter delivery, repeated refresh preservation, and uninstall symmetry. |
+| [`tests/spec/contracts/auxiliary_skills_spec.sh`](../../tests/spec/contracts/auxiliary_skills_spec.sh) | Selected universal artifact contracts. |
+
+Remaining legacy discipline and adapter scenarios are tracked in the
+[native regression inventory](../../tests/native/README.md).
 
 ## Verification
 
 ```bash
-shellspec tests/spec/integration/agent_adapters_spec.sh tests/spec/cli/doctor_spec.sh
+cargo test --locked
 bash tests/run.sh
 ```
 
 ## References
 
-- [`../../src/agent_adapter.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/agent_adapter.sh)
+- [`../../src/adapter.rs`](../../src/adapter.rs)
 - [`../../docs/agent-adapters.md`](../../docs/agent-adapters.md)
 - [`../../docs/architecture.md`](../../docs/architecture.md)
 - [`agent-adapters.md`](agent-adapters.md)

@@ -31,6 +31,10 @@ existing path in the working tree.
 
 ## Work
 
+Items 1-3 are complete: the fourteen child issues 147-160 were closed and
+retired, and behaviors that lost a native owner were recorded as issues 172,
+173, and 174. Only item 4 remains, blocked by issue 144.
+
 1. Rewrite the implementation tables in the fourteen specs that still reference
    retired Bash modules — `absorb.md`, `agent-adapters.md`, `architecture.md`,
    `configuration.md`, `coverage.md`, `disciplines.md`, `doctor.md`,

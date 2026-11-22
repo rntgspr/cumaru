@@ -14,7 +14,7 @@ describes precompiled CLI installation and project onboarding.
 
 ## Command contracts
 
-All 16 CLI command families are native. The [Rust specification](../.memory/specs/rust.md)
+All 18 CLI command families are native. The [Rust specification](../.memory/specs/rust.md)
 is canonical for their arguments, ownership rules, failure behavior, tests,
 and differences from Bash. The command guides in this directory describe the
 native contract.
