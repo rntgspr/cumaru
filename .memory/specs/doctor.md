@@ -15,8 +15,7 @@ configuration and reports structural or metadata defects without editing it.
 
 The [native Rust doctor contract](rust.md#native-doctor) records the detailed
 check order, daily-cached main drift reference, ASCII presentation, installed
-workflow-skill boundary, default invocation, and verification. The retired
-Bash doctor's local source-snapshot comparison has no native counterpart.
+workflow-skill boundary, default invocation, and verification.
 
 ## Public surface
 
@@ -98,6 +97,15 @@ also receive the main-HEAD source-default drift comparison.
 
 Remaining legacy doctor and tree-resolution scenarios are tracked in the
 [native regression inventory](../../tests/native/README.md).
+
+## Differences from the retired Bash CLI
+
+- Drift compares against the domain config on main, cached daily, instead of
+  a local source snapshot.
+- Workflow skill availability uses installed supported-adapter skill files, not
+  same-domain membership in a source package.
+- Output uses ASCII `[ok]`/`[warn]`/`[error]` lines without colors.
+- The former retired-adapter-state check has no native counterpart.
 
 ```bash
 cargo test --locked

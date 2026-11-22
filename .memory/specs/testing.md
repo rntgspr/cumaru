@@ -32,8 +32,8 @@ instruction when absent. Every process fixture isolates HOME and project state;
 the closed cURL stub permits only one main identity/inventory and SHA-pinned raw
 source reads. Unknown URLs fail without real network access. No deprecated CLI
 module, actual home cache, inference service or global installer is invoked.
-`--ci` emits TAP and `--random` reorders the same selection. The remaining sections
-retain historical Bash details where explicitly identified.
+`--ci` emits TAP and `--random` reorders the same selection. Historical Bash
+details are confined to [Differences](#differences-from-the-retired-bash-cli).
 
 ```text
 bash tests/run.sh
@@ -50,15 +50,14 @@ bash tests/run.sh --random
    no example may depend on state left by another.
 3. Fixtures under `tests/fixtures/` are framework-neutral and are not regenerated
    by test execution.
-4. The retired Bash CI ran the TAP suite on macOS 14 for Bash 3.2 compatibility;
-   no current CI job runs it.
-5. Tests invoke no LLM or provider API; adapter names exercise local files only.
+4. Tests invoke no LLM or provider API; adapter names exercise local files only.
 
 ## Inputs and ownership
 
 | Input or surface | Owner | Contract |
 |---|---|---|
-| `tests/spec/**/*.sh` | framework | ShellSpec examples grouped by CLI, contracts, integration, and update. |
+| `tests/native/*.sh` | framework | Selected native process scenarios with their helpers and closed cURL stub. |
+| `tests/spec/**/*.sh` | framework | Legacy ShellSpec reference; only five reviewed artifact suites are selected. |
 | `tests/fixtures/` | framework | Stable reusable inputs; tests copy rather than mutate canonical fixtures. |
 | `tests/report/` | generated | Ignored ShellSpec output. |
 | Real bench project | maintainer | Git history remains read-only; install artifacts may be reset during the cycle. |
@@ -69,12 +68,11 @@ bash tests/run.sh --random
 ### Preflight
 
 1. Selected native regressions require ShellSpec, Bash, Git, and ordinary POSIX
-   fixture tools. Retained unselected Bash scenarios have additional jq/yq/rg
-   requirements; those are not native runtime dependencies.
+   fixture tools.
 2. Examples create private temporary state and register cleanup through
    ShellSpec hooks/helpers.
 
-### Dry-run
+### Preview
 
 There is no test-runner dry-run. Product dry-run contracts are tested by
 snapshotting every managed surface and proving byte and metadata non-mutation.
@@ -119,10 +117,10 @@ project-local lock/staging/backup/recovery debris.
 
 | Script or artifact | Responsibility |
 |---|---|
-| [`../../tests/run.sh`](../../tests/run.sh) | Argument validation and local/TAP ShellSpec dispatch. |
+| [`../../tests/run.sh`](../../tests/run.sh) | Argument validation, binary resolution, and local/TAP/random ShellSpec dispatch of the reviewed selection. |
 | [`../../.shellspec`](../../.shellspec) | ShellSpec repository configuration. |
-| [`../../tests/spec/spec_helper.sh`](../../tests/spec/spec_helper.sh) | Shared suite initialization. |
-| [`../../tests/spec/`](../../tests/spec/) | CLI, contract, integration, and transaction examples. |
+| [`../../tests/native/helpers.sh`](../../tests/native/helpers.sh), [`../../tests/native/curl-stub.sh`](../../tests/native/curl-stub.sh) | Per-example project/HOME isolation and the closed main-SHA source stub. |
+| [`../../tests/spec/spec_helper.sh`](../../tests/spec/spec_helper.sh) | Shared initialization for the selected artifact suites. |
 | [`../../.github/workflows/tests.yml`](../../.github/workflows/tests.yml) | Ubuntu 24.04 native Rust CI, triggers, concurrency, and binary smoke. |
 
 ## Principal methods
@@ -153,18 +151,24 @@ parity, Linux behavior or permission to delete unselected `src/` consumers.
 
 | Test | Covered behavior |
 |---|---|
+| [`../../tests/native/navigation_spec.sh`](../../tests/native/navigation_spec.sh) | Tree/map/get output, targets, partial results, and removed options. |
+| [`../../tests/native/fs_spec.sh`](../../tests/native/fs_spec.sh) | Every fs verb, containment, preservation, arity, and symlink policy. |
+| [`../../tests/native/coverage_spec.sh`](../../tests/native/coverage_spec.sh) | Buckets, strict status, mode conflict, and byte preservation. |
+| [`../../tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Install, update, selectors, clear, Git recovery, uninstall, doctor warm, and drift cache. |
 | [`../../tests/native/model_spec.sh`](../../tests/native/model_spec.sh) | Offline release, retained artifacts and lightweight fallback, failed pull preservation, unsafe markers, and CLI arguments. Encoder inference remains an opt-in smoke. |
-| [`../../tests/spec/cli/`](../../tests/spec/cli/) | Tree, doctor, fs, and coverage public CLI contracts. |
-| [`../../tests/spec/contracts/`](../../tests/spec/contracts/) | Help, migration, and shipped artifact contracts. |
-| [`../../tests/spec/integration/`](../../tests/spec/integration/) | Global config model and agent adapters. |
-| [`../../tests/spec/update/`](../../tests/spec/update/) | Content ownership, tags, dry-run, versions, conditional Git recovery, and direct mutation behavior. |
+| `tests/native/*_domain_spec.sh` | Domain-specific installed contracts. |
+| Five selected `tests/spec/contracts/` suites | Source-independent artifact contracts. |
+
+The [native regression inventory](../../tests/native/README.md) is canonical for
+which legacy scenarios are reused, adapted, remaining, or retired.
 
 ## Design workflow verification
 
+Not selected by `tests/run.sh`; awaiting port under issue 139.
 `tests/spec/contracts/design_artifacts_spec.sh` resolves domain-owned skill and
-template dependencies and checks entity metadata against config. Pair it with
-command launcher, schema, and universal mirror checks. An isolated installation
-smoke verifies shipped artifacts, tree navigation, and doctor acceptance.
+template dependencies and checks entity metadata against config. An isolated
+installation smoke verifies shipped artifacts, tree navigation, and doctor
+acceptance.
 
 Independent forward evaluation of the design recipes checks realistic acceptance,
 review, source-refresh, and cleanup decisions. It is semantic evaluation, not an
@@ -173,6 +177,7 @@ automated tracker-to-browser-to-absorption test. Completion evidence for issues
 
 ## Corrected workflow scenarios
 
+Not selected by `tests/run.sh`; awaiting port under issue 139.
 `tests/spec/contracts/workflow_scenarios_spec.sh` composes only the cross-step
 boundaries not already owned by focused suites. It models a pre-dispatched Dev
 task through canonical acceptance, task status, handoff evidence, and
@@ -184,9 +189,16 @@ back.
 The scenario suite does not execute an agent, browser, tracker, cloud provider,
 Terraform provider, or external API. Semantic choices remain bounded contract
 evaluation; deterministic installation, file transitions, checksums, and doctor
-failure are automated. Existing focused suites remain authoritative for mixed
-tracker provenance, template destinations, complete uninstall, required
-ripgrep behavior, malformed tags, and Git recovery inventories.
+failure are automated. Focused suites remain authoritative for mixed tracker
+provenance, template destinations, complete uninstall, malformed tags, and Git
+recovery inventories.
+
+## Differences from the retired Bash CLI
+
+- The retired Bash CI ran the TAP suite on macOS 14 for Bash 3.2
+  compatibility; no current CI job runs it.
+- Unselected legacy scenarios still source deleted `src/*.sh` modules or need
+  `jq`, `yq`, or `rg`; those are not native runtime dependencies.
 
 ## Known limit
 

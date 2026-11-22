@@ -171,6 +171,16 @@ Historical, not executed by any command, test runner, or CI job:
 the written reference for issue 144 and are removed by
 [issue 145](../issues/issue_145.md) after it lands.
 
+## Differences from the retired Bash CLI
+
+- Validation runs in-process against the embedded schema; the `yq`/`jq`
+  preflight and the internal status `4` for validator runtime failures are gone.
+- `config::load` applies only the declarative schema. Workflow graph and skill
+  availability checks moved to doctor; sibling-wildcard conflicts and the
+  source wildcard index check have no native owner yet
+  ([issue 144](../issues/issue_144.md), [issue 172](../issues/issue_172.md)).
+- `update config` takes no source selector; defaults come from main HEAD.
+
 ## Principal methods
 
 | Method | Contract |

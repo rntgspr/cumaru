@@ -145,6 +145,23 @@ does not claim exclusion or prescribe a change.
 Remaining legacy coverage scenarios are tracked in the
 [native regression inventory](../../tests/native/README.md).
 
+## Differences from the retired Bash CLI
+
+- Invalid configs fail through the embedded-schema gate, and an undeclared or
+  wildcard `meta.specification_dir` fails instead of silently falling back to
+  `specs`.
+- Malformed tag hosts and walker defects (symlinks; hidden entries are pruned)
+  are reported after the projection with status 1, where the awk reader parsed
+  leniently and `find` included hidden or linked files.
+- Table separators may use alignment colons; rows after a nested
+  non-reference block remain in the reference body.
+- Ordering is byte order rather than locale `sort`; globs do not support
+  backslash escapes or extglob.
+- Direct symlink and special-file targets are invalid, and syntactic
+  `.cumaru/` paths are invalid even when missing.
+- Report text matches the former output without ANSI colors, and `.codex/`
+  stays coverable as before ([Known gap](#known-gap)).
+
 ## Verification
 
 ```bash

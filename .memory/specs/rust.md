@@ -76,10 +76,21 @@ the rename to `fs`, not a remaining command implementation.
 | `version`, `upgrade` | Build identity plus installed/latest domain config and drift report against main; binary-only global installation as `cumaru`. |
 | `help` | Offline local CLI help; explicit domain discovery uses the network. |
 
-The canonical native details live in this file. Capability specifications link
-here when their Bash source contracts differ; those links do not rewrite the
-retained Bash module contracts. Public command guides under `docs/` describe
-the native contract.
+The canonical native execution details live in this file. Capability
+specifications own each command's active contract and record its deltas from
+the retired Bash CLI in one bounded `Differences from the retired Bash CLI`
+section: [navigation](navigation.md#differences-from-the-retired-bash-cli),
+[tags](tags.md#differences-from-the-retired-bash-cli),
+[update](update.md#differences-from-the-retired-bash-cli),
+[configuration](configuration.md#differences-from-the-retired-bash-cli),
+[coverage](coverage.md#differences-from-the-retired-bash-cli),
+[doctor](doctor.md#differences-from-the-retired-bash-cli),
+[migration](migration.md#differences-from-the-retired-bash-cli),
+[testing](testing.md#differences-from-the-retired-bash-cli), and the
+[historical installer](install-upgrade.md#historical-bash-snapshot-distribution).
+This file keeps the deltas only for commands without a capability
+specification: `fs`, `bootstrap`, `uninstall`, `version`, and `help`. Public
+command guides under `docs/` describe the native contract.
 
 ## Invariants
 
@@ -217,8 +228,8 @@ the native contract.
     wildcards, and union of overlapping wildcard tag sets at equal ownership.
     Missing/unsafe entries and physical collisions fail before mutation.
     V8 uses root/pillar tag maps and literal/wildcard meta host declarations.
-    The existing Bash exception permits `reference` get/set without declaration
-    or configuration. All-tree modes also require no configuration.
+    The `reference` tag is exempt: its get/set needs no declaration or
+    configuration. All-tree modes also require no configuration.
 18. Hosts are regular Markdown files inside a real `.cumaru/` directory;
     direct and parent symlinks are refused. Contained absolute paths and paths
     prefixed with `.cumaru/` are supported. Set accepts positional content,
@@ -236,9 +247,8 @@ the native contract.
     Get/set and all --body preserve body text regardless of its content format;
     balanced delimiters remain the structural safety boundary.
     Malformed hosts or traversal defects return 1 while safe hosts still emit.
-    Audit mismatch returns 1; diagnostics go to stderr. Presentation omits Bash
-    colors/bullets, and empty positional set content is honored rather than
-    falling back to stdin.
+    Audit mismatch returns 1; diagnostics go to stderr. Deltas from the retired
+    Bash CLI are in [tags](tags.md#differences-from-the-retired-bash-cli).
 21. `bootstrap` is read-only and takes no arguments. It reads the `domain`
     string from a regular, non-symlink `.cumaru/config.yaml` with exactly one
     YAML document, without schema validation, maps `base` to `__base`, and
@@ -277,9 +287,8 @@ the native contract.
     body, and the base body after it. Base parts drop leading blanks like
     `_migrate_base_part`; the domain body uses `markdown::strip_frontmatter`.
     A missing checkpoint fails. `--apply` is a hidden flag that exits 2 with
-    an explanation. Intentional differences from Bash: no `--from`, local
-    checkout, or Git URL source; diagnostics go to stderr with the
-    `cumaru migrate:` prefix; the domain is resolved before the source.
+    an explanation. Deltas from the retired Bash CLI are in
+    [migration](migration.md#differences-from-the-retired-bash-cli).
 
 ## Failure contract
 
@@ -332,8 +341,8 @@ the native contract.
 
 ## Transaction and recovery
 
-Navigation and release checks are read-only. The Rust binary installer is
-separate from the existing [Bash global installer](install-upgrade.md). It
+Navigation and release checks are read-only. The binary installer replaced the
+[retired Bash snapshot installer](install-upgrade.md#historical-bash-snapshot-distribution). It
 downloads and verifies before publication, then stages a temporary executable
 beside `/usr/local/bin/cumaru` and renames it over the previous path without
 truncating a running executable. Temporary files are cleaned on exit.
@@ -424,8 +433,9 @@ The [shipped recipe contract](skill-cli-contracts.md) records the completed
 skills/README review against native arguments and ownership, including its
 deterministic verification and semantic limits.
 
-Rust `tree` and `map` do not expose `--domain` or `--pillars`. All active Bash
-command names have native implementations, with the differences recorded here.
+Rust `tree` and `map` do not expose `--domain` or `--pillars`. All former Bash
+command names have native implementations; their differences are indexed in
+[Port status](#port-status).
 The tag command
 now consumes the config loader, removing its previous dead-code warnings.
 The loader applies the declarative JSON Schema, not the additional semantic
@@ -445,8 +455,9 @@ Diagnostic escaping is shared through `text::shell_quote`.
 After extraction, `cargo test --locked` passed all six native tests and
 `git diff --check` passed. The unused configuration-loader warnings remain.
 
-Native CLI integration tests are deferred by maintainer decision; existing Bash
-scenarios remain available for a later port. Heading projection remains a
+Native CLI integration tests are deferred by maintainer decision; legacy
+ShellSpec scenarios are ported selectively under `tests/native/`
+([testing](testing.md)). Heading projection remains a
 separate `map` command; no `tree --heads` option is implemented.
 
 Map implementation verification on 2026-10-01: all six existing native tests,
@@ -529,7 +540,7 @@ Rust integration tests were added, and no real adopter was touched.
 ## Project installation
 
 Native `install` implements initial project adoption from HEAD of
-GitHub main. The Bash CLI retains its separate distribution contract.
+GitHub main.
 
 1. Default to domain `__base`; preserve explicit adapter selection and the
    existing generic adapter default.
@@ -738,15 +749,8 @@ and `-c core.quotepath=off ls-files -z` from the project directory.
    bucket order and detail columns. `--strict` fails on uncovered, stale, or
    invalid entries; foreign entries stay informational. Modes are a Clap group.
 
-Intentional differences: invalid configs fail through the native schema gate;
-malformed tag hosts and walker defects (symlinks, hidden entries pruned) are
-reported after the projection with status 1, where Bash's awk reader parsed
-leniently and `find` included hidden or linked files; table separators may use
-alignment colons; rows after a nested non-reference block remain in the
-reference body; ordering is byte order rather than locale `sort`; patterns do
-not support Bash backslash escapes or extglob. Reference parsing now lives in
-`references.rs`, shared with doctor. Direct symlink and special-file reference
-targets are invalid, and syntactic `.cumaru/` paths are invalid even when missing.
+Reference parsing lives in `references.rs`, shared with doctor. Deltas from the
+retired Bash CLI are in [coverage](coverage.md#differences-from-the-retired-bash-cli).
 
 Verification on 2026-10-02: six focused native tests cover table-row parsing,
 innermost-block attribution and malformed hosts, every target status with

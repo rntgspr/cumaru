@@ -41,8 +41,7 @@ cumaru map [<directory-or-md>] [--rows|--markdown]
    frontmatter reads.
 5. Output is deterministic; diagnostics are deduplicated and use stderr only.
 6. Navigation never loads `.cumaru/config.yaml`; it has no pillar or domain
-   filter. The Bash-era `--pillars` and `--domain` options were intentionally
-   removed, not left unowned, and are rejected as usage errors.
+   filter.
 7. `depends-on` is the strongest candidate signal and `relates` is weaker;
    both remain relevance-prunable.
 8. Summary curation is explicitly selected only for `.cumaru` `summary:`
@@ -137,6 +136,16 @@ cumaru map [<directory-or-md>] [--rows|--markdown]
 
 Remaining legacy tree/map scenarios and their disposition are tracked in the
 [native regression inventory](../../tests/native/README.md).
+
+## Differences from the retired Bash CLI
+
+- `--pillars` and `--domain` were intentionally removed, not left unowned, and
+  are rejected as usage errors; navigation no longer reads configuration.
+- `tree` accepts several targets; output defaults to TSV with an optional
+  Markdown table instead of the former Markdown default.
+- `map` lists literal H1-H6 headings with markers and `get` selectors instead
+  of level-two headings in `rg -n` form, and spawns no external search tool.
+- Summaries reject every C0/DEL control character, not only CR, LF, and tab.
 
 ## Verification
 

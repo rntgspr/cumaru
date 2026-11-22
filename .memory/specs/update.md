@@ -42,9 +42,8 @@ cumaru update skills|commands|agent --clear
 ```
 
 `<agent>` is `none`, `claude`, `codex`, or `opencode`. Every refresh reads the
-installed domain from HEAD of main; there is no `--from`, local checkout, or
-snapshot source. The [public guide](../../docs/update.md#selectors) owns the
-selector examples.
+installed domain from HEAD of main. The
+[public guide](../../docs/update.md#selectors) owns the selector examples.
 
 ## Invariants
 
@@ -192,6 +191,17 @@ explicit warning and no framework-created recovery point.
 
 Remaining legacy update scenarios and their disposition are tracked in the
 [native regression inventory](../../tests/native/README.md).
+
+## Differences from the retired Bash CLI
+
+- There is no source selector, local checkout, or snapshot source; every
+  refresh reads main HEAD pinned to one commit.
+- Refresh of skills, commands, and agent integration requires an explicit
+  adapter; Claude and Codex reject a separate commands refresh.
+- Only `.cumaru/archive/` is reported; installed `cumaru-archive` skills and
+  launchers are not ([issue 173](../issues/issue_173.md)).
+- Source discipline strictness is not validated before publication; the
+  doctor postcheck reports it afterward ([issue 174](../issues/issue_174.md)).
 
 ## Verification
 

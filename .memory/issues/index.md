@@ -20,7 +20,6 @@ from 175.
 | [143](issue_143.md) | low | Remove the unreachable legacy v8 tag resolution path |
 | [144](issue_144.md) | medium | Port the wildcard selector conflict check from the retired jq validator to Rust |
 | [145](issue_145.md) | medium | Realign specifications with the native Rust implementation |
-| [146](issue_146.md) | low | Compact historical Bash narrative in current specifications |
 | [161](issue_161.md) | high | Keep released binaries able to read the main domain config after additive meta keys ship |
 | [162](issue_162.md) | high | Keep doctor reporting when the downloaded drift reference fails this binary's schema |
 | [165](issue_165.md) | high | Make doctor survive an unwritable or contended drift reference cache |
@@ -45,8 +44,9 @@ from 175.
 - The per-spec children of [145](issue_145.md) (147–160) are closed; only its
   jq-validator removal remains, blocked by [144](issue_144.md). Behaviors that
   lost a native owner during realignment are [172](issue_172.md),
-  [173](issue_173.md), and [174](issue_174.md). Issue
-  [146](issue_146.md) compacts the historical Bash narration that remains.
+  [173](issue_173.md), and [174](issue_174.md). Historical Bash deltas live in
+  each capability spec's `Differences from the retired Bash CLI` section,
+  indexed from [`../specs/rust.md`](../specs/rust.md#port-status).
 - [142](issue_142.md) is the known limit recorded in
   [`../specs/rust.md`](../specs/rust.md#homebrew-distribution).
 - The completed native skill/README review is recorded in

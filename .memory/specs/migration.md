@@ -18,8 +18,7 @@ layouts directly from `N` to v9 rather than chaining historical adapters.
 The [native migration contract](rust.md#execution) records the detailed
 resolution and rendering: current/legacy config is read without requiring its
 schema to pass, and base/domain instructions come from one resolved HEAD commit
-of main. There is no source selector or local source snapshot. The command does
-not deliver the missing migration skill.
+of main. The command does not deliver the missing migration skill.
 
 ## Public surface
 
@@ -136,6 +135,15 @@ checkpoint or the explicit warning that non-Git execution has no recovery.
 The legacy delivery, repeatability, and prose-policy process scenarios in
 `tests/spec/contracts/migrate_spec.sh` are not selected by `tests/run.sh`; see
 the [native regression inventory](../../tests/native/README.md).
+
+## Differences from the retired Bash CLI
+
+- There is no `--from`, local checkout, or Git URL source; reads come from
+  main HEAD pinned to one commit.
+- The installed domain is resolved and validated before any source access.
+- Diagnostics go to stderr with the `cumaru migrate:` prefix and empty stdout.
+- Heading, preamble, checkpoint placement, and base-part spacing match the
+  former output byte for byte.
 
 ## Known gap
 

@@ -16,8 +16,7 @@ declares where tags are valid.
 
 The [native tag contract](rust.md#execution) records the detailed balanced
 parsing, declaration gates, opaque get/set bodies, and staged single-file
-publication. The typed tree-wide rows listing was deliberately removed by
-maintainer decision; table/reference interpretation lives in
+publication. Table/reference interpretation lives in
 [`src/references.rs`](../../src/references.rs) for coverage and doctor, never in
 `cumaru tag`.
 
@@ -160,6 +159,17 @@ Outside Git it warns and continues without a Git recovery point.
 
 Remaining legacy tag scenarios are tracked in the
 [native regression inventory](../../tests/native/README.md).
+
+## Differences from the retired Bash CLI
+
+- The typed tree-wide `tag all --rows` listing and its link/status
+  interpretation were removed by maintainer decision; `all` lists names or
+  bodies only.
+- An explicitly empty positional `set` content is honored instead of falling
+  back to stdin.
+- Output omits colors and bullets; diagnostics go to stderr.
+- The `reference` get/set exemption from declaration and configuration is
+  retained unchanged.
 
 ## Verification
 
