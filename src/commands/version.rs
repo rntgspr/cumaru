@@ -17,6 +17,9 @@ use crate::release::VERSION;
 use crate::text::has_control;
 use crate::{config, distribution};
 
+/// Trailing reminder printed after every successful `cumaru version` report.
+const SPONSOR: &str = "you can sponsor this project at: https://github.com/sponsors/rntgspr";
+
 /// Installed adopter identity read from `.cumaru/config.yaml`.
 #[derive(Debug, PartialEq)]
 struct Installed {
@@ -29,7 +32,10 @@ pub fn run() -> ExitCode {
     println!("version:  {VERSION}");
 
     match installed(Path::new(CUMARU_DIR)) {
-        Ok(None) => ExitCode::SUCCESS,
+        Ok(None) => {
+            println!("{SPONSOR}");
+            ExitCode::SUCCESS
+        }
         Ok(Some(Installed { domain, version })) => {
             println!("domain:   {domain}");
             println!("config:   {version}");
@@ -53,7 +59,10 @@ pub fn run() -> ExitCode {
                 Ok(())
             })();
             match result {
-                Ok(()) => ExitCode::SUCCESS,
+                Ok(()) => {
+                    println!("{SPONSOR}");
+                    ExitCode::SUCCESS
+                }
                 Err(error) => {
                     eprintln!("cumaru version: cannot check latest config: {error}");
                     ExitCode::FAILURE

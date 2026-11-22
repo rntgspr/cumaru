@@ -11,6 +11,8 @@
 
 # `.cumaru/` framework
 
+[![Sponsor](https://img.shields.io/badge/sponsor-rntgspr-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/rntgspr)
+
 Cumaru is a structured context-driven framework for AI-assisted work.
 
 Use the compiled `cumaru` CLI to install a project knowledge layer, discover

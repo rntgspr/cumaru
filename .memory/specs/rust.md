@@ -885,7 +885,10 @@ adopter removals, global uninstall, or Git mutations were performed.
 
 `version` is read-only and consults main HEAD when an adopter is present. It always prints `version:  <cli>` first,
 the build-time package version. When the fixed `.cumaru/` path is absent, that
-is the whole output and the status is 0. When it is present, the root must be a
+line and the sponsor reminder are the whole output and the status is 0. Every
+successful report ends with
+`you can sponsor this project at: https://github.com/sponsors/rntgspr`;
+failures omit it. When it is present, the root must be a
 regular directory and `config.yaml` a regular, non-symlink file holding exactly
 one YAML document with a non-empty `domain` string without control characters
 and an integer `version`. The command then adds `domain:   <name>` and

@@ -40,6 +40,7 @@ A lower installed integer is `outdated`; equal versions can still have drift
 from missing defaults or incompatible properties. Valid local choices and YAML
 formatting do not cause drift. Network/config failures return 1 while retaining
 the installed identity; no files are changed. Without an adopter it stays offline.
+A successful report ends with a reminder line linking GitHub Sponsors.
 `--version` prints only the package identity and always stays offline.
 
 ## Distribution and transition
