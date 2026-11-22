@@ -12,6 +12,11 @@
 # `.cumaru/` framework
 
 [![Sponsor](https://img.shields.io/badge/sponsor-rntgspr-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/rntgspr)
+[![Star](https://img.shields.io/github/stars/rntgspr/cumaru?label=star&logo=github)](https://github.com/rntgspr/cumaru)
+[![Tests](https://img.shields.io/github/actions/workflow/status/rntgspr/cumaru/tests.yml?branch=main&label=tests&logo=githubactions&logoColor=white)](https://github.com/rntgspr/cumaru/actions/workflows/tests.yml)
+[![Release](https://img.shields.io/github/v/release/rntgspr/cumaru?label=release)](https://github.com/rntgspr/cumaru/releases/latest)
+[![License](https://img.shields.io/github/license/rntgspr/cumaru)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@cumaru/cumaru?logo=npm)](https://www.npmjs.com/package/@cumaru/cumaru)
 
 Cumaru is a structured context-driven framework for AI-assisted work.
 
