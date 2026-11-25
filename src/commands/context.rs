@@ -57,7 +57,7 @@ pub struct ContextArgs {
     #[arg(long)]
     reset: bool,
 
-    /// Print every ranked file instead of the best LIMIT.
+    /// Print every ranked file instead of the best 16.
     #[arg(long)]
     full: bool,
 
