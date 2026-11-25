@@ -73,7 +73,7 @@ all four checksums matched the release `SHA256SUMS`, `brew style` passed, and
 `brew audit --strict` passed on the tapped formula; the 0.10.0 install and test
 evidence above was not repeated for 0.10.7.
 Installation on macOS Intel and Linux remains open in
-[issue 142](../../.memory/issues/issue_142.md).
+[issue 142](../../durable-memory/issues/issue_142.md).
 
 ## References
 

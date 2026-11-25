@@ -31,9 +31,9 @@ review, provenance, calibration, and quality gates before being embedded.
 ## Reproduce
 
 ```bash
-cargo test --manifest-path .memory/plans/context/lightweight/Cargo.toml --locked --offline
-cargo build --release --manifest-path .memory/plans/context/lightweight/Cargo.toml --locked --offline
-.memory/plans/context/lightweight/target/release/cumaru-relevance-experiment
+cargo test --manifest-path durable-memory/plans/context/lightweight/Cargo.toml --locked --offline
+cargo build --release --manifest-path durable-memory/plans/context/lightweight/Cargo.toml --locked --offline
+durable-memory/plans/context/lightweight/target/release/cumaru-relevance-experiment
 ```
 
 The executable compares plain term coverage with the learned head on nine

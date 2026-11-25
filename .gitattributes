@@ -1,5 +1,5 @@
 # Maintainer-only paths excluded from GitHub source archives.
-.memory/       export-ignore
+durable-memory/       export-ignore
 tests/         export-ignore
 .shellspec     export-ignore
 docs/          export-ignore

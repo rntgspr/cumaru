@@ -25,7 +25,7 @@ hook ships shell logic.
    (legacy commands stay recognized as owned); Codex entries set
    `additionalContextLimit: 0`.
 5. Next: decide whether repository-local `.claude/` and `.codex/`
-   `load-context.sh` move to a native command, given they serve `.memory/`,
+   `load-context.sh` move to a native command, given they serve `durable-memory/`,
    not `.cumaru/`.
 6. Pending: live probe of Codex `UserPromptSubmit` delivery in a fresh session.
 7. Done: `cumaru map` section ends and `cumaru get`

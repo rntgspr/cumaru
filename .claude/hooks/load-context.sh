@@ -3,7 +3,7 @@
 #
 # Modes:
 #   session (default) - emit the mandatory startup set defined in
-#                       .memory/index.md, validated as a whole first.
+#                       durable-memory/index.md, validated as a whole first.
 #   prompt            - emit a bounded per-prompt digest of discipline rules
 #                       and canonical paths, to reinforce recall every turn.
 #
@@ -13,23 +13,23 @@
 set -euo pipefail
 
 repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-memory="$repo_root/.memory"
+memory="$repo_root/durable-memory"
 mode="${1:-session}"
 session_budget=32768
 prompt_budget=2048
 
 # Print a diagnostic to stdout so the agent sees why context is missing.
 fail() {
-  printf 'cumaru context loader: %s; no context emitted. Read .memory/index.md manually.\n' "$1"
+  printf 'cumaru context loader: %s; no context emitted. Read durable-memory/index.md manually.\n' "$1"
   exit 0
 }
 
 # Resolve the mandatory set in canonical order: index, advisor mode, disciplines.
 # Discovery runs in the parent shell so any failure aborts before emission.
-[[ -d "$memory/disciplines" && ! -L "$memory/disciplines" ]] || fail "missing directory .memory/disciplines"
+[[ -d "$memory/disciplines" && ! -L "$memory/disciplines" ]] || fail "missing directory durable-memory/disciplines"
 
-disciplines=$(find "$memory/disciplines" -maxdepth 1 -type f -name '*.md' -print) || fail "cannot enumerate .memory/disciplines"
-[[ -n "$disciplines" ]] || fail "no discipline files in .memory/disciplines"
+disciplines=$(find "$memory/disciplines" -maxdepth 1 -type f -name '*.md' -print) || fail "cannot enumerate durable-memory/disciplines"
+[[ -n "$disciplines" ]] || fail "no discipline files in durable-memory/disciplines"
 
 files=("$memory/index.md" "$memory/advisor_mode.md")
 while IFS= read -r file; do
@@ -74,7 +74,7 @@ for file in "${files[@]:2}"; do
   digest+=$'\n'"- $description (${file#"$repo_root"/})"
 done
 
-digest+=$'\n''Canonical sources: load the relevant spec from .memory/index.md before changing its surface; never rely on memory of it.'
+digest+=$'\n''Canonical sources: load the relevant spec from durable-memory/index.md before changing its surface; never rely on memory of it.'
 
 size=$(printf '%s\n' "$digest" | wc -c | tr -d ' ')
 (( size <= prompt_budget )) || fail "prompt digest is $size bytes, over the $prompt_budget-byte budget"

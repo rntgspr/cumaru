@@ -63,11 +63,11 @@ inferred from its results.
 ## Reproduce
 
 ```bash
-bash .memory/plans/context/comparison/fetch-assets.sh /tmp/cumaru-bge-micro
+bash durable-memory/plans/context/comparison/fetch-assets.sh /tmp/cumaru-bge-micro
 CARGO_HOME=/tmp/cumaru-context-cargo \
 CUMARU_ENCODER_ASSETS=/tmp/cumaru-bge-micro \
-cargo build --release --locked --manifest-path .memory/plans/context/comparison/experiment/Cargo.toml
-bash .memory/plans/context/comparison/bench.sh /tmp/cumaru-encoder-results
+cargo build --release --locked --manifest-path durable-memory/plans/context/comparison/experiment/Cargo.toml
+bash durable-memory/plans/context/comparison/bench.sh /tmp/cumaru-encoder-results
 ```
 
 Downloads happen only during preparation. Assets are embedded with `include_bytes!`;

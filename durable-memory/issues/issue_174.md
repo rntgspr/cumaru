@@ -43,4 +43,4 @@ adopter byte unchanged.
 
 - `src/commands/update.rs`
 - `src/commands/install.rs` — `validate_disciplines`
-- `.memory/specs/disciplines.md` preflight item 1
+- `durable-memory/specs/disciplines.md` preflight item 1

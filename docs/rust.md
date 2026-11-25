@@ -14,7 +14,7 @@ describes precompiled CLI installation and project onboarding.
 
 ## Command contracts
 
-All 18 CLI command families are native. The [Rust specification](../.memory/specs/rust.md)
+All 18 CLI command families are native. The [Rust specification](../durable-memory/specs/rust.md)
 is canonical for their arguments, ownership rules, failure behavior, tests,
 and differences from Bash. The command guides in this directory describe the
 native contract.
@@ -65,7 +65,7 @@ and PATH precedence deliberately when switching executables.
 
 Platform assets are published in [release 0.10.0](https://github.com/rntgspr/cumaru/releases/tag/0.10.0).
 Linux ARM64 requires FP16 CPU instruction support. Publication and target
-verification are recorded in the [native specification](../.memory/specs/rust.md#release-verification).
+verification are recorded in the [native specification](../durable-memory/specs/rust.md#release-verification).
 Previously installed `cuma` session hooks are recognized during native refresh
 and cleanup so they can be replaced without duplicating Cumaru-owned entries.
 

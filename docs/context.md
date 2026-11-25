@@ -110,7 +110,7 @@ nothing changed; without an enabled encoder it reports that there is nothing to
 cache and exits 0. `--reset` deletes `.cumaru/.cache/context/` first, or only
 `.cumaru/.cache/context/<scope>/` with `--scope`. Known defect: without an
 enabled encoder, `--reset` currently prints the nothing-to-cache notice, exits
-0, and leaves the cache on disk ([issue 169](../.memory/issues/issue_169.md)).
+0, and leaves the cache on disk ([issue 169](../durable-memory/issues/issue_169.md)).
 `cumaru update --apply` warms every scope's cache after a successful publication or an
 up-to-date check, warning instead of failing. `cumaru doctor` warms only the
 `adopter` scope, after a passing report and only with `meta.doctor.after.warm: true`,
@@ -155,5 +155,5 @@ Exit codes: `0` complete ranking; `1` validation/runtime/partial-result failure;
 `2` malformed invocation. No project, model, adapter, or Git state is modified.
 
 - [Model management](model.md)
-- [Scorer experiments](../.memory/plans/context/lightweight/README.md)
-- [Model/no-model comparison](../.memory/plans/context/comparison.md)
+- [Scorer experiments](../durable-memory/plans/context/lightweight/README.md)
+- [Model/no-model comparison](../durable-memory/plans/context/comparison.md)

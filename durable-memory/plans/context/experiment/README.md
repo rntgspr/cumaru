@@ -11,14 +11,14 @@ not invocation. The artifact directory is outside the repository.
 Run from the repository root:
 
 ```bash
-bash .memory/plans/context/experiment/fetch-assets.sh /tmp/cumaru-context-assets
+bash durable-memory/plans/context/experiment/fetch-assets.sh /tmp/cumaru-context-assets
 CARGO_HOME=/tmp/cumaru-context-cargo \
 CUMARU_CONTEXT_ASSETS=/tmp/cumaru-context-assets \
-cargo build --release --locked --manifest-path .memory/plans/context/experiment/Cargo.toml
-bash .memory/plans/context/experiment/bench.sh /tmp/cumaru-context-bench
+cargo build --release --locked --manifest-path durable-memory/plans/context/experiment/Cargo.toml
+bash durable-memory/plans/context/experiment/bench.sh /tmp/cumaru-context-bench
 CARGO_HOME=/tmp/cumaru-context-cargo \
 CUMARU_CONTEXT_ASSETS=/tmp/cumaru-context-assets \
-cargo test --release --locked --manifest-path .memory/plans/context/experiment/Cargo.toml
+cargo test --release --locked --manifest-path durable-memory/plans/context/experiment/Cargo.toml
 ```
 
 `CUMARU_CONTEXT_ASSETS` selects build-time inputs only. `CARGO_HOME` keeps new

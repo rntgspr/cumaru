@@ -39,5 +39,5 @@ review was retired and names where adopters find that guidance.
 ## References
 
 - `src/commands/update.rs`
-- `.memory/specs/update.md` invariant 6
+- `durable-memory/specs/update.md` invariant 6
 - [`src/cmd_update.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/cmd_update.sh) — retired reference

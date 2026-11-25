@@ -16,14 +16,14 @@ plain stdout as developer context.
 The original proposed repository context declaration was:
 
 ```text
-.memory/*.md
-.memory/todo/*.md
+durable-memory/*.md
+durable-memory/todo/*.md
 docs/*.md
 ```
 
 Those patterns are historical input, not the final selection policy. Another
-historical startup proposal also included `.memory/specs/*.md` and
-`.memory/disciplines/*.md`; issue 120 supersedes both proposals.
+historical startup proposal also included `durable-memory/specs/*.md` and
+`durable-memory/disciplines/*.md`; issue 120 supersedes both proposals.
 
 This issue is the sole owner of manifest, loader, hook implementation, and their
 mechanical tests. It depends on the selection, ordering, history, and budget
@@ -54,7 +54,7 @@ produce explicit diagnostics rather than silent partial context.
 
 ## Work
 
-1. Encode the accepted policy in `.memory/index.md` from issue 120 in one
+1. Encode the accepted policy in `durable-memory/index.md` from issue 120 in one
    agent-neutral canonical manifest;
    do not duplicate the glob list independently in `AGENTS.md`, the loader, and
    adapter code.
@@ -62,8 +62,8 @@ produce explicit diagnostics rather than silent partial context.
    root, expands only permitted project-relative Markdown patterns, rejects
    absolute paths, `..`, symlinks, and canonical escapes, and sorts with
    `LC_ALL=C`.
-3. Emit `.memory/index.md` first, then the mandatory set in the canonical
-   `.memory/index.md` order, sorting disciplines with `LC_ALL=C` and
+3. Emit `durable-memory/index.md` first, then the mandatory set in the canonical
+   `durable-memory/index.md` order, sorting disciplines with `LC_ALL=C` and
    deduplicating paths.
    Keep historical details on demand as specified by that policy.
 4. Register the emitter as a separate Cumaru-owned `SessionStart` entry in
@@ -82,7 +82,7 @@ produce explicit diagnostics rather than silent partial context.
 ## Tests
 
 - A startup fixture emits every declared Markdown file exactly once with
-  `.memory/index.md` first, policy-defined group ordering, and deterministic
+  `durable-memory/index.md` first, policy-defined group ordering, and deterministic
   C-locale ordering within groups; on-demand history is not injected eagerly.
 - Starting from the repository root and a nested directory produces identical
   context output.
@@ -103,8 +103,8 @@ produce explicit diagnostics rather than silent partial context.
 ## References
 
 - `AGENTS.md`
-- `.memory/index.md`
-- `.memory/issues/issue_120.md`
+- `durable-memory/index.md`
+- `durable-memory/issues/issue_120.md`
 - `src/agent_adapter.sh`
 - `tests/spec/integration/agent_adapters_spec.sh`
 - `docs/agent-adapters.md`

@@ -40,7 +40,7 @@ unchanged when at most one of them declares it or the values are equal.
 1. Add the pairwise sibling-wildcard comparison to the Rust config validation
    path that already walks `root` child selectors, reporting every conflict
    rather than stopping at the first one.
-2. Record the rule in `.memory/specs/configuration.md` as a native invariant.
+2. Record the rule in `durable-memory/specs/configuration.md` as a native invariant.
 3. Issue 145 removes the jq validators and their stale references after this
    port lands.
 
@@ -57,4 +57,4 @@ unchanged when at most one of them declares it or the values are equal.
 - `schemas/schema-validate-v9.jq` `wildcard_conflicts`, `validate_node`
 - `src/config.rs` `validate`
 - `src/config_tree.rs` `wildcard`, `declarations`
-- `.memory/specs/configuration.md`
+- `durable-memory/specs/configuration.md`

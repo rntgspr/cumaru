@@ -17,5 +17,5 @@ AGENTS.md
 !tests/**/.cumaru/**
 tests/report/
 opencode.json
-.memory/notepad.md
+durable-memory/notepad.md
 /target/

@@ -17,7 +17,7 @@ and installed session hooks. The native runtime needs no Python, jq, yq, or rg.
 Some retained maintenance scripts and legacy tests have separate requirements.
 
 Before repository work, follow the startup policy in
-[.memory/index.md](.memory/index.md). Load specifications on demand rather than
+[durable-memory/index.md](durable-memory/index.md). Load specifications on demand rather than
 reading the entire memory tree.
 
 ## Architecture
@@ -60,7 +60,7 @@ the root candidate projection. Agents select relevant candidates, inspect headin
 or summaries, and load only the necessary bodies. Context ranking aids selection;
 it does not replace bootstrap, source tools, or acceptance evidence.
 
-Read [architecture](docs/architecture.md) and the [native specification](.memory/specs/rust.md)
+Read [architecture](docs/architecture.md) and the [native specification](durable-memory/specs/rust.md)
 for canonical contracts. CLI package version and adopter config version are independent.
 
 ## Build and run locally
@@ -113,7 +113,7 @@ bash tests/run.sh --random
 ```
 
 Native tests live beside implementations. The prepared-model smoke is explicitly
-opt-in; its setup and limits are in the [context/model specification](.memory/specs/context.md).
+opt-in; its setup and limits are in the [context/model specification](durable-memory/specs/context.md).
 Use disposable projects and cache roots when exercising writes. Never use a real
 global installer or adopter uninstall as routine verification.
 
@@ -127,7 +127,7 @@ executable path; missing binaries fail with a build instruction. `--ci` emits TA
 The [coverage inventory](tests/native/README.md) records adapted and deferred cases.
 
 After editing canonical universal domain artifacts, follow the
-[synchronization contract](.memory/specs/sync-domain-kernel.md). Domain-owned
+[synchronization contract](durable-memory/specs/sync-domain-kernel.md). Domain-owned
 exceptions must remain intact.
 
 ## Distribution and legacy boundaries
@@ -160,5 +160,5 @@ snapshot. Existing legacy state and unrelated PATH entries are not cleaned up
 automatically by the native installer.
 
 - [Native CLI guide](docs/rust.md)
-- [Testing contract](.memory/specs/testing.md)
-- [Context and model experiments](.memory/plans/context/index.md)
+- [Testing contract](durable-memory/specs/testing.md)
+- [Context and model experiments](durable-memory/plans/context/index.md)

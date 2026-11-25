@@ -9,9 +9,9 @@ review.
 Before substantive repository work, load this complete mandatory set exactly
 once and in this order:
 
-1. `.memory/index.md`.
-2. `.memory/advisor_mode.md`.
-3. Every regular `.memory/disciplines/*.md` file in `LC_ALL=C` path order.
+1. `durable-memory/index.md`.
+2. `durable-memory/advisor_mode.md`.
+3. Every regular `durable-memory/disciplines/*.md` file in `LC_ALL=C` path order.
 
 The complete set has a 32 KiB (32,768-byte) budget, measured as the sum of the
 selected files' byte sizes. A context emitter must resolve and validate the

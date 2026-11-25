@@ -34,7 +34,7 @@ Describe 'documented CLI contracts'
   End
 
   It 'documents immediate clear as the exception to update previews'
-    files="$CONTRACT_ROOT/docs/update.md $CONTRACT_ROOT/docs/agent-adapters.md $CONTRACT_ROOT/domains/__base/skills/cumaru-update/SKILL.md $CONTRACT_ROOT/domains/__base/disciplines/cumaru-first.md $CONTRACT_ROOT/.memory/specs/update.md"
+    files="$CONTRACT_ROOT/docs/update.md $CONTRACT_ROOT/docs/agent-adapters.md $CONTRACT_ROOT/domains/__base/skills/cumaru-update/SKILL.md $CONTRACT_ROOT/domains/__base/disciplines/cumaru-first.md $CONTRACT_ROOT/durable-memory/specs/update.md"
     When call cli_help update
     The status should be success
     The output should include '--clear removes immediately'
@@ -44,7 +44,7 @@ Describe 'documented CLI contracts'
   End
 
   It 'uses Git recovery when available without requiring a Git project'
-    files="$CONTRACT_ROOT/docs/update.md $CONTRACT_ROOT/docs/agent-adapters.md $CONTRACT_ROOT/domains/__base/skills/cumaru-update/SKILL.md $CONTRACT_ROOT/.memory/specs/update.md $CONTRACT_ROOT/.memory/specs/architecture.md"
+    files="$CONTRACT_ROOT/docs/update.md $CONTRACT_ROOT/docs/agent-adapters.md $CONTRACT_ROOT/domains/__base/skills/cumaru-update/SKILL.md $CONTRACT_ROOT/durable-memory/specs/update.md $CONTRACT_ROOT/durable-memory/specs/architecture.md"
     When call cli_help update
     The status should be success
     The output should include 'Outside Git, Cumaru warns and continues without a Git recovery point.'
@@ -68,8 +68,8 @@ Describe 'documented CLI contracts'
         grep -Fq "Retired adapter config" "$1/docs/doctor.md" &&
         grep -Fq "does not persist an active agent" "$1/docs/agent-adapters.md" &&
         ! grep -E "persist(s|ed)? (an |the )?(active )?agent|selected agent adapter|transactionally refresh" \
-          "$1/README.md" "$1/.memory/specs/agent-adapters.md" \
-          "$1/.memory/specs/domains.md" "$1/.memory/specs/install-upgrade.md" >/dev/null &&
+          "$1/README.md" "$1/durable-memory/specs/agent-adapters.md" \
+          "$1/durable-memory/specs/domains.md" "$1/durable-memory/specs/install-upgrade.md" >/dev/null &&
         ! grep -F "Validators warn" "$1"/domains/*/roles/lead.md >/dev/null &&
         test -z "$(grep -L "doctor does not validate" "$1"/domains/{design-as-code,sdlc-full,sdlc-light,qa-basic}/roles/lead.md)"
     ' _ "$CONTRACT_ROOT"
@@ -342,17 +342,17 @@ Describe 'documented CLI contracts'
   End
 
   It 'defines one bounded atomic repository startup policy'
-    index="$CONTRACT_ROOT/.memory/index.md"
-    issue="$CONTRACT_ROOT/.memory/issues/issue_040.md"
-    The contents of file "$index" should include '1. `.memory/index.md`.'
-    The contents of file "$index" should include '2. `.memory/advisor_mode.md`.'
-    The contents of file "$index" should include '3. Every regular `.memory/disciplines/*.md` file in `LC_ALL=C` path order.'
+    index="$CONTRACT_ROOT/durable-memory/index.md"
+    issue="$CONTRACT_ROOT/durable-memory/issues/issue_040.md"
+    The contents of file "$index" should include '1. `durable-memory/index.md`.'
+    The contents of file "$index" should include '2. `durable-memory/advisor_mode.md`.'
+    The contents of file "$index" should include '3. Every regular `durable-memory/disciplines/*.md` file in `LC_ALL=C` path order.'
     The contents of file "$index" should include '32 KiB (32,768-byte) budget'
     The contents of file "$index" should include 'selected file count and total byte count'
     The contents of file "$index" should include 'emit none of the selected file bodies'
     The contents of file "$index" should include 'Specifications are current reference material selected on demand'
     The contents of file "$index" should include 'history are historical or task-scoped material'
-    The contents of file "$issue" should include '`.memory/index.md` order'
+    The contents of file "$issue" should include '`durable-memory/index.md` order'
     The contents of file "$index" should not include '@./specs/*.md'
   End
 

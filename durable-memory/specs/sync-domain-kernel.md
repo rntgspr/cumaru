@@ -143,5 +143,5 @@ bash tests/run.sh
 
 - `scripts/sync-domain-kernel.sh`
 - `src/install.sh` (drift-check enforcement)
-- `.memory/specs/domains.md` (kernel byte-identity requirement)
-- `.memory/specs/disciplines.md` (universal vs domain-owned disciplines)
+- `durable-memory/specs/domains.md` (kernel byte-identity requirement)
+- `durable-memory/specs/disciplines.md` (universal vs domain-owned disciplines)

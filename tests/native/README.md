@@ -73,7 +73,7 @@ passed all 82 cases (24.29 and 26.93 seconds respectively). The initial model
 fixture failures on macOS's `/var` alias were resolved by canonicalizing the
 temporary root; production cache symlink protection remains unchanged. Real BGE
 inference and retained-package reactivation were verified separately in disposable
-caches as recorded in [the model specification](../../.memory/specs/context.md).
+caches as recorded in [the model specification](../../durable-memory/specs/context.md).
 
 On macOS ARM, ShellSpec 0.28.1 with Bash 3.2 executes 57 native process cases plus
 18 reused artifact cases. Default TAP and randomized execution passed all 75

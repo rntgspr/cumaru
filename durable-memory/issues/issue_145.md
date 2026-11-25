@@ -61,17 +61,17 @@ retired, and behaviors that lost a native owner were recorded as issues 172,
 
 ## Tests
 
-- `rg -n 'src/(common|schema|agent_adapter|cmd_[a-z_]+)\.sh' .memory/specs`
+- `rg -n 'src/(common|schema|agent_adapter|cmd_[a-z_]+)\.sh' durable-memory/specs`
   returns no matches.
-- `rg -n '\byq\b|\bjq\b' .memory/specs` returns only historical or explicitly
+- `rg -n '\byq\b|\bjq\b' durable-memory/specs` returns only historical or explicitly
   non-runtime mentions.
 - Every relative link in the edited specs resolves to an existing file.
 
 ## References
 
-- `.memory/specs/absorb.md`, `agent-adapters.md`, `architecture.md`,
+- `durable-memory/specs/absorb.md`, `agent-adapters.md`, `architecture.md`,
   `configuration.md`, `coverage.md`, `disciplines.md`, `doctor.md`,
   `domains.md`, `install-upgrade.md`, `migration.md`, `navigation.md`,
   `tags.md`, `update.md`, `workflows.md`
-- `.memory/specs/rust.md` module boundaries
+- `durable-memory/specs/rust.md` module boundaries
 - Issue 144 (jq removal dependency)

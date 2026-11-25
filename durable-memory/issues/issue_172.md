@@ -44,5 +44,5 @@ matches `index.md`; adopter configs and wildcards without tags are unaffected.
 
 - `src/config_tree.rs`
 - `src/commands/install.rs`, `src/commands/update.rs`
-- `.memory/specs/configuration.md` invariant 9
+- `durable-memory/specs/configuration.md` invariant 9
 - [`src/schema.sh`](https://github.com/rntgspr/cumaru/blob/0.10.0/src/schema.sh) — retired reference
