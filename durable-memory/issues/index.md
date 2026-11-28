@@ -12,7 +12,6 @@ from 179.
 | Issue | Priority | Description |
 |---|---|---|
 | [040](issue_040.md) | low | Implement the manifest, loader, and hooks using issue 120's context policy |
-| [064](issue_064.md) | medium | Restore a universal migration skill with approval and post-migration checks |
 | [065](issue_065.md) | medium | Audit deterministic test scope and skill contract coverage |
 | [139](issue_139.md) | high | Reuse legacy Bash regression scenarios for the native Rust CLI |
 | [142](issue_142.md) | medium | Verify Homebrew installation on every supported platform |
@@ -37,8 +36,6 @@ from 179.
 - [040](issue_040.md) implements the context policy that
   [`../specs/disciplines.md`](../specs/disciplines.md) and
   [`../index.md`](../index.md) already define; it is not approved for delivery.
-- [064](issue_064.md) is the known gap recorded in
-  [`../specs/migration.md`](../specs/migration.md).
 - [065](issue_065.md) is the known limit recorded in
   [`../specs/testing.md`](../specs/testing.md).
 - The per-spec children of [145](issue_145.md) (147–160) are closed; only its

@@ -145,11 +145,13 @@ the [native regression inventory](../../tests/native/README.md).
 - Heading, preamble, checkpoint placement, and base-part spacing match the
   former output byte for byte.
 
-## Known gap
+## No migration skill
 
-The read-only command and rolling procedure are shipped, but a universal
-`cumaru-migrate` skill is not yet distributed to adapters. [Issue 064](../issues/issue_064.md)
-tracks the agent-facing inspection, approval, and post-migration checks.
+No `cumaru-migrate` skill ships: the configuration has stayed at version 9, so
+the rolling procedure only converges pre-9 installations, and `cumaru update`
+and `cumaru doctor` already route a version mismatch to `cumaru migrate`. When
+the configuration version is bumped, add the new procedure step together with
+an explicit plan-and-approval gate in `domains/__base/migration.md`.
 
 ## Verification
 
