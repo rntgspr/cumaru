@@ -5,7 +5,7 @@ Issues follow [`_issue_template.md`](_issue_template.md).
 This directory holds open issues only. Completed issues are removed once their
 invariants are absorbed into `durable-memory/specs/`, which is the durable single
 source of truth; Git history keeps the retired records. New issues continue
-from 178.
+from 179.
 
 ## Open issues
 
@@ -32,6 +32,7 @@ from 178.
 | [173](issue_173.md) | low | Decide whether update reports archive skill artifacts |
 | [174](issue_174.md) | low | Validate source discipline metadata before update writes |
 | [177](issue_177.md) | medium | Let doctor verify memory-graph integrity: alias collisions, open disputes, reciprocal edges |
+| [178](issue_178.md) | medium | Make the vault-memory domain.md carry its required relations tag |
 
 ## Notes
 
