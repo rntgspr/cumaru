@@ -86,8 +86,8 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
     `cumaru bootstrap` prints the base body then the installed domain body,
     frontmatter stripped, and fails with a diagnostic for a missing config or
     unknown domain. A domain's `cumaru-install` skill points to it instead of
-    restating steps. `focus` ships one naming every pillar and template; other
-    domains follow later.
+    restating steps. Every shipped domain ships one naming each of its pillar
+    directories and templates, checked by `tests/native/domain_bootstrap_spec.sh`.
 13. The `focus` bootstrap runs sources first (proposed from the tools actually
     available, written only once confirmed, unreachable ones reported as
     unavailable), then directives (stated by the user or drafted from the

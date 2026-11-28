@@ -35,7 +35,7 @@ behavior that requires later native scenarios; issue 139 stays open.
 | `contracts/summarize_artifacts_spec.sh` | Reused five artifact cases; outdated CR/LF/tab wording adapted to current C0/DEL contract. |
 | `contracts/terraform_skill_spec.sh` | Reused unchanged: three written inspection/authorization contracts. No Terraform execution. |
 | `contracts/workflow_orchestrator_skill_spec.sh` | Reused unchanged: three written prerequisite/launcher contracts. No agent execution. |
-| `contracts/bootstrap_spec.sh` | Remaining native process delivery/source-only and focus pillar checks; native bootstrap units already cover rendering/resolution. Retired `--from`. |
+| `contracts/bootstrap_spec.sh` | Adapted every-domain body, pillar/template coverage, and install-skill pointer checks in `native/domain_bootstrap_spec.sh`. Remaining source-only delivery and focus step-order checks; native bootstrap units cover rendering/resolution. Retired `--from`. |
 | `contracts/design_artifacts_spec.sh` | Remaining domain artifact/schema/scenario checks. Direct calls to Bash `schema_validate_domain` must be replaced; native install/doctor/config units provide partial mechanical coverage. |
 | `contracts/documented_contracts_spec.sh` | Remaining written lifecycle/ownership/role contracts and catalog checks. Adapted unsupported CLI invocations and fs safeguards in native suites. Retired Bash help layout and source-text implementation assertions. |
 | `contracts/domain_kernel_sync_spec.sh` | CI already runs `scripts/sync-domain-kernel.sh --check`. Remaining disposable apply/idempotence checks; old CLI-map checks need native invocation. |
