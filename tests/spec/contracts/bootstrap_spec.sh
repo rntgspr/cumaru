@@ -70,28 +70,43 @@ Describe 'cumaru bootstrap prose delivery'
     printf 'version: 9\ndomain: sdlc-light\n' >"$project/.cumaru/config.yaml"
     (cd "$project" && bash "$CONTRACT_CLI" bootstrap)
   }
-  It 'prints only the base body with a note when the domain ships none'
+  It 'prints the domain body for a domain that used to ship none'
     When call absent_doc
     The status should be success
     The output should include '## Universal rules'
-    The output should include 'ships no bootstrap.md'
+    The output should include '## sdlc-light — bootstrap steps'
+    The output should not include 'ships no bootstrap.md'
   End
 
-  # Lists focus pillar dirs and templates missing from focus bootstrap.md.
+  # Lists every domain pillar dir and template missing from its bootstrap.md.
+  domain_coverage_gaps() {
+    for dir in "$CONTRACT_ROOT"/domains/*/; do
+      domain=$(basename "$dir")
+      [ "$domain" = __base ] && continue
+      doc="$dir/bootstrap.md"
+      [ -f "$doc" ] || { printf "%s: missing bootstrap.md\n" "$domain"; continue; }
+      for pillar in $(yq ".root | keys | .[]" "$dir/config.yaml"); do
+        [ -d "$dir/$pillar" ] || continue
+        grep -Fq "\`$pillar/" "$doc" || printf "%s: pillar %s\n" "$domain" "$pillar"
+      done
+      for tpl in "$dir"/templates/*.md; do
+        name=$(basename "$tpl")
+        [ "$name" = index.md ] && continue
+        grep -Fq "templates/$name" "$doc" || printf "%s: template %s\n" "$domain" "$name"
+      done
+    done
+  }
+  It 'names every pillar and template in each domain bootstrap.md'
+    When call domain_coverage_gaps
+    The stdout should equal ''
+  End
+
+  # Lists focus bootstrap skills missing from focus bootstrap.md.
   focus_coverage_gaps() {
-    for pillar in $(yq '.root | keys | .[]' "$CONTRACT_ROOT/domains/focus/config.yaml"); do
-      [ -d "$CONTRACT_ROOT/domains/focus/$pillar" ] || continue
-      grep -Fq "\`$pillar/" "$FOCUS_DOC" || printf 'pillar %s\n' "$pillar"
-    done
-    for tpl in "$CONTRACT_ROOT"/domains/focus/templates/*.md; do
-      name=$(basename "$tpl")
-      [ "$name" = index.md ] && continue
-      grep -Fq "templates/$name" "$FOCUS_DOC" || printf 'template %s\n' "$name"
-    done
     grep -Fq 'cumaru-sources' "$FOCUS_DOC" || printf 'skill cumaru-sources\n'
     grep -Fq 'cumaru-directives' "$FOCUS_DOC" || printf 'skill cumaru-directives\n'
   }
-  It 'names every focus pillar, template, and bootstrap skill'
+  It 'names every focus bootstrap skill'
     When call focus_coverage_gaps
     The stdout should equal ''
   End

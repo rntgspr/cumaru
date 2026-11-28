@@ -27,30 +27,13 @@ What the CLI does, in order:
 5. Wires durable instructions, plus session hooks where the adapter supports them (Claude, Codex), preserving adopter content; only Generic (`none`) and OpenCode also receive command launchers. The adapter is not persisted in config.
 6. Prints next steps. It does not run `cumaru doctor` or `cumaru bootstrap`.
 
-After step 6, the CLI prints "Next steps" — that's your cue to start the coverage bootstrap below.
+After step 6, the CLI prints "Next steps" — run `cumaru bootstrap` next.
 
-## Post-install (LLM work — start here)
+## Bootstrap
 
-The framework is in place; the codebase is not yet mapped to it. **Your job** is to seed `coverage/` so future campaigns have somewhere to absorb deltas. Do these in order, **with user confirmation on each judgment call**.
-
-### Step 1 — Test levels
-
-1. Read the test layout and runner configuration to identify the project's test levels.
-2. Propose the level list to the user. Don't auto-decide or reinterpret levels as software components.
-3. Update `.cumaru/config.yaml > meta.targets.values` with those test-level keys, keeping the reserved `all` and `meta` values.
-4. Do not configure a tracker registry on `intake/index.md`; `cumaru-intake`
-   records observed scalar provenance on each item without adding an integration.
-5. Run `cumaru doctor`; resolve structural errors, then review warnings and the authored content semantically.
-
-### Step 2 — Hand off to `cumaru-coverage` for the coverage bootstrap
-
-With test levels declared, the next post-install step is seeding `coverage/` so future campaigns have somewhere to absorb deltas. **That work lives in the domain-specific `cumaru-coverage` skill** (it carries the bootstrap / deepen / consolidate recipes). When the user is ready, invoke it — `cumaru-coverage` walks them through:
-
-- **Bootstrap** — identify coverage areas (`auth`, `payments`, …) and create skeleton `coverage/<area>/index.md` per area, with user confirmation on every split.
-- **Deepen** — fill an area's scenarios (GWT) grounded in tests; split into cases / subareas per flow/feature.
-- **Consolidate** — rewrite a coverage map whose body has drifted into a changelog back into a flat statement of current state. On request only.
-
-This skill stops at Step 1 because the coverage work is recurring (deepen + consolidate happen across the project's lifetime, not just at install). Keeping it in `cumaru-coverage` lets non-qa domains install without that overhead.
+Run `cumaru bootstrap` and follow the printed steps in order. It prints the
+universal rules and the qa-basic steps from main HEAD, pinned to one commit; the
+document is never installed into `.cumaru/`.
 
 ## Uninstall
 
@@ -65,7 +48,7 @@ cumaru uninstall --yes          # non-interactive (agents / CI)
 
 | User says | You do |
 |---|---|---|
-| "Install the framework here" | `cumaru install --domain qa-basic` → declare test levels → hand off to `cumaru-coverage` for the coverage bootstrap |
+| "Install the framework here" | `cumaru install --domain qa-basic` → `cumaru bootstrap` → hand off to `cumaru-coverage` for the coverage bootstrap |
 | "Set up Cumaru for this project" | Same as above |
 | "Bootstrap the coverage" / "deepen auth" / "consolidate checkout" | Not this skill — hand off to `cumaru-coverage` (carries those recipes) |
 | "Add a domain" / "install with the X domain" | `cumaru install --domain <name>` (default = base) |

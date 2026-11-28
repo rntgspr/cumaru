@@ -9,7 +9,7 @@ Describe 'design domain authoring contracts'
     local domain="$CONTRACT_ROOT/domains/design-as-code" reference
     local references skill sources=("$domain/templates" "$domain/roles"
       "$domain/intake" "$domain/research" "$domain/assets" "$domain/plans"
-      "$domain/specs" "$domain/concepts" "$domain/domain.md")
+      "$domain/specs" "$domain/concepts" "$domain/domain.md" "$domain/bootstrap.md")
     for skill in "$domain"/skills/*/SKILL.md; do
       reference=${skill#"$domain"/}
       # Universal recipes discuss other domains; validate domain-owned recipes here.
@@ -251,7 +251,7 @@ MAPPINGS
       [ "$(yq -r '.root.intake.frontmatter // "absent"' "$domain/config.yaml")" = absent ] &&
       grep -Fq 'There is no project-wide tracker registry on this index' "$domain/intake/index.md" &&
       grep -Fq 'actual tracker in scalar `tracker:`' "$domain/skills/cumaru-intake/SKILL.md" &&
-      grep -Fq 'tracker registry on `intake/index.md`' "$domain/skills/cumaru-install/SKILL.md" &&
+      grep -Fq 'tracker registry on `intake/index.md`' "$domain/bootstrap.md" &&
       grep -Fq 'retire the tracker registry' "$domain/migration.md"
   }
 

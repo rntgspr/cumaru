@@ -21,24 +21,16 @@ cumaru install --domain vault-memory
 Install refuses an existing `.cumaru/`. Use `cumaru update` for refresh or
 adapter-targeted opt-in skills.
 
-## Post-install
+## Bootstrap
 
-1. Read `.cumaru/domain.md`.
-2. Replace the `components` table with the vault's major domains or external
-   collections.
-3. Update `.cumaru/config.yaml > meta.targets.values` when the user wants a custom
-   domain axis.
-4. Run `cumaru doctor`.
-5. Hand off to:
-   - `cumaru-capture` for raw material.
-   - `cumaru-draft` for rough notes.
-   - `cumaru-distill` for permanent memory.
-   - `cumaru-link` for graph relationships.
+Run `cumaru bootstrap` and follow the printed steps in order. It prints the
+universal rules and the vault-memory steps from main HEAD, pinned to one commit; the
+document is never installed into `.cumaru/`.
 
 ## Patterns
 
 | User says | You do |
 |---|---|
-| "install vault-memory" | Run `cumaru install --domain vault-memory`, then configure domains |
+| "install vault-memory" | Run `cumaru install --domain vault-memory`, then `cumaru bootstrap` |
 | "set up permanent memory" | Install this domain, then create the first `memories/` node |
 | "use my notes as memory" | Install this domain, then decide what starts as `drafts/` versus `memories/` |

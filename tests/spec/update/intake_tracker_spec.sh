@@ -138,7 +138,7 @@ Describe 'intake tracker provenance across framework updates'
       grep -Fq 'multiple or conflicting candidates' \
         "$UPDATE_ROOT/domains/$domain/migration.md" || return 1
       grep -Fq 'Do not configure a tracker registry' \
-        "$UPDATE_ROOT/domains/$domain/skills/cumaru-install/SKILL.md" || return 1
+        "$UPDATE_ROOT/domains/$domain/bootstrap.md" || return 1
 
       for template in intake-epic.md intake-story.md intake-ticket.md; do
         grep -Fq 'tracker: <TRACKER>' \

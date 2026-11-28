@@ -6,8 +6,9 @@ summary: Ordered bootstrap steps for the ai-ccn domain after install.
 
 The install ships a starter `constitution.md` and empty `creator/`,
 `posts/`, and `tasks/` pillars. Work through the steps in order. Where a step allows a
-proposal, present it and write only what the user confirms. `disciplines/`
-and `templates/` stay as shipped.
+proposal, present it and write only what the user confirms. `disciplines/`,
+`roles/`, and `templates/` stay as shipped; new pillar indexes start from
+`templates/any-index.md`.
 
 1. **Network.** Ask the network name, its shared channels, and local
    conventions. Write the answers in the `root` tag of `domain.md` with

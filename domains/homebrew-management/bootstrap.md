@@ -6,8 +6,8 @@ summary: Ordered bootstrap steps for the homebrew-management domain after instal
 
 The install ships empty `formulae/` and `casks/` pillars. Work through the
 steps in order. Where a step allows a proposal, present it and write only what
-the user confirms. `disciplines/`, `templates/`, and `release/bump.md` stay as
-shipped.
+the user confirms. `disciplines/`, `roles/`, `templates/`, and `release/bump.md` stay
+as shipped; new pillar indexes start from `templates/any-index.md`.
 
 1. **Tap.** Ask the tap name (`<user>/<tap>`), who consumes it, and the commit
    convention. Write the answers in the `root` tag of `domain.md` with
