@@ -32,7 +32,6 @@ from 179.
 | [173](issue_173.md) | low | Decide whether update reports archive skill artifacts |
 | [174](issue_174.md) | low | Validate source discipline metadata before update writes |
 | [177](issue_177.md) | medium | Let doctor verify memory-graph integrity: alias collisions, open disputes, reciprocal edges |
-| [178](issue_178.md) | medium | Make the vault-memory domain.md carry its required relations tag |
 
 ## Notes
 

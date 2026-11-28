@@ -135,6 +135,17 @@ domains/{sdlc-full,sdlc-light,design-as-code,iac-basic,qa-basic,vault-memory,foc
     task may produce a script, kept outside `.cumaru/` in
     `scripts/<task_slug>/`. The domain ships no domain-specific skill,
     command, or discipline, and nothing that publishes or schedules content.
+19. Every tag a shipped domain's `config.yaml` requires on a file exists as a
+    balanced marker in that source file, so doctor on a fresh install of any
+    shipped domain reports no missing required tag. Inline-code mentions of a
+    marker do not count.
+20. `vault-memory` converges multi-source knowledge on one node per fact
+    through the conventions in its `domain.md` Disambiguation section:
+    search-before-write in `cumaru-distill`, `aliases` and `type: term`
+    nodes, `status`, `authority` ranked by the adopter-owned `authority` tag,
+    `valid-from` / `valid-until`, and span-level `derived-from` from bulk
+    capture. Doctor checks field presence only; graph-integrity checks are
+    tracked by [issue 177](../issues/issue_177.md).
 
 ## Inputs and ownership
 
@@ -229,6 +240,7 @@ regression-tested without explicit authorization
 | `src/config_tree.rs`, `src/commands/help.rs`, `src/commands/bootstrap.rs` unit tests | Initial file selection, domain catalog, and bootstrap rendering. |
 | [`tests/native/lifecycle_spec.sh`](../../tests/native/lifecycle_spec.sh) | Stateless adapters, existing-install refusal, truncated inventories, and missing remote assets. |
 | [`tests/native/ai_ccn_domain_spec.sh`](../../tests/native/ai_ccn_domain_spec.sh), [`tests/native/homebrew_domain_spec.sh`](../../tests/native/homebrew_domain_spec.sh) | Domain-specific installed contracts. |
+| [`tests/native/source_domain_tags_spec.sh`](../../tests/native/source_domain_tags_spec.sh) | Every shipped domain installs with all config-required tags present. |
 
 Remaining legacy domain, schema, and bootstrap scenarios are tracked in the
 [native regression inventory](../../tests/native/README.md).

@@ -54,7 +54,7 @@ Phases 1 to 3 remove ambiguity; 4 to 6 add authority, time, and bulk intake.
    `policy > handbook > wiki > notes`) as prose in `domain.md`, inside a new
    `<!-- cumaru:authority -->` tag body so each vault sets its own order and
    update preserves it. Register it in `config.yaml` as
-   `domain.md: {framework: true, tags: [components, root, relations, authority]}`;
+   `domain.md: {framework: true, tags: [components, root, authority]}`;
    `tags` is a free name array (`$defs/tagName` in
    `schemas/config.schema.json`), so no schema change. Add
    `authority: {optional: true}` on memories and drafts. `cumaru-distill`
@@ -74,8 +74,8 @@ Phases 1 to 3 remove ambiguity; 4 to 6 add authority, time, and bulk intake.
 Phases 1 to 6 are implemented in `domains/vault-memory/` (prose, templates,
 `config.yaml`). Remaining: the deferred native checks below, and the adopter
 note that installed vaults must add `<!-- cumaru:authority -->` to `domain.md`
-after `cumaru update config`. Pre-existing and unrelated: doctor reports
-`domain.md: missing required tag 'relations'` on the source tree at HEAD too.
+after `cumaru update config`. The pre-existing missing `relations` tag was fixed
+(spec `domains.md` Invariant 19).
 
 ## Deferred native checks
 
