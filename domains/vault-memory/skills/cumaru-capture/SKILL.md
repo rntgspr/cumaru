@@ -31,6 +31,22 @@ retained as attachments, or deleted.
 5. Set the capture `summary:`, then run `cumaru tree inbox --rows` and `cumaru doctor`.
 6. Run `cumaru doctor`.
 
+## Recipe: bulk capture a document
+
+Use for whole documents (handbooks, policies, wikis) that will yield many
+memories.
+
+1. Store the source document under `attachments/<slug>/` from
+   `templates/attachment.md`, with `retained-for` naming the bulk ingest; it
+   must outlive inbox cleanup.
+2. Run `cumaru map attachments/<slug>` to list its sections and line ranges.
+3. Create one capture per section that holds durable content, with
+   `attachments` pointing at `attachments/<slug>/index.md:<start>,<end>`.
+4. Distill section by section with `cumaru-distill`, so each memory's
+   `derived-from` points at its exact span and each section runs the
+   search-before-write step.
+5. Run `cumaru doctor`.
+
 ## What this skill does NOT do
 
 - Distill permanent memory - use `cumaru-distill`.
@@ -42,3 +58,4 @@ retained as attachments, or deleted.
 |---|---|
 | "capture this URL" | Create an inbox capture with `type: url` |
 | "save this PDF for processing" | Create an inbox capture and list the file in `attachments` |
+| "ingest the company handbook" | Bulk capture recipe |

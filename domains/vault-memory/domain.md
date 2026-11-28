@@ -14,6 +14,15 @@ _(replace with memory domains, vault folders, or important external collections)
 _(empty - replace with adopter-specific context for this vault)_
 <!-- /cumaru:root -->
 
+<!-- cumaru:authority -->
+Source authority, highest first. A node's `authority:` names one rank.
+
+1. `policy`
+2. `handbook`
+3. `wiki`
+4. `notes`
+<!-- /cumaru:authority -->
+
 # Vault Memory domain
 
 This domain turns loose captured material, rough drafts, and durable memory
@@ -74,6 +83,27 @@ Graph edges live in frontmatter so they are machine-readable:
 
 The optional `<!-- cumaru:relations -->` table mirrors the most important graph
 edges for humans and LLM traversal.
+
+## Disambiguation
+
+Several sources describing one organization must converge on one node per fact.
+
+- **Search before write.** `cumaru-distill` searches existing nodes and their
+  aliases before creating one.
+- **Terms.** `aliases:` lists every other name for a node; one alias belongs to
+  one node only. A `type: term` node (`templates/term.md`) defines a concept,
+  its synonyms, and the words that are not synonyms.
+- **Status.** `status:` is `canonical`, `disputed`, or `superseded`. A
+  `contradicts` edge makes both nodes `disputed` until one is chosen; the other
+  becomes `superseded` with `superseded-by`.
+- **Authority.** `authority:` names a rank from the `authority` tag above. The
+  higher rank wins a conflict; equal or unknown ranks go to the user. Edit the
+  tag to set this vault's own order.
+- **Validity.** `valid-from:` / `valid-until:` state when a fact holds, unlike
+  `last_update`, which dates the edit. Superseded facts keep their dates and
+  stay in the graph.
+
+These values are conventions; `cumaru doctor` checks field presence only.
 
 ## Roles
 

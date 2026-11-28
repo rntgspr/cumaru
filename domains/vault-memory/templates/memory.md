@@ -7,6 +7,11 @@ summary: Replace with one-line durable statement.
 targets: [personal]
 topics: []
 source: []
+aliases: []
+status: canonical
+authority:
+valid-from:
+valid-until:
 references: []
 derived-from: []
 relates: []

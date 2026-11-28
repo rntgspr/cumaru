@@ -26,7 +26,9 @@ You maintain the memory vault.
 - **Attachments** - preserve only source files that should outlive inbox
   cleanup.
 - **Graph hygiene** - link related memories, mark contradictions and superseded
-  nodes, and avoid duplicate canonical statements.
+  nodes, and avoid duplicate canonical statements. Search before writing, keep
+  each alias on one node, and surface `status: disputed` nodes to the user
+  (see `domain.md` Disambiguation).
 
 ## Initial Load
 

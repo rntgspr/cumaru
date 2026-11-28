@@ -21,6 +21,8 @@ load as permanent memory.
 - **Use typed graph edges.** Prefer `relates`, `supports`, `contradicts`,
   `supersedes`, `superseded-by`, `part-of`, `similar-to`, and `derived-from`
   when linking nodes.
+- **One node per fact.** Use `aliases`, `status`, `authority`, and
+  `valid-from` / `valid-until` as described in `domain.md` Disambiguation.
 - **Use references honestly.** URLs are evidence; search strings are refresh
   queries, not proof.
 
