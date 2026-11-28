@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_VaultMemory" targetNamespace="http://cumaru.local/bpmn">
+<bpmn2:process id="Process_VaultMemory" name="vault-memory capture, distill, link, clean" isExecutable="false">
+<bpmn2:startEvent id="Start" name="Source arrives"/>
+<bpmn2:exclusiveGateway id="GwSource" name="Single item or whole document?"/>
+<bpmn2:task id="Capture" name="cumaru-capture: inbox/&lt;id&gt;/"/>
+<bpmn2:task id="Bulk" name="Bulk capture: keep source in attachments/&lt;slug&gt;/"/>
+<bpmn2:task id="Map" name="cumaru map: one capture per section"/>
+<bpmn2:exclusiveGateway id="GwSourceJoin"/>
+<bpmn2:task id="Search" name="cumaru-distill: search before write (context, tree, aliases)"/>
+<bpmn2:exclusiveGateway id="GwClass" name="Classify subject"/>
+<bpmn2:task id="Update" name="Same subject: update node"/>
+<bpmn2:task id="Similar" name="Neighbor: new node + similar-to both sides"/>
+<bpmn2:task id="New" name="New: create node or type: term"/>
+<bpmn2:exclusiveGateway id="GwClassJoin"/>
+<bpmn2:task id="Frontmatter" name="Set aliases, authority, valid-from/until, derived-from span"/>
+<bpmn2:exclusiveGateway id="GwConflict" name="Conflicts with a node?"/>
+<bpmn2:task id="Rank" name="Higher authority: canonical / superseded + superseded-by"/>
+<bpmn2:task id="Dispute" name="Equal rank: contradicts + disputed, ask user"/>
+<bpmn2:exclusiveGateway id="GwConflictJoin"/>
+<bpmn2:task id="Link" name="cumaru-link: reciprocal edges, resolve disputed"/>
+<bpmn2:task id="Cleanup" name="Reconcile provenance, remove inbox with confirmation"/>
+<bpmn2:task id="Doctor" name="cumaru doctor"/>
+<bpmn2:endEvent id="End" name="One node per fact"/>
+<bpmn2:textAnnotation id="NoteSearch"><bpmn2:text>Decision recorded in the node's ## Notes. One alias belongs to one node.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:association id="AssocSearch" sourceRef="Search" targetRef="NoteSearch"/>
+<bpmn2:textAnnotation id="NoteConflict"><bpmn2:text>Ranking lives in the domain.md authority tag. Superseded nodes are never deleted.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:association id="AssocConflict" sourceRef="GwConflict" targetRef="NoteConflict"/>
+<bpmn2:textAnnotation id="NoteDoctor"><bpmn2:text>Doctor checks field presence only; alias collision and open disputes are not detected yet.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:association id="AssocDoctor" sourceRef="Doctor" targetRef="NoteDoctor"/>
+<bpmn2:sequenceFlow id="F01" sourceRef="Start" targetRef="GwSource"/>
+<bpmn2:sequenceFlow id="F02" name="item" sourceRef="GwSource" targetRef="Capture"/>
+<bpmn2:sequenceFlow id="F03" name="document" sourceRef="GwSource" targetRef="Bulk"/>
+<bpmn2:sequenceFlow id="F04" sourceRef="Bulk" targetRef="Map"/>
+<bpmn2:sequenceFlow id="F05" sourceRef="Capture" targetRef="GwSourceJoin"/>
+<bpmn2:sequenceFlow id="F06" sourceRef="Map" targetRef="GwSourceJoin"/>
+<bpmn2:sequenceFlow id="F07" sourceRef="GwSourceJoin" targetRef="Search"/>
+<bpmn2:sequenceFlow id="F08" sourceRef="Search" targetRef="GwClass"/>
+<bpmn2:sequenceFlow id="F09" name="same" sourceRef="GwClass" targetRef="Update"/>
+<bpmn2:sequenceFlow id="F10" name="neighbor" sourceRef="GwClass" targetRef="Similar"/>
+<bpmn2:sequenceFlow id="F11" name="new" sourceRef="GwClass" targetRef="New"/>
+<bpmn2:sequenceFlow id="F12" sourceRef="Update" targetRef="GwClassJoin"/>
+<bpmn2:sequenceFlow id="F13" sourceRef="Similar" targetRef="GwClassJoin"/>
+<bpmn2:sequenceFlow id="F14" sourceRef="New" targetRef="GwClassJoin"/>
+<bpmn2:sequenceFlow id="F15" sourceRef="GwClassJoin" targetRef="Frontmatter"/>
+<bpmn2:sequenceFlow id="F16" sourceRef="Frontmatter" targetRef="GwConflict"/>
+<bpmn2:sequenceFlow id="F17" name="ranks differ" sourceRef="GwConflict" targetRef="Rank"/>
+<bpmn2:sequenceFlow id="F18" name="no conflict" sourceRef="GwConflict" targetRef="GwConflictJoin"/>
+<bpmn2:sequenceFlow id="F19" name="equal or unknown" sourceRef="GwConflict" targetRef="Dispute"/>
+<bpmn2:sequenceFlow id="F20" sourceRef="Rank" targetRef="GwConflictJoin"/>
+<bpmn2:sequenceFlow id="F21" sourceRef="Dispute" targetRef="GwConflictJoin"/>
+<bpmn2:sequenceFlow id="F22" sourceRef="GwConflictJoin" targetRef="Link"/>
+<bpmn2:sequenceFlow id="F23" sourceRef="Link" targetRef="Cleanup"/>
+<bpmn2:sequenceFlow id="F24" sourceRef="Cleanup" targetRef="Doctor"/>
+<bpmn2:sequenceFlow id="F25" sourceRef="Doctor" targetRef="End"/>
+</bpmn2:process>
+<bpmndi:BPMNDiagram id="Diagram_VaultMemory">
+<bpmndi:BPMNPlane id="Plane_VaultMemory" bpmnElement="Process_VaultMemory">
+<bpmndi:BPMNShape id="S_Start" bpmnElement="Start"><dc:Bounds x="100" y="222" width="36" height="36"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_GwSource" bpmnElement="GwSource" isMarkerVisible="true"><dc:Bounds x="190" y="215" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Capture" bpmnElement="Capture"><dc:Bounds x="290" y="100" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Bulk" bpmnElement="Bulk"><dc:Bounds x="290" y="300" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Map" bpmnElement="Map"><dc:Bounds x="450" y="300" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_GwSourceJoin" bpmnElement="GwSourceJoin" isMarkerVisible="true"><dc:Bounds x="620" y="215" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Search" bpmnElement="Search"><dc:Bounds x="720" y="200" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_GwClass" bpmnElement="GwClass" isMarkerVisible="true"><dc:Bounds x="890" y="215" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Update" bpmnElement="Update"><dc:Bounds x="990" y="80" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Similar" bpmnElement="Similar"><dc:Bounds x="990" y="200" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_New" bpmnElement="New"><dc:Bounds x="990" y="320" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_GwClassJoin" bpmnElement="GwClassJoin" isMarkerVisible="true"><dc:Bounds x="1160" y="215" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Frontmatter" bpmnElement="Frontmatter"><dc:Bounds x="1260" y="200" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_GwConflict" bpmnElement="GwConflict" isMarkerVisible="true"><dc:Bounds x="1430" y="215" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Rank" bpmnElement="Rank"><dc:Bounds x="1530" y="80" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Dispute" bpmnElement="Dispute"><dc:Bounds x="1530" y="320" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_GwConflictJoin" bpmnElement="GwConflictJoin" isMarkerVisible="true"><dc:Bounds x="1700" y="215" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Link" bpmnElement="Link"><dc:Bounds x="1800" y="200" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Cleanup" bpmnElement="Cleanup"><dc:Bounds x="1970" y="200" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_Doctor" bpmnElement="Doctor"><dc:Bounds x="2140" y="200" width="120" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_End" bpmnElement="End"><dc:Bounds x="2312" y="222" width="36" height="36"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_NoteSearch" bpmnElement="NoteSearch"><dc:Bounds x="700" y="40" width="180" height="60"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_NoteConflict" bpmnElement="NoteConflict"><dc:Bounds x="1380" y="440" width="200" height="60"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="S_NoteDoctor" bpmnElement="NoteDoctor"><dc:Bounds x="2110" y="60" width="200" height="60"/></bpmndi:BPMNShape>
+<bpmndi:BPMNEdge id="E_AssocSearch" bpmnElement="AssocSearch"><di:waypoint x="780" y="200"/><di:waypoint x="790" y="100"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_AssocConflict" bpmnElement="AssocConflict"><di:waypoint x="1455" y="265"/><di:waypoint x="1470" y="440"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_AssocDoctor" bpmnElement="AssocDoctor"><di:waypoint x="2200" y="200"/><di:waypoint x="2205" y="120"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F01" bpmnElement="F01"><di:waypoint x="136" y="240"/><di:waypoint x="190" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F02" bpmnElement="F02"><di:waypoint x="215" y="215"/><di:waypoint x="215" y="140"/><di:waypoint x="290" y="140"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F03" bpmnElement="F03"><di:waypoint x="215" y="265"/><di:waypoint x="215" y="340"/><di:waypoint x="290" y="340"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F04" bpmnElement="F04"><di:waypoint x="410" y="340"/><di:waypoint x="450" y="340"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F05" bpmnElement="F05"><di:waypoint x="410" y="140"/><di:waypoint x="645" y="140"/><di:waypoint x="645" y="215"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F06" bpmnElement="F06"><di:waypoint x="570" y="340"/><di:waypoint x="645" y="340"/><di:waypoint x="645" y="265"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F07" bpmnElement="F07"><di:waypoint x="670" y="240"/><di:waypoint x="720" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F08" bpmnElement="F08"><di:waypoint x="840" y="240"/><di:waypoint x="890" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F09" bpmnElement="F09"><di:waypoint x="915" y="215"/><di:waypoint x="915" y="120"/><di:waypoint x="990" y="120"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F10" bpmnElement="F10"><di:waypoint x="940" y="240"/><di:waypoint x="990" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F11" bpmnElement="F11"><di:waypoint x="915" y="265"/><di:waypoint x="915" y="360"/><di:waypoint x="990" y="360"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F12" bpmnElement="F12"><di:waypoint x="1110" y="120"/><di:waypoint x="1185" y="120"/><di:waypoint x="1185" y="215"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F13" bpmnElement="F13"><di:waypoint x="1110" y="240"/><di:waypoint x="1160" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F14" bpmnElement="F14"><di:waypoint x="1110" y="360"/><di:waypoint x="1185" y="360"/><di:waypoint x="1185" y="265"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F15" bpmnElement="F15"><di:waypoint x="1210" y="240"/><di:waypoint x="1260" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F16" bpmnElement="F16"><di:waypoint x="1380" y="240"/><di:waypoint x="1430" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F17" bpmnElement="F17"><di:waypoint x="1455" y="215"/><di:waypoint x="1455" y="120"/><di:waypoint x="1530" y="120"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F18" bpmnElement="F18"><di:waypoint x="1480" y="240"/><di:waypoint x="1700" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F19" bpmnElement="F19"><di:waypoint x="1455" y="265"/><di:waypoint x="1455" y="360"/><di:waypoint x="1530" y="360"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F20" bpmnElement="F20"><di:waypoint x="1650" y="120"/><di:waypoint x="1725" y="120"/><di:waypoint x="1725" y="215"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F21" bpmnElement="F21"><di:waypoint x="1650" y="360"/><di:waypoint x="1725" y="360"/><di:waypoint x="1725" y="265"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F22" bpmnElement="F22"><di:waypoint x="1750" y="240"/><di:waypoint x="1800" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F23" bpmnElement="F23"><di:waypoint x="1920" y="240"/><di:waypoint x="1970" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F24" bpmnElement="F24"><di:waypoint x="2090" y="240"/><di:waypoint x="2140" y="240"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="E_F25" bpmnElement="F25"><di:waypoint x="2260" y="240"/><di:waypoint x="2312" y="240"/></bpmndi:BPMNEdge>
+</bpmndi:BPMNPlane>
+</bpmndi:BPMNDiagram>
+</bpmn2:definitions>

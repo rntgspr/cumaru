@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_UserFlows" targetNamespace="http://dot-llm.local/bpmn">
+<bpmn2:process id="Process_UserFlows" name="dot-llm user flows" isExecutable="false">
+<bpmn2:startEvent id="Start" name="dot-llm user flows"/>
+<bpmn2:task id="Intent" name="User or LLM selects intent"/>
+<bpmn2:task id="Dispatch" name="CLI dispatches command or skill recipe"/>
+<bpmn2:exclusiveGateway id="Gateway" name="Select flow"/>
+<bpmn2:endEvent id="End" name="Complete"/>
+<bpmn2:task id="F_Doctor" name="Diagnose installed tree"/>
+<bpmn2:textAnnotation id="Note_F_Doctor"><bpmn2:text>Code: six pillar-agnostic structural, marker, and tool checks.
+Docs: run after install/update and around structural changes.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Install" name="Adopt framework flavor"/>
+<bpmn2:textAnnotation id="Note_F_Install"><bpmn2:text>Code: copy flavor, install skills/commands, wire CLAUDE.md.
+Docs: then edit domain/schema and run doctor.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Uninstall" name="Remove managed footprint"/>
+<bpmn2:textAnnotation id="Note_F_Uninstall"><bpmn2:text>Fixed path: .llm/. Existing trees require index.md + schema.yaml before any managed artifact is removed.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Intake" name="Fetch or re-sync intake"/>
+<bpmn2:textAnnotation id="Note_F_Intake"><bpmn2:text>Code: Jira, Linear, ClickUp adapters.
+Docs: LLM refines RAW and adds pillar row; doctor warns while RAW remains.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Tag" name="Audit / get / set tags"/>
+<bpmn2:textAnnotation id="Note_F_Tag"><bpmn2:text>Code and docs align on schema validation and marker preservation.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Flow" name="Move / copy / create / remove"/>
+<bpmn2:textAnnotation id="Note_F_Flow"><bpmn2:text>All paths are canonically contained inside .llm.
+Directory naming is enforced consistently across all verbs.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Update" name="Review or apply update"/>
+<bpmn2:textAnnotation id="Note_F_Update"><bpmn2:text>Code: preserve frontmatter values and tag bodies; source prose by default.
+Flavor is detected from .llm/schema.yaml, with base fallback.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Skills" name="Update skills only"/>
+<bpmn2:textAnnotation id="Note_F_Skills"><bpmn2:text>Dedicated documented subflow; previews or replaces only framework skills.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Commands" name="Update commands only"/>
+<bpmn2:textAnnotation id="Note_F_Commands"><bpmn2:text>Dedicated documented subflow; previews or replaces only slash commands.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Schema" name="Review or replace schema"/>
+<bpmn2:textAnnotation id="Note_F_Schema"><bpmn2:text>Dedicated documented subflow; dry-run diff is recommended, while apply destructively replaces schema.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Upgrade" name="Upgrade tool snapshot"/>
+<bpmn2:textAnnotation id="Note_F_Upgrade"><bpmn2:text>Re-runs install.sh, wipes snapshot, clones, validates kernel drift, relinks binary.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:task id="F_Recipe" name="Execute recipe workflow"/>
+<bpmn2:textAnnotation id="Note_F_Recipe"><bpmn2:text>Archive, explore, plan, specs/topology/coverage are skill-driven and compose flow/tag/doctor.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:textAnnotation id="Annotation_0"><bpmn2:text>Ownership boundary
+Bash: deterministic mechanics and validation.
+Skills/slash commands: multi-step recipes.
+Human or LLM: semantic refinement and reconciliation.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:textAnnotation id="Annotation_1"><bpmn2:text>Detailed implemented flows, documentation expectations, and evidence-based gaps are listed in user-flows.md and documentation-code-differences.md.</bpmn2:text></bpmn2:textAnnotation>
+<bpmn2:sequenceFlow id="Flow_1" sourceRef="Start" targetRef="Intent"/>
+<bpmn2:sequenceFlow id="Flow_2" sourceRef="Intent" targetRef="Dispatch"/>
+<bpmn2:sequenceFlow id="Flow_3" sourceRef="Dispatch" targetRef="Gateway"/>
+<bpmn2:sequenceFlow id="Flow_4" sourceRef="Gateway" targetRef="F_Doctor"/>
+<bpmn2:sequenceFlow id="Flow_5" sourceRef="F_Doctor" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_6" sourceRef="Gateway" targetRef="F_Install"/>
+<bpmn2:sequenceFlow id="Flow_7" sourceRef="F_Install" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_8" sourceRef="Gateway" targetRef="F_Uninstall"/>
+<bpmn2:sequenceFlow id="Flow_9" sourceRef="F_Uninstall" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_10" sourceRef="Gateway" targetRef="F_Intake"/>
+<bpmn2:sequenceFlow id="Flow_11" sourceRef="F_Intake" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_12" sourceRef="Gateway" targetRef="F_Tag"/>
+<bpmn2:sequenceFlow id="Flow_13" sourceRef="F_Tag" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_14" sourceRef="Gateway" targetRef="F_Flow"/>
+<bpmn2:sequenceFlow id="Flow_15" sourceRef="F_Flow" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_16" sourceRef="Gateway" targetRef="F_Update"/>
+<bpmn2:sequenceFlow id="Flow_17" sourceRef="F_Update" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_18" sourceRef="Gateway" targetRef="F_Skills"/>
+<bpmn2:sequenceFlow id="Flow_19" sourceRef="F_Skills" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_20" sourceRef="Gateway" targetRef="F_Commands"/>
+<bpmn2:sequenceFlow id="Flow_21" sourceRef="F_Commands" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_22" sourceRef="Gateway" targetRef="F_Schema"/>
+<bpmn2:sequenceFlow id="Flow_23" sourceRef="F_Schema" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_24" sourceRef="Gateway" targetRef="F_Upgrade"/>
+<bpmn2:sequenceFlow id="Flow_25" sourceRef="F_Upgrade" targetRef="End"/>
+<bpmn2:sequenceFlow id="Flow_26" sourceRef="Gateway" targetRef="F_Recipe"/>
+<bpmn2:sequenceFlow id="Flow_27" sourceRef="F_Recipe" targetRef="End"/>
+</bpmn2:process>
+<bpmndi:BPMNDiagram id="Diagram_UserFlows"><bpmndi:BPMNPlane id="Plane_UserFlows" bpmnElement="Process_UserFlows">
+<bpmndi:BPMNShape id="Start_di" bpmnElement="Start"><dc:Bounds x="80" y="430" width="36" height="36"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Intent_di" bpmnElement="Intent"><dc:Bounds x="160" y="408" width="150" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Dispatch_di" bpmnElement="Dispatch"><dc:Bounds x="370" y="408" width="150" height="80"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Gateway_di" bpmnElement="Gateway" isMarkerVisible="true"><dc:Bounds x="580" y="423" width="50" height="50"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="End_di" bpmnElement="End"><dc:Bounds x="1080" y="430" width="36" height="36"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Doctor_di" bpmnElement="F_Doctor"><dc:Bounds x="740" y="30" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Doctor_di" bpmnElement="Note_F_Doctor"><dc:Bounds x="980" y="25" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Install_di" bpmnElement="F_Install"><dc:Bounds x="740" y="145" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Install_di" bpmnElement="Note_F_Install"><dc:Bounds x="980" y="140" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Uninstall_di" bpmnElement="F_Uninstall"><dc:Bounds x="740" y="260" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Uninstall_di" bpmnElement="Note_F_Uninstall"><dc:Bounds x="980" y="255" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Intake_di" bpmnElement="F_Intake"><dc:Bounds x="740" y="375" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Intake_di" bpmnElement="Note_F_Intake"><dc:Bounds x="980" y="370" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Tag_di" bpmnElement="F_Tag"><dc:Bounds x="740" y="490" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Tag_di" bpmnElement="Note_F_Tag"><dc:Bounds x="980" y="485" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Flow_di" bpmnElement="F_Flow"><dc:Bounds x="740" y="605" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Flow_di" bpmnElement="Note_F_Flow"><dc:Bounds x="980" y="600" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Update_di" bpmnElement="F_Update"><dc:Bounds x="740" y="720" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Update_di" bpmnElement="Note_F_Update"><dc:Bounds x="980" y="715" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Skills_di" bpmnElement="F_Skills"><dc:Bounds x="740" y="835" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Skills_di" bpmnElement="Note_F_Skills"><dc:Bounds x="980" y="830" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Commands_di" bpmnElement="F_Commands"><dc:Bounds x="740" y="950" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Commands_di" bpmnElement="Note_F_Commands"><dc:Bounds x="980" y="945" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Schema_di" bpmnElement="F_Schema"><dc:Bounds x="740" y="1065" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Schema_di" bpmnElement="Note_F_Schema"><dc:Bounds x="980" y="1060" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Upgrade_di" bpmnElement="F_Upgrade"><dc:Bounds x="740" y="1180" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Upgrade_di" bpmnElement="Note_F_Upgrade"><dc:Bounds x="980" y="1175" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="F_Recipe_di" bpmnElement="F_Recipe"><dc:Bounds x="740" y="1295" width="220" height="78"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Note_F_Recipe_di" bpmnElement="Note_F_Recipe"><dc:Bounds x="980" y="1290" width="330" height="90"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Annotation_0_di" bpmnElement="Annotation_0"><dc:Bounds x="160" y="30" width="620" height="120"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="Annotation_1_di" bpmnElement="Annotation_1"><dc:Bounds x="160" y="1450" width="760" height="100"/></bpmndi:BPMNShape>
+<bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="116" y="448"/><di:waypoint x="160" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="310" y="448"/><di:waypoint x="370" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="520" y="448"/><di:waypoint x="580" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="69"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="960" y="69"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="184"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="960" y="184"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="299"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9"><di:waypoint x="960" y="299"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="414"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11"><di:waypoint x="960" y="414"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="529"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13"><di:waypoint x="960" y="529"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="644"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15"><di:waypoint x="960" y="644"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="759"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17"><di:waypoint x="960" y="759"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="874"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19"><di:waypoint x="960" y="874"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_20_di" bpmnElement="Flow_20"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="989"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_21_di" bpmnElement="Flow_21"><di:waypoint x="960" y="989"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_22_di" bpmnElement="Flow_22"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="1104"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_23_di" bpmnElement="Flow_23"><di:waypoint x="960" y="1104"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_24_di" bpmnElement="Flow_24"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="1219"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_25_di" bpmnElement="Flow_25"><di:waypoint x="960" y="1219"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_26_di" bpmnElement="Flow_26"><di:waypoint x="630" y="448"/><di:waypoint x="740" y="1334"/></bpmndi:BPMNEdge>
+<bpmndi:BPMNEdge id="Flow_27_di" bpmnElement="Flow_27"><di:waypoint x="960" y="1334"/><di:waypoint x="1080" y="448"/></bpmndi:BPMNEdge>
+</bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn2:definitions>

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Architecture" targetNamespace="http://dot-llm.local/bpmn">
+  <bpmn2:process id="Process_Architecture" name="dot-llm internal architecture" isExecutable="false">
+    <bpmn2:startEvent id="Start" name="dot-llm internal architecture" />
+    <bpmn2:task id="Resolve" name="Resolve real script location&#10;_resolve_self" />
+    <bpmn2:task id="Globals" name="Initialize runtime globals" />
+    <bpmn2:task id="Source" name="Source common and command modules" />
+    <bpmn2:exclusiveGateway id="Gateway" name="Select flow" />
+    <bpmn2:endEvent id="End" name="Complete" />
+    <bpmn2:task id="Task_Help" name="Help / discovery" />
+    <bpmn2:task id="Task_Install" name="Install framework" />
+    <bpmn2:task id="Task_Uninstall" name="Uninstall managed artifacts" />
+    <bpmn2:task id="Task_Doctor" name="Run diagnostics" />
+    <bpmn2:task id="Task_Update" name="Merge framework update" />
+    <bpmn2:task id="Task_Intake" name="Fetch or re-sync issue" />
+    <bpmn2:task id="Task_Flow" name="Guarded file operation" />
+    <bpmn2:task id="Task_Tag" name="Marker-block operation" />
+    <bpmn2:task id="Task_Upgrade" name="Replace tool snapshot" />
+    <bpmn2:sequenceFlow id="Flow_1" sourceRef="Start" targetRef="Resolve" />
+    <bpmn2:sequenceFlow id="Flow_2" sourceRef="Resolve" targetRef="Globals" />
+    <bpmn2:sequenceFlow id="Flow_3" sourceRef="Globals" targetRef="Source" />
+    <bpmn2:sequenceFlow id="Flow_4" sourceRef="Source" targetRef="Gateway" />
+    <bpmn2:sequenceFlow id="Flow_5" sourceRef="Gateway" targetRef="Task_Help" />
+    <bpmn2:sequenceFlow id="Flow_6" sourceRef="Task_Help" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_7" sourceRef="Gateway" targetRef="Task_Install" />
+    <bpmn2:sequenceFlow id="Flow_8" sourceRef="Task_Install" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_9" sourceRef="Gateway" targetRef="Task_Uninstall" />
+    <bpmn2:sequenceFlow id="Flow_10" sourceRef="Task_Uninstall" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_11" sourceRef="Gateway" targetRef="Task_Doctor" />
+    <bpmn2:sequenceFlow id="Flow_12" sourceRef="Task_Doctor" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_13" sourceRef="Gateway" targetRef="Task_Update" />
+    <bpmn2:sequenceFlow id="Flow_14" sourceRef="Task_Update" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_15" sourceRef="Gateway" targetRef="Task_Intake" />
+    <bpmn2:sequenceFlow id="Flow_16" sourceRef="Task_Intake" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_17" sourceRef="Gateway" targetRef="Task_Flow" />
+    <bpmn2:sequenceFlow id="Flow_18" sourceRef="Task_Flow" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_19" sourceRef="Gateway" targetRef="Task_Tag" />
+    <bpmn2:sequenceFlow id="Flow_20" sourceRef="Task_Tag" targetRef="End" />
+    <bpmn2:sequenceFlow id="Flow_21" sourceRef="Gateway" targetRef="Task_Upgrade" />
+    <bpmn2:sequenceFlow id="Flow_22" sourceRef="Task_Upgrade" targetRef="End" />
+    <bpmn2:textAnnotation id="Note_Task_Help">
+      <bpmn2:text>src/cmd_help.sh
+Functions: cmd_help</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Install">
+      <bpmn2:text>src/cmd_install.sh
+Functions: cmd_install, _framework_install_skills_to_claude, _framework_prune_deprecated_llm_skills, _framework_prune_legacy_dot_llm_skills, _framework_copy_commands, _framework_deprecated_commands, _install_print_hook_block, _install_wire_claude_md, _install_list_frameworks, _install_list_skills, cmd_install_help</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Uninstall">
+      <bpmn2:text>src/cmd_uninstall.sh
+Functions: cmd_uninstall, _uninstall_prune_dirs, _uninstall_strip_hook, cmd_uninstall_help</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Doctor">
+      <bpmn2:text>src/cmd_doctor.sh
+Functions: cmd_doctor_help, _doctor_pass, _doctor_warn_emit, _doctor_fail, _doctor_apps_values, _doctor_pattern_rules, _doctor_disk_files_for_path, _doctor_check_schema, _doctor_check_schema_pass, _doctor_orphan_pillars, _doctor_schema_entities, _doctor_schema_pillar_extras, _doctor_orphan_anchor, _doctor_row_paths, _doctor_check_orphans, _doctor_check_stale_markers, _doctor_check_raw_blocks, _doctor_check_file_refs, _doctor_check_external_tools, cmd_doctor</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Update">
+      <bpmn2:text>src/cmd_update.sh
+Functions: _update_has_fm, _update_fm_keys, _update_fm_region, _update_body_after_fm, _update_tag_header, _update_tag_is_table, _update_tag_kind, _update_build_expected, _update_needs_attention, _update_render, cmd_update_help, cmd_update, _update_inject_blocks</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Intake">
+      <bpmn2:text>src/cmd_intake.sh
+Functions: cmd_intake_help, _intake_require_env, _intake_require_tools, _intake_relates_add, _intake_read_trackers, _intake_fetch_jira, _intake_fetch_linear, _intake_fetch_clickup, cmd_intake, _intake_append_raw_block</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Flow">
+      <bpmn2:text>src/cmd_flow.sh
+Functions: cmd_flow_help, _flow_check_path, _flow_resolve_inside, _flow_check_shape, cmd_flow</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Tag">
+      <bpmn2:text>src/cmd_tag.sh
+Functions: cmd_tag_help, _tag_relpath, _tag_resolve_file, _tag_schema_root_keys, _tag_schema_pillar_keys, _tag_schema_meta_table, _tag_schema_expected_tags_for_file, _tag_schema_wildcard_tags, _tag_schema_allowed_tags_for_file, _tag_in_schema_for_file, _tag_list, _tag_do_get, _tag_do_set, _tag_insert_empty, _tag_dispatch_verb, _tag_arg_is_md_file, _tag_arg_looks_like_file, _tag_parse_error_non_md_file, _tag_dispatch_verb_first, _tag_dispatch_file_first, cmd_tag</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Note_Task_Upgrade">
+      <bpmn2:text>src/install.sh
+Functions: (top-level script)</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Annotation_0">
+      <bpmn2:text>Entrypoint functions: _resolve_self, _resolve_framework_src
+Shared helpers: red, yellow, green, say, fm_scalar, fm_list, fm_h1, fm_block_list, fm_block_extract, fm_block_replace
+Shared and cross-flow variables: BASE_DIR, BASE_FRAMEWORK_SRC, BIN, DEFAULT_FRAMEWORK, DEST, DOT_LLM_DIR, FRAMEWORK_SRC, FRAMEWORKS_DIR, INTAKE_DESC, INTAKE_RELATES, INTAKE_STATUS, INTAKE_SUMMARY, INTAKE_TYPE, INTAKE_TYPE_RAW, QUIET, REPO, SCHEMA, SCRIPT_DIR, SKILLS_SRC, SRC</bpmn2:text>
+    </bpmn2:textAnnotation>
+    <bpmn2:textAnnotation id="Annotation_1">
+      <bpmn2:text>Call relationships and exact source lines are listed in function-inventory.md. Command tasks represent module boundaries; each annotation lists every function owned by that module.</bpmn2:text>
+    </bpmn2:textAnnotation>
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="Diagram_Architecture">
+    <bpmndi:BPMNPlane id="Plane_Architecture" bpmnElement="Process_Architecture">
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
+        <dc:Bounds x="80" y="430" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Resolve_di" bpmnElement="Resolve">
+        <dc:Bounds x="160" y="408" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Globals_di" bpmnElement="Globals">
+        <dc:Bounds x="370" y="408" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Source_di" bpmnElement="Source">
+        <dc:Bounds x="580" y="408" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_di" bpmnElement="Gateway" isMarkerVisible="true">
+        <dc:Bounds x="790" y="423" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_di" bpmnElement="End">
+        <dc:Bounds x="1290" y="430" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Doctor_di" bpmnElement="Task_Doctor">
+        <dc:Bounds x="950" y="375" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Update_di" bpmnElement="Task_Update">
+        <dc:Bounds x="950" y="490" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Intake_di" bpmnElement="Task_Intake">
+        <dc:Bounds x="950" y="605" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Flow_di" bpmnElement="Task_Flow">
+        <dc:Bounds x="950" y="720" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Tag_di" bpmnElement="Task_Tag">
+        <dc:Bounds x="950" y="835" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Help_di" bpmnElement="Task_Help">
+        <dc:Bounds x="950" y="-119" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Install_di" bpmnElement="Task_Install">
+        <dc:Bounds x="950" y="1" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Uninstall_di" bpmnElement="Task_Uninstall">
+        <dc:Bounds x="950" y="216" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Upgrade_di" bpmnElement="Task_Upgrade">
+        <dc:Bounds x="950" y="1111" width="220" height="78" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Update_di" bpmnElement="Note_Task_Update">
+        <dc:Bounds x="1190" y="485" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Intake_di" bpmnElement="Note_Task_Intake">
+        <dc:Bounds x="1190" y="600" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Flow_di" bpmnElement="Note_Task_Flow">
+        <dc:Bounds x="1190" y="715" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Tag_di" bpmnElement="Note_Task_Tag">
+        <dc:Bounds x="1190" y="830" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Upgrade_di" bpmnElement="Note_Task_Upgrade">
+        <dc:Bounds x="1190" y="945" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Annotation_0_di" bpmnElement="Annotation_0">
+        <dc:Bounds x="160" y="40" width="570" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Annotation_1_di" bpmnElement="Annotation_1">
+        <dc:Bounds x="160" y="1120" width="450" height="57" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="116" y="448" />
+        <di:waypoint x="160" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="310" y="448" />
+        <di:waypoint x="370" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="520" y="448" />
+        <di:waypoint x="580" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="730" y="448" />
+        <di:waypoint x="790" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="840" y="-80" />
+        <di:waypoint x="950" y="-80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1170" y="-80" />
+        <di:waypoint x="1230" y="-80" />
+        <di:waypoint x="1230" y="448" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="840" y="40" />
+        <di:waypoint x="950" y="40" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1170" y="40" />
+        <di:waypoint x="1230" y="40" />
+        <di:waypoint x="1230" y="448" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="840" y="255" />
+        <di:waypoint x="950" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1170" y="255" />
+        <di:waypoint x="1230" y="255" />
+        <di:waypoint x="1230" y="448" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="950" y="414" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1170" y="414" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="950" y="529" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1170" y="529" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="950" y="644" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="1170" y="644" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="950" y="759" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="1170" y="759" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="950" y="874" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_20_di" bpmnElement="Flow_20">
+        <di:waypoint x="1170" y="874" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_21_di" bpmnElement="Flow_21">
+        <di:waypoint x="840" y="448" />
+        <di:waypoint x="840" y="1150" />
+        <di:waypoint x="950" y="1150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_22_di" bpmnElement="Flow_22">
+        <di:waypoint x="1170" y="1150" />
+        <di:waypoint x="1230" y="1150" />
+        <di:waypoint x="1230" y="448" />
+        <di:waypoint x="1290" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Note_Task_Doctor_di" bpmnElement="Note_Task_Doctor">
+        <dc:Bounds x="1410" y="350" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Help_di" bpmnElement="Note_Task_Help">
+        <dc:Bounds x="1260" y="-125" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Install_di" bpmnElement="Note_Task_Install">
+        <dc:Bounds x="1270" y="10" width="330" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Task_Uninstall_di" bpmnElement="Note_Task_Uninstall">
+        <dc:Bounds x="1270" y="210" width="330" height="90" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>
